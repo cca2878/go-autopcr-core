@@ -24,6 +24,15 @@ type (
 	Result   = automation.Result   // 单个任务运行结果
 	Source   = automation.Source   // 「模块名→参数名→值」配置源
 	Status   = automation.Status   // 任务结果状态
+	Observer = automation.Observer // 只写进度端口（外壳注入、核心推送）
+	Event    = automation.Event    // 任务级进度事件
+	Phase    = automation.Phase    // 进度事件阶段
+)
+
+// 进度事件阶段常量（转发 automation 同名量）。
+const (
+	PhaseStarted  = automation.PhaseStarted
+	PhaseFinished = automation.PhaseFinished
 )
 
 // 任务结果状态常量（转发 automation 同名量）。

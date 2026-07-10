@@ -129,10 +129,13 @@ func (s *Session) Masterdata() Reader { return s.gc.Masterdata() }
 // ServerTime 返回最近同步到的服务器时间（Unix 秒）。
 func (s *Session) ServerTime() int64 { return s.gc.ServerTime() }
 
-// Run 依次执行 tasks 并返回每个任务的结果（须先 Login 成功）。单任务=长度 1、批处理=多元素，
-// 统一走 automation.Run；单个任务失败/跳过不影响其余。
-func (s *Session) Run(ctx context.Context, tasks []Task) []Result {
-	return automation.Run(ctx, s.gc, s.registry, tasks)
+// Run 依次执行 tasks，返回每个任务的结果与终止因由（须先 Login 成功）。单任务=长度 1、批处理=
+// 多元素，统一走 automation.Run；单个任务失败/跳过不影响其余。
+//
+// obs 是可选的进度端口（见 Observer）：非 nil 时按任务边界推送进度事件，nil 即无进度。返回的
+// error 非 nil 表示【被取消】（ctx 取消/超时），此时 []Result 只含已完成任务；nil 表示全部跑完。
+func (s *Session) Run(ctx context.Context, tasks []Task, obs Observer) ([]Result, error) {
+	return automation.Run(ctx, s.gc, s.registry, tasks, obs)
 }
 
 // Close 释放会话资源（母数据库连接）。未登录时安全返回 nil。

@@ -66,5 +66,6 @@ func (f *FakeClient) Tower() tower.API              { return f.TowerAPI }
 func RunOne(gc client.GameClient, m automation.Module, values map[string]any) automation.Result {
 	reg := automation.NewRegistry()
 	reg.Register(m)
-	return automation.Run(context.Background(), gc, reg, []automation.Task{{Module: m.Meta().Name, Values: values}})[0]
+	res, _ := automation.Run(context.Background(), gc, reg, []automation.Task{{Module: m.Meta().Name, Values: values}}, nil)
+	return res[0]
 }
