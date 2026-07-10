@@ -5,7 +5,7 @@ go 1.25.0
 require github.com/ugorji/go/codec v1.3.1
 
 require (
-	github.com/cca2878/bsdkv3-go v0.1.1-0.20260708064434-475e968bee8c
+	github.com/cca2878/bsdkv3-go v0.1.1-0.20260710020515-1f99e1bb055f
 	github.com/cca2878/gtrv-go v0.0.0-20260708024213-fad418739791
 	github.com/pierrec/lz4/v4 v4.1.27
 	modernc.org/sqlite v1.53.0
@@ -23,5 +23,3 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
-
-replace github.com/cca2878/bsdkv3-go => ./ref/bsdkv3-go

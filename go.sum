@@ -1,3 +1,5 @@
+github.com/cca2878/bsdkv3-go v0.1.1-0.20260710020515-1f99e1bb055f h1:4QGwhG2xqQyxLidA6DIJX4MuaP4hC3joRzbIpI49/4s=
+github.com/cca2878/bsdkv3-go v0.1.1-0.20260710020515-1f99e1bb055f/go.mod h1:72b1/7LoaLmZ030a8lhbuHst3lZUoQSAg0/DfMwXXRI=
 github.com/cca2878/gtrv-go v0.0.0-20260708024213-fad418739791 h1:VbcfMkOrnqB18T03gapbA7CXKUC7+f9rUPFDDbTnLSA=
 github.com/cca2878/gtrv-go v0.0.0-20260708024213-fad418739791/go.mod h1:UTjTXvMAh15KFLfES7VAx/l+np5hTsxss3PAy1eHOoQ=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
