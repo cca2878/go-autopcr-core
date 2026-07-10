@@ -1,15 +1,21 @@
 name: CI
 
+# 验证类 CI（dev/main 模型）：dev=snapshot 验证；main=PR 门禁与合并后正式验证。
 on:
   push:
+    branches: [dev, main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 # 硬性约束：全程禁用 CGO。
 env:
   CGO_ENABLED: "0"
 
 jobs:
-  build:
+  go:
+    # 显示名即分支保护 required_status_checks 的 context（与 bsdk/gtrv 通用 ruleset 一致）。
+    name: Go (fmt · vet · test)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,6 +23,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
+
+      - name: Format check
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then echo "以下文件未 gofmt："; echo "$unformatted"; exit 1; fi
 
       - name: Build
         run: go build ./...
