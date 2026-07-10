@@ -1,0 +1,166 @@
+// Package accesskey 实现「AccessKey 四要素直传」的凭据（SC 缝首期实现）。
+//
+// 它不做任何账密登录：Login 直接返回构造时传入的 uid/access_key；渠道（bsdk/qsdk）
+// 仅决定 apiRoot / resKey / platformID / channelID 等静态配置与请求头。
+package accesskey
+
+import (
+	"context"
+	"crypto/md5"
+	"encoding/hex"
+	"fmt"
+	"maps"
+
+	"github.com/cca2878/go-autopcr/internal/client/credential/captcha"
+)
+
+// 渠道标识。
+const (
+	ChannelBSDK = "bsdk" // 官服（免登录，直传 AccessKey）
+	ChannelQSDK = "qsdk" // 渠道服
+)
+
+// Android 平台标识（PLATFORM 头 / DEVICE 头）。
+const platformAndroid = "2"
+
+// androidHeaders 复刻原 constants.py 的 DEFAULT_HEADERS（Android）。
+// APP-VER 等版本相关字段 M1 先固定；动态版本刷新（version.txt / store_url）留待后续。
+//
+// 注：不含 Accept-Encoding —— Go 的 http.Transport 未手动指定时会自动添加
+// "Accept-Encoding: gzip"（规范大小写，与官方客户端一致）并透明解压响应。
+var androidHeaders = map[string]string{
+	"User-Agent":           "UnityPlayer/2021.3.45f2c1 (UnityWebRequest/1.0, libcurl/8.5.0-DEV)",
+	"X-Unity-Version":      "2021.3.45f2c1",
+	"APP-VER":              "11.4.0",
+	"BATTLE-LOGIC-VERSION": "4",
+	"BUNDLE-VER":           "",
+	"DEVICE":               "2",
+	"DEVICE-NAME":          "OPPO PCRT00",
+	"EXCEL-VER":            "1.0.0",
+	"GRAPHICS-DEVICE-NAME": "Adreno (TM) 640",
+	"IP-ADDRESS":           "10.0.2.15",
+	"KEYCHAIN":             "",
+	"LOCALE":               "CN",
+	"PLATFORM-OS-VERSION":  "Android OS 5.1.1 / API-22 (LMY48Z/rel.se.infra.20200612.100533)",
+	"REGION-CODE":          "",
+	"RES-VER":              "10002200",
+	"SHORT-UDID":           "0",
+}
+
+// channelConfig 是各渠道的静态配置。
+type channelConfig struct {
+	apiRoot    string
+	resKey     string
+	platformID string // ToolSdkLogin 的 platform，也用于 PLATFORM-ID 头
+	channelID  string // ToolSdkLogin 的 channel_id，也用于 CHANNEL-ID 头
+}
+
+var channels = map[string]channelConfig{
+	ChannelBSDK: {
+		apiRoot:    "https://l3-prod-all-gs-gzlj.bilibiligame.net/",
+		resKey:     "ab00a0a6dd915a052a2ef7fd649083e5",
+		platformID: "2",
+		channelID:  "1",
+	},
+	ChannelQSDK: {
+		apiRoot:    "https://l1-prod-uo-gs-gzlj.bilibiligame.net/",
+		resKey:     "d145b29050641dac2f8b19df0afe0e59",
+		platformID: "4",
+		channelID:  "1",
+	},
+}
+
+// Credential 是 AccessKey 直传凭据。
+//
+// solver 可选：核心不携带任何验证码求解器实现（见 captcha 包的架构决策），故默认为 nil。
+// 未注入求解器时，仅在真正触发风控(is_risk)才会以 captcha.ErrNoSolver 硬失败——正常登录
+// （绝大多数情况）不需要求解器。求解能力由外壳经 WithCaptchaSolver 注入。
+type Credential struct {
+	uid       string
+	accessKey string
+	cfg       channelConfig
+	solver    captcha.Solver // 可为 nil：未注入求解器
+}
+
+// Option 用于定制 Credential。
+type Option func(*Credential)
+
+// WithCaptchaSolver 注入验证码求解器（外壳侧构造，如 gtrv 远程或本地 wasm）。
+// 不注入则触发风控时以 captcha.ErrNoSolver 硬失败。
+func WithCaptchaSolver(s captcha.Solver) Option {
+	return func(c *Credential) { c.solver = s }
+}
+
+// New 构造一个直传凭据。channel 取 ChannelBSDK / ChannelQSDK。
+func New(channel, uid, accessKey string, opts ...Option) (*Credential, error) {
+	cfg, ok := channels[channel]
+	if !ok {
+		return nil, fmt.Errorf("未知渠道 %q（支持 %q / %q）", channel, ChannelBSDK, ChannelQSDK)
+	}
+	if uid == "" || accessKey == "" {
+		return nil, fmt.Errorf("uid 与 access_key 均不能为空")
+	}
+	c := &Credential{
+		uid:       uid,
+		accessKey: accessKey,
+		cfg:       cfg,
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c, nil
+}
+
+// Anonymous 构造仅用于【免凭证握手】(source_ini/index + get_maintenance_status，均非加密)
+// 的凭据：只提供渠道静态配置(APIRoot/Header/platform/channel)，不含账号 uid/access_key。
+//
+// 供 masterdata 无凭证刷新用——不登录也能拉服务器列表与维护状态、进而取最新母数据。
+// Login 会返回错误：它绝不应被用于真正的登录序列。
+func Anonymous(channel string) (*Credential, error) {
+	cfg, ok := channels[channel]
+	if !ok {
+		return nil, fmt.Errorf("未知渠道 %q（支持 %q / %q）", channel, ChannelBSDK, ChannelQSDK)
+	}
+	return &Credential{cfg: cfg}, nil
+}
+
+// Login 直接返回构造时传入的 uid / access_key；匿名凭据（无 uid）不可登录。
+func (c *Credential) Login(ctx context.Context) (string, string, error) {
+	if c.uid == "" {
+		return "", "", fmt.Errorf("匿名凭据不可用于登录")
+	}
+	return c.uid, c.accessKey, nil
+}
+
+// Header 返回本渠道的基础请求头。
+func (c *Credential) Header() map[string]string {
+	h := maps.Clone(androidHeaders)
+	h["DEVICE-ID"] = md5Hex(c.uid)
+	h["RES-KEY"] = c.cfg.resKey
+	h["PLATFORM"] = platformAndroid
+	h["PLATFORM-ID"] = c.cfg.platformID
+	h["CHANNEL-ID"] = c.cfg.channelID
+	return h
+}
+
+// APIRoot 返回本渠道 API 根地址。
+func (c *Credential) APIRoot() string { return c.cfg.apiRoot }
+
+// PlatformID 返回 ToolSdkLogin 的 platform 值。
+func (c *Credential) PlatformID() string { return c.cfg.platformID }
+
+// ChannelID 返回 ToolSdkLogin 的 channel_id 值。
+func (c *Credential) ChannelID() string { return c.cfg.channelID }
+
+// DoCaptcha 委托给注入的验证码求解器；未注入时返回 captcha.ErrNoSolver（硬失败）。
+func (c *Credential) DoCaptcha(ctx context.Context) (*captcha.Result, error) {
+	if c.solver == nil {
+		return nil, captcha.ErrNoSolver
+	}
+	return c.solver.Solve(ctx)
+}
+
+func md5Hex(s string) string {
+	sum := md5.Sum([]byte(s))
+	return hex.EncodeToString(sum[:])
+}

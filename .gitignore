@@ -1,0 +1,25 @@
+# Build artifacts
+/bin/
+/dist/
+*.exe
+
+# Go
+/vendor/
+*.test
+*.out
+go.work
+go.work.sum
+
+# Reference material: original Python project, design docs, sibling libraries,
+# and test secrets. Kept locally for cross-checking, not part of this repo.
+/ref/
+
+# Runtime cache (per-version 干净母数据库等成品，运行时生成)
+/cache/
+
+# Python virtualenv (local tooling only)
+/.venv/
+
+# Local-only settings / files（含 .claude/settings.local.json 等）
+*.local.json
+.DS_Store
