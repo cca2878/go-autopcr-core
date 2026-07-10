@@ -299,14 +299,40 @@ func runCommand(cfg config.Config, args []string) int {
 	}
 	defer func() { _ = sess.Close() }()
 
-	results := sess.Run(ctx, app.TasksFor(mods, src))
+	// 进度经 stderr 实时打印（app.Observer 的 CLI 接线 / 端口 litmus）；结果仍走 stdout。
+	results, err := sess.Run(ctx, app.TasksFor(mods, src), progressObserver(os.Stderr))
 	printResults(os.Stdout, results)
+	if err != nil { // 被取消/超时：只跑了 results 这些，非零退出
+		fmt.Fprintf(os.Stderr, "run: 已取消，完成 %d 个任务: %v\n", len(results), err)
+		return 1
+	}
 	for _, r := range results {
 		if r.Status == app.StatusError {
 			return 1 // 有模块失败时以非零退出，便于脚本判断
 		}
 	}
 	return 0
+}
+
+// progressObserver 返回把任务级进度打到 w 的 app.Observer：开始时 “[i/n] ▶ 标题”、结束时附状态
+// 字形。进度是外壳职责，回调只做即时打印（快、不阻塞、不 panic）——契约见 app.Observer。
+func progressObserver(w io.Writer) app.Observer {
+	return func(ev app.Event) {
+		switch ev.Phase {
+		case app.PhaseStarted:
+			_, _ = fmt.Fprintf(w, "[%d/%d] ▶ %s\n", ev.Index+1, ev.Total, metaLabel(ev.Meta))
+		case app.PhaseFinished:
+			_, _ = fmt.Fprintf(w, "[%d/%d] %s %s\n", ev.Index+1, ev.Total, statusGlyph(ev.Result.Status), metaLabel(ev.Meta))
+		}
+	}
+}
+
+// metaLabel 取模块展示名，未知模块名（无 Title）时回落到稳定键。
+func metaLabel(m app.Meta) string {
+	if m.Title != "" {
+		return m.Title
+	}
+	return m.Name
 }
 
 // needsMasterdata 报告选中模块中是否有任一声明依赖母数据。

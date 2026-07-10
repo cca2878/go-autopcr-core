@@ -28,7 +28,10 @@ func TestRunStatuses(t *testing.T) {
 	reg.Register(stubModule{meta: Meta{Name: "err"}, fn: func(rc *RunContext) error { return errors.New("boom") }})
 	tasks := []Task{{Module: "ok"}, {Module: "skip"}, {Module: "err"}, {Module: "ghost"}}
 
-	res := Run(context.Background(), nil, reg, tasks) // gc=nil：stub 不使用它，验证 Runner 与客户端解耦
+	res, err := Run(context.Background(), nil, reg, tasks, nil) // gc=nil：stub 不使用它，验证 Runner 与客户端解耦
+	if err != nil {
+		t.Fatalf("未取消不应返回 error: %v", err)
+	}
 	if len(res) != 4 {
 		t.Fatalf("结果数=%d want 4", len(res))
 	}
@@ -62,7 +65,7 @@ func TestPerInstanceConfig(t *testing.T) {
 		{Module: "echo", Values: map[string]any{"n": 2}},
 		{Module: "echo"}, // 无值→默认 0
 	}
-	res := Run(context.Background(), nil, reg, tasks)
+	res, _ := Run(context.Background(), nil, reg, tasks, nil)
 	got := []string{res[0].Log[0], res[1].Log[0], res[2].Log[0]}
 	want := []string{"n=1", "n=2", "n=0"}
 	for i := range want {
@@ -107,7 +110,7 @@ func TestRunRejectsInvalidConfig(t *testing.T) {
 		params: []Param{{Name: "mode", Type: ParamChoice, Bounds: Bounds{Choices: []string{"a"}}}},
 		fn:     func(rc *RunContext) error { t.Fatal("非法配置不应执行 Run"); return nil },
 	})
-	res := Run(context.Background(), nil, reg, []Task{{Module: "x", Values: map[string]any{"mode": "z"}}})
+	res, _ := Run(context.Background(), nil, reg, []Task{{Module: "x", Values: map[string]any{"mode": "z"}}}, nil)
 	if res[0].Status != StatusError || res[0].Err == nil {
 		t.Fatalf("非法配置应 error: %+v", res[0])
 	}
@@ -164,5 +167,86 @@ func TestConfigResolution(t *testing.T) {
 	ov := resolve(params, map[string]any{"flag": false, "count": float64(9), "label": "y"})
 	if ov.Bool("flag") || ov.Int("count") != 9 || ov.String("label") != "y" {
 		t.Fatalf("覆盖解析错误: %v %d %q", ov.Bool("flag"), ov.Int("count"), ov.String("label"))
+	}
+}
+
+// TestRunObserverEvents 验证进度端口：事件序列、Finished 携带结果、Log 副本隔离、以及
+// observer 不影响返回结果（确定性）。
+func TestRunObserverEvents(t *testing.T) {
+	reg := NewRegistry()
+	reg.Register(stubModule{meta: Meta{Name: "a", Title: "甲"}, fn: func(rc *RunContext) error { rc.Logf("甲done"); return nil }})
+	reg.Register(stubModule{meta: Meta{Name: "b", Title: "乙"}, fn: func(rc *RunContext) error { return Skip("跳过") }})
+	tasks := []Task{{Module: "a"}, {Module: "b"}}
+
+	var events []Event
+	res, err := Run(context.Background(), nil, reg, tasks, func(ev Event) { events = append(events, ev) })
+	if err != nil {
+		t.Fatalf("未取消不应返回 error: %v", err)
+	}
+
+	// 期望序列：Started(0),Finished(0),Started(1),Finished(1)，Total 恒为 2。
+	want := []struct {
+		phase Phase
+		idx   int
+	}{{PhaseStarted, 0}, {PhaseFinished, 0}, {PhaseStarted, 1}, {PhaseFinished, 1}}
+	if len(events) != len(want) {
+		t.Fatalf("事件数=%d want %d: %+v", len(events), len(want), events)
+	}
+	for i, w := range want {
+		if events[i].Phase != w.phase || events[i].Index != w.idx || events[i].Total != 2 {
+			t.Fatalf("事件[%d]=%+v want phase=%v idx=%d total=2", i, events[i], w.phase, w.idx)
+		}
+	}
+	// Finished 携带对应结果状态。
+	if events[1].Result.Status != StatusOK || events[3].Result.Status != StatusSkip {
+		t.Fatalf("Finished 结果状态错误: %v %v", events[1].Result.Status, events[3].Result.Status)
+	}
+	// 事件里的 Result.Log 是副本：篡改它不影响返回结果。
+	events[1].Result.Log[0] = "TAMPERED"
+	if res[0].Log[0] == "TAMPERED" {
+		t.Fatal("事件 Result.Log 未与返回结果隔离")
+	}
+	// 确定性：nil observer 与有 observer 返回一致。
+	res2, _ := Run(context.Background(), nil, reg, tasks, nil)
+	if len(res) != len(res2) || res[0].Status != res2[0].Status || res[1].Status != res2[1].Status {
+		t.Fatalf("observer 影响了返回结果: %+v vs %+v", res, res2)
+	}
+}
+
+// TestRunCancelStopsAtBoundary 验证 B1 边界取消：取消后不再调度后续任务，返回已完成部分 +
+// context.Canceled。
+func TestRunCancelStopsAtBoundary(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	reg := NewRegistry()
+	reg.Register(stubModule{meta: Meta{Name: "a"}, fn: func(rc *RunContext) error { cancel(); return nil }}) // 跑完即取消
+	reg.Register(stubModule{meta: Meta{Name: "b"}, fn: func(rc *RunContext) error { t.Fatal("取消后不应执行后续任务"); return nil }})
+
+	res, err := Run(ctx, nil, reg, []Task{{Module: "a"}, {Module: "b"}}, nil)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("应返回 context.Canceled，得 %v", err)
+	}
+	if len(res) != 1 || res[0].Meta.Name != "a" || res[0].Status != StatusOK {
+		t.Fatalf("应只含已完成的 a: %+v", res)
+	}
+}
+
+// TestRunCancelDuringTaskNotError 验证任务执行途中被取消（在途请求失败）归为取消而非失败：
+// 该任务不计入结果、后续不执行。
+func TestRunCancelDuringTaskNotError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	reg := NewRegistry()
+	reg.Register(stubModule{meta: Meta{Name: "a"}, fn: func(rc *RunContext) error { return nil }})
+	reg.Register(stubModule{meta: Meta{Name: "b"}, fn: func(rc *RunContext) error {
+		cancel()                // 模拟执行途中被取消
+		return context.Canceled // 在途请求因 ctx 取消而失败
+	}})
+	reg.Register(stubModule{meta: Meta{Name: "c"}, fn: func(rc *RunContext) error { t.Fatal("取消后不应执行 c"); return nil }})
+
+	res, err := Run(ctx, nil, reg, []Task{{Module: "a"}, {Module: "b"}, {Module: "c"}}, nil)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("应返回 context.Canceled，得 %v", err)
+	}
+	if len(res) != 1 || res[0].Meta.Name != "a" {
+		t.Fatalf("被取消的 b 不应记为结果、c 不应执行；得 %+v", res)
 	}
 }

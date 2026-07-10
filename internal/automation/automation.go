@@ -99,24 +99,91 @@ func TasksFor(mods []Module, src Source) []Task {
 	return tasks
 }
 
+// Phase 标识进度事件在任务生命周期中的位置。
+type Phase int
+
+const (
+	PhaseStarted  Phase = iota // 任务即将执行（尚无结果）
+	PhaseFinished              // 任务已结束（Result 为已定稿结果的副本）
+)
+
+// Event 是一条【任务级】进度事件，按值传递。
+type Event struct {
+	Phase        Phase
+	Index, Total int    // 第 Index（从 0 计）个任务，共 Total 个
+	Meta         Meta   // 该任务模块的元信息（未知模块名时仅 Name）
+	Result       Result // 仅 PhaseFinished 有意义：已定稿结果的独立副本
+}
+
+// Observer 是 Run 的【只写进度端口】：外壳注入，核心在任务边界【同步、按序推送】Event。
+//
+// 注入方须遵守（同步 push 固有）：
+//   - 回调必须尽快返回、不得阻塞——它在 Run 的 goroutine 上同步调用，慢/阻塞会拖慢整条
+//     任务链；耗时处理请自行转交其它线程。
+//   - 不得 panic：进度上报是旁路，panic 会波及 Run（跨 FFI 时由 mobile skin 兜住异常）。
+//   - 事件顺序确定（Started(i)→Finished(i) 依次），到达时刻不确定：勿让任何逻辑依赖时序。
+//
+// 核心侧保证（注入方无需操心）：Event 按值传递（含 Result 副本），核心绝不从 Observer 读回；
+// 故 Observer 为 nil 与否，Run 返回的 []Result 逐字节相同——确定性不受观察者影响。
+type Observer func(Event)
+
 // Run 依次执行每个 Task 并返回对应结果：经 reg 把 Task.Module 解析为模块。单任务=长度 1 的
 // 列表，批处理=多元素，二者走同一路径（统一单/批）。单个任务失败/跳过（含未知模块名）不影响
 // 其余继续执行。
-func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task) []Result {
-	results := make([]Result, 0, len(tasks))
-	for _, t := range tasks {
-		m, ok := reg.Get(t.Module)
-		if !ok {
-			results = append(results, Result{
-				Meta:   Meta{Name: t.Module},
-				Status: StatusError,
-				Err:    fmt.Errorf("未知模块 %q", t.Module),
-			})
-			continue
+//
+// 进度：obs 非 nil 时在每个任务前后推送 PhaseStarted / PhaseFinished（见 Observer 契约）；obs
+// 为 nil 即无进度、行为与不传观察者完全一致。
+//
+// 取消（边界语义 / B1）：在开跑下一个任务前检查 ctx，已取消则【停止调度后续任务】，返回【已完成
+// 部分】+ ctx.Err()。正在执行的任务因共享 ctx 被中断而失败时，归为取消而非失败——丢弃该结果、就地
+// 停止。故返回的 error 非 nil 即“被取消，只跑了这些”，而结果里的 StatusError 永远只表示【真实失败】，
+// 不含取消假象。
+func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task, obs Observer) ([]Result, error) {
+	total := len(tasks)
+	results := make([]Result, 0, total)
+	for i, t := range tasks {
+		// 边界取消：开跑下一个任务前检查，已取消则返回已完成部分与因由。
+		if err := ctx.Err(); err != nil {
+			return results, err
 		}
-		results = append(results, runOne(ctx, gc, m, t.Values))
+
+		m, known := reg.Get(t.Module)
+		meta := Meta{Name: t.Module}
+		if known {
+			meta = m.Meta()
+		}
+		emit(obs, Event{Phase: PhaseStarted, Index: i, Total: total, Meta: meta})
+
+		var res Result
+		if !known {
+			res = Result{Meta: meta, Status: StatusError, Err: fmt.Errorf("未知模块 %q", t.Module)}
+		} else {
+			res = runOne(ctx, gc, m, t.Values)
+			// 取消判定：任务因 ctx 取消被中断而失败时归为取消而非失败——丢弃结果、就地停止。
+			if res.Status == StatusError && ctx.Err() != nil {
+				return results, ctx.Err()
+			}
+		}
+
+		results = append(results, res)
+		emit(obs, Event{Phase: PhaseFinished, Index: i, Total: total, Meta: res.Meta, Result: cloneResult(res)})
 	}
-	return results
+	return results, nil
+}
+
+// emit 向非 nil 的 obs 推送一条事件。
+func emit(obs Observer, ev Event) {
+	if obs != nil {
+		obs(ev)
+	}
+}
+
+// cloneResult 复制 Result（含 Log 切片）供事件按值携带，隔离于返回给调用方的结果。
+func cloneResult(r Result) Result {
+	if r.Log != nil {
+		r.Log = append([]string(nil), r.Log...)
+	}
+	return r
 }
 
 func runOne(ctx context.Context, gc client.GameClient, m Module, values map[string]any) Result {
