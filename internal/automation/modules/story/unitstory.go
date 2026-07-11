@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
-	mdstory "github.com/cca2878/go-autopcr/internal/client/masterdata/story"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
+	mdstory "github.com/cca2878/go-autopcr-core/internal/client/masterdata/story"
 )
 
 // unitStoryReport 报告【可阅读但未读】的角色好感剧情（只读，不实际阅读）。最典型的 masterdata

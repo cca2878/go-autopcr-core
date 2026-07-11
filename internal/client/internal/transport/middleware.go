@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/cca2878/go-autopcr/internal/client/gameerr"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
 // DefaultRetries 是网络错误的默认重试次数（复刻原 errorhandler）。

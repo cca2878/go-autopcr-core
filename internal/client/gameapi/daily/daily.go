@@ -6,7 +6,7 @@ package daily
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // API 是每日收取域能力面契约（随功能在本包内累加）。

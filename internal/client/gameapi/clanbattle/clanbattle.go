@@ -6,8 +6,8 @@ package clanbattle
 import (
 	"context"
 
-	clanbattlepb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/clanbattle"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	clanbattlepb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/clanbattle"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // Top 是公会战刀数摘要。

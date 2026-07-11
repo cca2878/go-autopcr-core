@@ -4,8 +4,8 @@ package account
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // Register 登记本域全部模块。

@@ -3,9 +3,9 @@ package daily
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
-	gapidaily "github.com/cca2878/go-autopcr/internal/client/gameapi/daily"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
+	gapidaily "github.com/cca2878/go-autopcr-core/internal/client/gameapi/daily"
 )
 
 // maxReceiveBatches 是「按批领取」类任务的循环上限，防止意外死循环（实际一般 1~2 批即清空）。

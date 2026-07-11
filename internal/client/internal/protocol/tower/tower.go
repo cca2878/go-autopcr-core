@@ -4,7 +4,7 @@ package tower
 import (
 	"net/url"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
 var urlTop = protocol.MustRelURL("tower/top")

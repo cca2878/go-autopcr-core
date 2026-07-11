@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	mdschedule "github.com/cca2878/go-autopcr/internal/client/masterdata/schedule"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	mdschedule "github.com/cca2878/go-autopcr-core/internal/client/masterdata/schedule"
 )
 
 // fakeScheduleMD mock 母数据日程域；fakeSchedReader 覆写 Reader.Schedule()。

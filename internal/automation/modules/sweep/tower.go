@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // towerUnlockQuestID 是露娜塔解锁任务（对应 ref get_tower_top 的门禁）。

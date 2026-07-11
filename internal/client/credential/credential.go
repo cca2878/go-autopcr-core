@@ -12,7 +12,7 @@ package credential
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential/captcha"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/captcha"
 )
 
 // Credential 是凭据端口：向传输/会话层提供鉴权信息、请求头与渠道配置。

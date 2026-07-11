@@ -7,8 +7,8 @@ package arena
 import (
 	"context"
 
-	arenapb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/arena"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	arenapb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/arena"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // API 是竞技场域能力面契约（随功能在本包内累加）。

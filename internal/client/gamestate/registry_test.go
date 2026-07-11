@@ -3,8 +3,8 @@ package gamestate
 import (
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol/account"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol/sdk"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/account"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/sdk"
 )
 
 func TestApplyFoldsLoadIndex(t *testing.T) {

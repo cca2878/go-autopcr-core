@@ -5,7 +5,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/mddb"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
 
 // API 是地下城域查询契约（随功能在本包内累加）。

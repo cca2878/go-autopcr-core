@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/mddb"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
 
 // Entry 是一条排程（某系统的一段开放时段）。

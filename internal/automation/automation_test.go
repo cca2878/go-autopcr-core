@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // stubModule 是仅用于测试的模块：不触碰 client，故 Run 可传 nil GameClient。

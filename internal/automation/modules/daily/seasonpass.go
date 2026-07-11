@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // seasonpassAccept 领取进行中女神祭的任务奖励（对应 ref seasonpass_accept）。

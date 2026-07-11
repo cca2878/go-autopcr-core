@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential/accesskey"
-	"github.com/cca2878/go-autopcr/internal/client/internal/discovery"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
-	"github.com/cca2878/go-autopcr/internal/client/internal/urlx"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/asset"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/accesskey"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/discovery"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/urlx"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/asset"
 )
 
 // assetDownloadTimeout 是母数据 CDN 下载的 http 超时（母数据包达几十 MB，给足余量）。

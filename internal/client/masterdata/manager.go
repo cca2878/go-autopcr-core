@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cca2878/go-autopcr/internal/client/unityfs"
+	"github.com/cca2878/go-autopcr-core/internal/client/unityfs"
 )
 
 // Fetcher 下载指定版本的 masterdata_master.unity3d 原始字节（由 asset.Source 实现）。

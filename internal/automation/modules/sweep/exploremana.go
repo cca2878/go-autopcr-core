@@ -3,8 +3,8 @@ package sweep
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // exploreManaReport 报告今日 Mana 探索还可扫荡多少次（只读，不实际扫荡/消耗体力）。

@@ -18,11 +18,11 @@ import (
 	"log/slog"
 	"net/url"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules"
-	"github.com/cca2878/go-autopcr/internal/client"
-	"github.com/cca2878/go-autopcr/internal/client/credential/accesskey"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules"
+	"github.com/cca2878/go-autopcr-core/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/accesskey"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
 )
 
 // Dirs 是外壳提供给核心的文件系统位置。核心不假设任何工作目录——一切目录由调用方【显式传入】

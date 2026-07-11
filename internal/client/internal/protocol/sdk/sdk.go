@@ -5,7 +5,7 @@ package sdk
 import (
 	"net/url"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
 // 端点相对引用（解析一次，复用；ResolveReference 只读引用、不修改，故共享安全）。

@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	gapirace "github.com/cca2878/go-autopcr/internal/client/gameapi/race"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	mdrace "github.com/cca2878/go-autopcr/internal/client/masterdata/race"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	gapirace "github.com/cca2878/go-autopcr-core/internal/client/gameapi/race"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	mdrace "github.com/cca2878/go-autopcr-core/internal/client/masterdata/race"
 )
 
 // fakeRace mock 赛马域能力面（抽取），记录调用参数。

@@ -3,7 +3,7 @@ package client
 import (
 	_ "embed"
 
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
 )
 
 // embeddedRainbow 是随客户端编译进二进制的默认反混淆表。

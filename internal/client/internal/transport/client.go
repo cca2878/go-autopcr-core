@@ -14,10 +14,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential"
-	"github.com/cca2878/go-autopcr/internal/client/gameerr"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol"
-	"github.com/cca2878/go-autopcr/internal/client/internal/urlx"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/urlx"
 )
 
 // DefaultTimeout 是单次请求的默认超时（对应原项目 timeout=10）。

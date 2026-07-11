@@ -1,7 +1,7 @@
 # go-autopcr 构建脚手架
 # 硬性约束：禁用 CGO（CGO_ENABLED=0），且不依赖任何使用 CGO 的包，保证跨平台可移植。
 
-MODULE  := github.com/cca2878/go-autopcr
+MODULE  := github.com/cca2878/go-autopcr-core
 BIN_DIR := bin
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 COMMIT  ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo none)

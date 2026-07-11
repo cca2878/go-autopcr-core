@@ -4,7 +4,7 @@ package emblem
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/mddb"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
 
 // Emblem 是一个称号（图鉴条目）：id、名称、达成说明（取自关联的 emblem_mission_data.description）。

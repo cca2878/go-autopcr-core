@@ -3,8 +3,8 @@ package daily
 import (
 	"context"
 
-	dailypb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/daily"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	dailypb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/daily"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // missionStatusEnableReceive 是 eMissionStatusType.EnableReceive（可领取）。

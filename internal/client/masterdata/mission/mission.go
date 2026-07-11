@@ -4,7 +4,7 @@ package mission
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/mddb"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
 
 // 任务领取类别（对应 mission/accept 的 type 参数；复刻 ref 的 1/2/4）。

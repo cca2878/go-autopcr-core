@@ -6,8 +6,8 @@ package clan
 import (
 	"context"
 
-	clanpb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/clan"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	clanpb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/clan"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // API 是公会域能力面契约（随功能在本包内累加）。

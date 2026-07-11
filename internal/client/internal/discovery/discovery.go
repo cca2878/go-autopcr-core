@@ -9,10 +9,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/cca2878/go-autopcr/internal/client/gameerr"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol/sdk"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
-	"github.com/cca2878/go-autopcr/internal/client/internal/urlx"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/sdk"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/urlx"
 )
 
 // Result 是握手拿到的服务端发现信息。

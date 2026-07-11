@@ -3,7 +3,7 @@ package account
 import (
 	"net/url"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
 var urlHomeIndex = protocol.MustRelURL("home/index")

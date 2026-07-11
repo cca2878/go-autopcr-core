@@ -23,12 +23,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cca2878/go-autopcr/app"
-	"github.com/cca2878/go-autopcr/cmd/autopcr-cli/internal/bsdklogin"
-	"github.com/cca2878/go-autopcr/cmd/autopcr-cli/internal/remote"
-	"github.com/cca2878/go-autopcr/internal/buildinfo"
-	"github.com/cca2878/go-autopcr/internal/platform/config"
-	"github.com/cca2878/go-autopcr/internal/platform/logging"
+	"github.com/cca2878/go-autopcr-core/app"
+	"github.com/cca2878/go-autopcr-core/cmd/autopcr-cli/internal/bsdklogin"
+	"github.com/cca2878/go-autopcr-core/cmd/autopcr-cli/internal/remote"
+	"github.com/cca2878/go-autopcr-core/internal/buildinfo"
+	"github.com/cca2878/go-autopcr-core/internal/platform/config"
+	"github.com/cca2878/go-autopcr-core/internal/platform/logging"
 )
 
 func main() {

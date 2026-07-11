@@ -5,11 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential/captcha"
-	"github.com/cca2878/go-autopcr/internal/client/gameerr"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol/sdk"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/captcha"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/sdk"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // fakeCred 是仅供 passRisk 测试用的凭据打桩：Header/APIRoot 满足 transport.New，

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
 )
 
 // maxStoryReportTitles 限制报告里列出的篇名数量，避免一次性列出过长。

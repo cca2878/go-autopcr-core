@@ -3,8 +3,8 @@ package daily
 import (
 	"context"
 
-	dailypb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/daily"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	dailypb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/daily"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // 库存/物品领域常量：体力饮料 =（Stamina 类型, 93001）。

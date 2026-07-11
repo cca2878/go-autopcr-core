@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // halfMonth 汇总当前与未来的活动日程（半月刊；对应 ref half_schedule，只读、纯母数据）。

@@ -3,9 +3,9 @@ package gamestate
 import (
 	"reflect"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/discovery"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol/account"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol/sdk"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/discovery"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/account"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/sdk"
 )
 
 // Folder 把一个响应折叠进 PlayerState。resp 为 *R（具体响应类型的指针）。
