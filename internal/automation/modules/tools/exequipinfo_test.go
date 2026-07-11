@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	mdexequip "github.com/cca2878/go-autopcr/internal/client/masterdata/exequip"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	mdexequip "github.com/cca2878/go-autopcr-core/internal/client/masterdata/exequip"
 )
 
 // fakeExequipMD mock 母数据 EX 装备域；fakeExReader 覆写 Reader.Exequip()。

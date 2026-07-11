@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/mddb"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
 
 const (

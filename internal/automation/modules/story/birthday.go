@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // birthdayStoryReport 报告【可阅读但未读】的生日剧情（只读，不实际阅读）。

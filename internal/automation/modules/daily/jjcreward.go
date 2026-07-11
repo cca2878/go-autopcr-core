@@ -3,8 +3,8 @@ package daily
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // 竞技场/公主竞技场的解锁任务 id（对应 ref get_arena_info / get_grand_arena_info 的门禁）。

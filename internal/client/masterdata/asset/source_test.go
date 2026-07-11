@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/urlx"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/urlx"
 )
 
 // TestFetchMasterdata 用本地服务器模拟层级清单 + pool，验证解析与下载。

@@ -1,4 +1,4 @@
-module github.com/cca2878/go-autopcr
+module github.com/cca2878/go-autopcr-core
 
 go 1.25.0
 

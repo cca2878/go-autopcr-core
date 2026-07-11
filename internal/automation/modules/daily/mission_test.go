@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	gapidaily "github.com/cca2878/go-autopcr/internal/client/gameapi/daily"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/mission"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	gapidaily "github.com/cca2878/go-autopcr-core/internal/client/gameapi/daily"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mission"
 )
 
 // fakeMissionDaily mock 每日收取域能力面（mission 相关）。

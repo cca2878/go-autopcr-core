@@ -17,9 +17,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/asset"
-	"github.com/cca2878/go-autopcr/internal/client/unityfs"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/asset"
+	"github.com/cca2878/go-autopcr-core/internal/client/unityfs"
 	_ "modernc.org/sqlite"
 )
 

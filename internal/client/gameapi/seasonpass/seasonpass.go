@@ -6,8 +6,8 @@ package seasonpass
 import (
 	"context"
 
-	seasonpasspb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/seasonpass"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	seasonpasspb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/seasonpass"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // Index 是女神祭总览摘要（供先查后动：判断是否有可领任务）。

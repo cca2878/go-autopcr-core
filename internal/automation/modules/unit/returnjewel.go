@@ -5,8 +5,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // 返钻公式常量（复刻 ref return_jewel）：等级同步只统计练度最高的 20 个之外的角色。

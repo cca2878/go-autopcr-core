@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	gapiarena "github.com/cca2878/go-autopcr/internal/client/gameapi/arena"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	gapiarena "github.com/cca2878/go-autopcr-core/internal/client/gameapi/arena"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
 )
 
 // fakeArena mock 竞技场域能力面，记录领取调用。

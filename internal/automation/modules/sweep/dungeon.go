@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // dungeonReport 报告地下城今日是否还可挑战/扫荡（只读，不实际进入/扫荡）。

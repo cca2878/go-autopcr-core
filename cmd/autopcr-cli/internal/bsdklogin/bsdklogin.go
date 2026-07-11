@@ -25,7 +25,7 @@ import (
 	bsdkv3 "github.com/cca2878/bsdkv3-go"
 	"github.com/cca2878/gtrv-go"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential/accesskey"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/accesskey"
 )
 
 // options 定制登录行为。

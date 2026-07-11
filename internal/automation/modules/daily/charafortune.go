@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // charaFortune 抽取今日赛马（免费每日活动，获得宝石；对应 ref chara_fortune）。

@@ -6,15 +6,15 @@
 package modules
 
 import (
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/account"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/clan"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/daily"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/room"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/story"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/sweep"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/tools"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/unit"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/account"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/clan"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/daily"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/room"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/story"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/sweep"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/tools"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/unit"
 )
 
 // DefaultRegistry 返回内置模块与批预设的注册表。各域在其子包 Register 内登记，此处聚合。

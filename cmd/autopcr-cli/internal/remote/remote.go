@@ -14,7 +14,7 @@ import (
 
 	"github.com/cca2878/gtrv-go"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential/captcha"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/captcha"
 )
 
 // Solver 用单个 gtrv.Validator 求解验证码，实现 captcha.Solver。

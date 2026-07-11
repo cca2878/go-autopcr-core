@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential/captcha"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/captcha"
 )
 
 // 渠道标识。

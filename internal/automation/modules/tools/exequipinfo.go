@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // exRarityNames 是 EX 装备稀有度名（对应 ref db.ex_rarity_name）。

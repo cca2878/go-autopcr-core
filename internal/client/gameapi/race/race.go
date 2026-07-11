@@ -7,8 +7,8 @@ package race
 import (
 	"context"
 
-	racepb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/race"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	racepb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/race"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // API 是赛马域能力面契约（随功能在本包内累加）。

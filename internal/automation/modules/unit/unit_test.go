@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	mdunit "github.com/cca2878/go-autopcr/internal/client/masterdata/unit"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	mdunit "github.com/cca2878/go-autopcr-core/internal/client/masterdata/unit"
 )
 
 // fakeUnitData mock 母数据角色域；fakeReader 覆写访问器 Unit()。

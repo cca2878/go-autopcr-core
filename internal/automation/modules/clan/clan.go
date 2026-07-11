@@ -5,9 +5,9 @@ import (
 	"context"
 	"math/rand"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
-	gapiclan "github.com/cca2878/go-autopcr/internal/client/gameapi/clan"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
+	gapiclan "github.com/cca2878/go-autopcr-core/internal/client/gameapi/clan"
 )
 
 // Register 登记本域全部模块。

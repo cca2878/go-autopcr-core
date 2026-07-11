@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/urlx"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/urlx"
 )
 
 // DefaultRes 是 B 服资源 CDN 根（对应 assetmgr.res）；下发为空时的兜底。

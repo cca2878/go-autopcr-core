@@ -1,7 +1,7 @@
 // Package daily 汇集「每日收取」域的自动化模块（礼物箱、任务奖励…）。
 package daily
 
-import "github.com/cca2878/go-autopcr/internal/automation"
+import "github.com/cca2878/go-autopcr-core/internal/automation"
 
 // Register 登记本域全部模块。
 func Register(r *automation.Registry) {

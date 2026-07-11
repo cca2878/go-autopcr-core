@@ -7,19 +7,19 @@
 package gameapi
 
 import (
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/account"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/arena"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/clan"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/clanbattle"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/daily"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/dungeon"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/emblem"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/mirage"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/race"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/room"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/seasonpass"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi/tower"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/account"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/arena"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/clan"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/clanbattle"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/daily"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/dungeon"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/emblem"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/mirage"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/race"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/room"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/seasonpass"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/tower"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // GameAPI 以访问器聚合各功能域能力面。新增域时在此加一个访问器方法。

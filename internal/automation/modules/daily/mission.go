@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client"
-	gapidaily "github.com/cca2878/go-autopcr/internal/client/gameapi/daily"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client"
+	gapidaily "github.com/cca2878/go-autopcr-core/internal/client/gameapi/daily"
 )
 
 // missionReceive 领取任务奖励（日常/常驻/纹章，不消耗资源）。

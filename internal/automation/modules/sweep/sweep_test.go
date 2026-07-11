@@ -3,9 +3,9 @@ package sweep
 import (
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
 )
 
 func TestExploreExpReport(t *testing.T) {

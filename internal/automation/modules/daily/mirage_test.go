@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	gapimirage "github.com/cca2878/go-autopcr/internal/client/gameapi/mirage"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	mdmirage "github.com/cca2878/go-autopcr/internal/client/masterdata/mirage"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	gapimirage "github.com/cca2878/go-autopcr-core/internal/client/gameapi/mirage"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	mdmirage "github.com/cca2878/go-autopcr-core/internal/client/masterdata/mirage"
 )
 
 // fakeMirageAPI mock 追忆战域能力面。

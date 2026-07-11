@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	gapiseason "github.com/cca2878/go-autopcr/internal/client/gameapi/seasonpass"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	mdseason "github.com/cca2878/go-autopcr/internal/client/masterdata/seasonpass"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	gapiseason "github.com/cca2878/go-autopcr-core/internal/client/gameapi/seasonpass"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	mdseason "github.com/cca2878/go-autopcr-core/internal/client/masterdata/seasonpass"
 )
 
 // fakeSeasonAPI mock 女神祭域能力面，记录领取调用。

@@ -4,8 +4,8 @@ package emblem
 import (
 	"context"
 
-	emblempb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/emblem"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	emblempb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/emblem"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // API 是称号域能力面契约（随功能在本包内累加）。

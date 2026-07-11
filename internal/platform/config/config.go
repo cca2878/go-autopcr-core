@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/cca2878/go-autopcr/internal/platform/paths"
+	"github.com/cca2878/go-autopcr-core/internal/platform/paths"
 )
 
 // Config 保存运行期配置。

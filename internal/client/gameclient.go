@@ -14,13 +14,13 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential"
-	"github.com/cca2878/go-autopcr/internal/client/gameapi"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol"
-	"github.com/cca2878/go-autopcr/internal/client/internal/session"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/session"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
 )
 
 // GameClient 是无头客户端对上层暴露的接口（S2 缝）。

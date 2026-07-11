@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	gapitower "github.com/cca2878/go-autopcr/internal/client/gameapi/tower"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	mdtower "github.com/cca2878/go-autopcr/internal/client/masterdata/tower"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	gapitower "github.com/cca2878/go-autopcr-core/internal/client/gameapi/tower"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	mdtower "github.com/cca2878/go-autopcr-core/internal/client/masterdata/tower"
 )
 
 // fakeTowerAPI mock 露娜塔域能力面。

@@ -3,7 +3,7 @@ package transport
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
 // Handler 处理一次请求：把 req 发出，将响应数据解码进 out（*R），返回响应头。

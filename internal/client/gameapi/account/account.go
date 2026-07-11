@@ -4,8 +4,8 @@ package account
 import (
 	"context"
 
-	accountpb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/account"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	accountpb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/account"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // API 是账号/首页域能力面契约。

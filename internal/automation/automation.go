@@ -10,7 +10,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cca2878/go-autopcr/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
 // Status 是单个模块的执行结果状态。

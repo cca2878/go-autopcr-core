@@ -4,7 +4,7 @@ package unit
 import (
 	"context"
 
-	"github.com/cca2878/go-autopcr/internal/client/masterdata/mddb"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
 
 // Obtainable 是一个可获得角色（图鉴条目）：id、名称、是否限定。

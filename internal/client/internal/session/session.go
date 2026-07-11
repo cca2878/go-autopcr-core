@@ -9,12 +9,12 @@ import (
 	"context"
 	"math/rand"
 
-	"github.com/cca2878/go-autopcr/internal/client/credential"
-	"github.com/cca2878/go-autopcr/internal/client/gameerr"
-	"github.com/cca2878/go-autopcr/internal/client/internal/discovery"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol/account"
-	"github.com/cca2878/go-autopcr/internal/client/internal/protocol/sdk"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/discovery"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/account"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/sdk"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // Login 执行完整登录序列：

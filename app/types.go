@@ -1,11 +1,11 @@
 package app
 
 import (
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/client/credential/accesskey"
-	"github.com/cca2878/go-autopcr/internal/client/credential/captcha"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/accesskey"
+	"github.com/cca2878/go-autopcr-core/internal/client/credential/captcha"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
 )
 
 // 以下别名把 app 之下各内部域的类型提升为 app 包的【公开命名面】：外部消费方（如

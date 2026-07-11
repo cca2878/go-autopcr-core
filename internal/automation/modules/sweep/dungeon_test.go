@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cca2878/go-autopcr/internal/automation"
-	"github.com/cca2878/go-autopcr/internal/automation/modules/moduletest"
-	gapidungeon "github.com/cca2878/go-autopcr/internal/client/gameapi/dungeon"
-	"github.com/cca2878/go-autopcr/internal/client/gamestate"
-	"github.com/cca2878/go-autopcr/internal/client/masterdata"
-	mddungeon "github.com/cca2878/go-autopcr/internal/client/masterdata/dungeon"
+	"github.com/cca2878/go-autopcr-core/internal/automation"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/moduletest"
+	gapidungeon "github.com/cca2878/go-autopcr-core/internal/client/gameapi/dungeon"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
+	mddungeon "github.com/cca2878/go-autopcr-core/internal/client/masterdata/dungeon"
 )
 
 // fakeDungeonAPI mock 地下城域能力面。

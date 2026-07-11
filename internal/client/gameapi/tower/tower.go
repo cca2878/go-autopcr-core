@@ -6,8 +6,8 @@ package tower
 import (
 	"context"
 
-	towerpb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/tower"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	towerpb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/tower"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // Top 是露娜塔回廊状态摘要。

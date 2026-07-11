@@ -4,8 +4,8 @@ package dungeon
 import (
 	"context"
 
-	dungeonpb "github.com/cca2878/go-autopcr/internal/client/internal/protocol/dungeon"
-	"github.com/cca2878/go-autopcr/internal/client/internal/transport"
+	dungeonpb "github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/dungeon"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
 // Info 是地下城当前状态摘要（供扫荡/报告判定）。
