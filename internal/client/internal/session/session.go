@@ -50,7 +50,8 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential)
 		return err
 	}
 	if loginResp.IsRisk {
-		if err := passRisk(ctx, c, cred, uid, accessKey); err != nil {
+		// 把首个风控响应的未知载荷带入 passRisk——无求解器（mobile）场景下它就是最终透出的载荷。
+		if err := passRisk(ctx, c, cred, uid, accessKey, loginResp.Extra); err != nil {
 			return err
 		}
 	}
@@ -93,11 +94,13 @@ const maxRiskAttempts = 5
 // 求解失败（含未注入求解器 → captcha.ErrNoSolver）即【硬失败】：不发重登，返回 distinct
 // 的 gameerr.RiskError（Unwrap 保留成因，便于外壳 errors.Is/As 诊断与数据采集）。这是
 // 有意的设计——is_risk 极罕见且行为不明，暂不在核心内投机求解（见架构决策）。
-func passRisk(ctx context.Context, c *transport.Client, cred credential.Credential, uid, accessKey string) error {
+// payload 为触发本次风控的响应中未建模字段的快照，随每轮重登刷新为最近一次风控响应的载荷，
+// 最终随 RiskError 透出（供数据采集）。
+func passRisk(ctx context.Context, c *transport.Client, cred credential.Credential, uid, accessKey string, payload map[string]any) error {
 	for i := range maxRiskAttempts {
 		res, err := cred.DoCaptcha(ctx)
 		if err != nil {
-			return gameerr.Risk(i, err)
+			return gameerr.Risk(i, err, payload)
 		}
 		req := &sdk.ToolSdkLoginRequest{
 			UID:         uid,
@@ -118,8 +121,9 @@ func passRisk(ctx context.Context, c *transport.Client, cred credential.Credenti
 		if !resp.IsRisk {
 			return nil // 风控解除
 		}
+		payload = resp.Extra // 刷新为最近一次风控响应的载荷
 	}
-	return gameerr.Risk(maxRiskAttempts, nil)
+	return gameerr.Risk(maxRiskAttempts, nil, payload)
 }
 
 func strptr(s string) *string { return &s }

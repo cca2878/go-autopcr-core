@@ -3,6 +3,7 @@ package transport
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
@@ -37,6 +38,9 @@ func newResponseHandle() *codec.MsgpackHandle {
 	h := &codec.MsgpackHandle{WriteExt: true}
 	h.Raw = true
 	h.TypeInfos = codec.NewTypeInfos([]string{"msgpack"})
+	// 无类型 map（解入 interface{}，如 ToolSdkLoginResponse.Extra 的嵌套值）一律用 map[string]any，
+	// 而非 go-codec 默认的 map[interface{}]interface{}——后者无法 json.Marshal，也不合 Python dict 语义。
+	h.MapType = reflect.TypeFor[map[string]any]()
 	return h
 }
 

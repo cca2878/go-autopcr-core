@@ -70,10 +70,32 @@ type ToolSdkLoginRequest struct {
 func (*ToolSdkLoginRequest) URL() *url.URL { return urlToolSdkLogin }
 
 // ToolSdkLoginResponse 表示登录结果；is_risk 为真时需验证码。
+//
+// 除 is_risk 外，服务器在【风控(is_risk)】响应里可能携带我们尚未建模的字段——其真实形状目前
+// 未知（原项目登录响应同样只声明 is_risk，验证码 gt/challenge 另经 do_captcha 服务获取，不在此
+// 响应里）。为积累数据、看清风控响应到底带什么，本类型实现 codec.MissingFielder：解码时把所有
+// 【未声明】字段原样收进 Extra（单次解码、无额外往返）。仅 crypted(msgpack) 路径填充——登录恒走
+// 该路径。经 session.passRisk 透出为 gameerr.RiskError.Payload。
 type ToolSdkLoginResponse struct {
 	protocol.ResponseBase
 	IsRisk bool `msgpack:"is_risk" json:"is_risk"`
+
+	// Extra 收纳响应 data 中未被已声明字段接收的键（风控未知 payload）。惰性初始化、无则为 nil。
+	// msgpack:"-" 使其不作为普通字段参与编解码——它只由 CodecMissingField 填充。
+	Extra map[string]any `msgpack:"-" json:"-"`
 }
+
+// CodecMissingField 实现 codec.MissingFielder：把未声明字段收进 Extra（返回 true 表示已接收）。
+func (r *ToolSdkLoginResponse) CodecMissingField(field []byte, value any) bool {
+	if r.Extra == nil {
+		r.Extra = make(map[string]any)
+	}
+	r.Extra[string(field)] = value
+	return true
+}
+
+// CodecMissingFields 实现 codec.MissingFielder（编码侧回吐未声明字段；解码用不到，返回 Extra）。
+func (r *ToolSdkLoginResponse) CodecMissingFields() map[string]any { return r.Extra }
 
 // CheckGameStartRequest 校验游戏启动状态。
 type CheckGameStartRequest struct {
