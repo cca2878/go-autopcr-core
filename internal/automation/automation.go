@@ -51,15 +51,37 @@ func (r *Reporter) Logf(format string, args ...any) {
 	r.lines = append(r.lines, fmt.Sprintf(format, args...))
 }
 
+// Observation 是模块发射的一条结构化遥测观测（核心侧中性载荷）。核心不关心其去向：
+// 缓冲/持久化/上传由外壳注入的 Collector 处理；具体线缆 schema 归遥测侧适配（core.Event →
+// schema.Record）。Kind 为观测类别，Fields 为载荷（键名由各模块以常量约定）。
+type Observation struct {
+	Kind   string
+	Fields map[string]any
+}
+
+// Collector 是 Run 的【只写遥测端口】：外壳注入，模块经 rc.Emit 同步推送 Observation。
+// 契约同 Observer（尽快返回、不得 panic、勿依赖时序）。为 nil 时 Emit 为 no-op——不注入
+// 采集器时模块行为不变、Run 返回的结果逐字节相同（确定性不受采集器影响）。
+type Collector func(Observation)
+
 // RunContext 是模块 Run 期间的上下文：提供本模块解析后的配置访问（嵌入 Config，故可直接
-// rc.Bool/Int/String）与日志记录（rc.Logf）。后续如需扩展只在此累加，不再改 Run 签名。
+// rc.Bool/Int/String）、日志记录（rc.Logf）与遥测发射（rc.Emit）。后续如需扩展只在此累加。
 type RunContext struct {
 	Config
-	rep *Reporter
+	rep       *Reporter
+	collector Collector
 }
 
 // Logf 追加一行过程日志。
 func (rc *RunContext) Logf(format string, args ...any) { rc.rep.Logf(format, args...) }
+
+// Emit 向外壳注入的采集器推送一条遥测观测（未注入=no-op）。kind 为观测类别（如 "alces_roll"），
+// fields 为载荷。发射是旁路：不影响模块的业务判定与 Run 结果。
+func (rc *RunContext) Emit(kind string, fields map[string]any) {
+	if rc.collector != nil {
+		rc.collector(Observation{Kind: kind, Fields: fields})
+	}
+}
 
 // Module 是一个自动化任务单元：操作客户端能力面完成一件事。
 type Module interface {
@@ -138,7 +160,9 @@ type Observer func(Event)
 // 部分】+ ctx.Err()。正在执行的任务因共享 ctx 被中断而失败时，归为取消而非失败——丢弃该结果、就地
 // 停止。故返回的 error 非 nil 即“被取消，只跑了这些”，而结果里的 StatusError 永远只表示【真实失败】，
 // 不含取消假象。
-func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task, obs Observer) ([]Result, error) {
+// col 是可选的遥测采集端口（见 Collector）：非 nil 时模块经 rc.Emit 推送的观测转交外壳；
+// nil 即无遥测、行为与不传采集器完全一致。
+func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task, obs Observer, col Collector) ([]Result, error) {
 	total := len(tasks)
 	results := make([]Result, 0, total)
 	for i, t := range tasks {
@@ -158,7 +182,7 @@ func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task,
 		if !known {
 			res = Result{Meta: meta, Status: StatusError, Err: fmt.Errorf("未知模块 %q", t.Module)}
 		} else {
-			res = runOne(ctx, gc, m, t.Values)
+			res = runOne(ctx, gc, m, t.Values, col)
 			// 取消判定：任务因 ctx 取消被中断而失败时归为取消而非失败——丢弃结果、就地停止。
 			if res.Status == StatusError && ctx.Err() != nil {
 				return results, ctx.Err()
@@ -186,12 +210,12 @@ func cloneResult(r Result) Result {
 	return r
 }
 
-func runOne(ctx context.Context, gc client.GameClient, m Module, values map[string]any) Result {
+func runOne(ctx context.Context, gc client.GameClient, m Module, values map[string]any, col Collector) Result {
 	if err := Validate(m.Params(), values); err != nil {
 		return Result{Meta: m.Meta(), Status: StatusError, Err: fmt.Errorf("配置无效: %w", err)}
 	}
 	rep := &Reporter{}
-	rc := &RunContext{Config: resolve(m.Params(), values), rep: rep}
+	rc := &RunContext{Config: resolve(m.Params(), values), rep: rep, collector: col}
 	err := m.Run(ctx, gc, rc)
 	res := Result{Meta: m.Meta(), Log: rep.lines}
 	switch {

@@ -14,19 +14,21 @@ import (
 
 // —— 自动化域：模块 / 任务 / 结果 ——
 type (
-	Registry = automation.Registry // 模块注册表（列出/挑选模块与预设）
-	Module   = automation.Module   // 单个自动化任务单元
-	Meta     = automation.Meta     // 模块静态元信息
-	Param    = automation.Param    // 模块参数定义
-	Bounds   = automation.Bounds   // 参数约束/边界
-	Preset   = automation.Preset   // 具名模块批
-	Task     = automation.Task     // 一次待执行任务的纯数据描述（可序列化）
-	Result   = automation.Result   // 单个任务运行结果
-	Source   = automation.Source   // 「模块名→参数名→值」配置源
-	Status   = automation.Status   // 任务结果状态
-	Observer = automation.Observer // 只写进度端口（外壳注入、核心推送）
-	Event    = automation.Event    // 任务级进度事件
-	Phase    = automation.Phase    // 进度事件阶段
+	Registry    = automation.Registry    // 模块注册表（列出/挑选模块与预设）
+	Module      = automation.Module      // 单个自动化任务单元
+	Meta        = automation.Meta        // 模块静态元信息
+	Param       = automation.Param       // 模块参数定义
+	Bounds      = automation.Bounds      // 参数约束/边界
+	Preset      = automation.Preset      // 具名模块批
+	Task        = automation.Task        // 一次待执行任务的纯数据描述（可序列化）
+	Result      = automation.Result      // 单个任务运行结果
+	Source      = automation.Source      // 「模块名→参数名→值」配置源
+	Status      = automation.Status      // 任务结果状态
+	Observer    = automation.Observer    // 只写进度端口（外壳注入、核心推送）
+	Event       = automation.Event       // 任务级进度事件
+	Phase       = automation.Phase       // 进度事件阶段
+	Collector   = automation.Collector   // 只写遥测端口（外壳注入、模块 Emit 推送）
+	Observation = automation.Observation // 一条结构化遥测观测（Kind + Fields）
 )
 
 // 进度事件阶段常量（转发 automation 同名量）。

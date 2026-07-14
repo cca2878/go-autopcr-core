@@ -9,10 +9,11 @@ import (
 type ParamType string
 
 const (
-	ParamBool   ParamType = "bool"
-	ParamInt    ParamType = "int"
-	ParamString ParamType = "string"
-	ParamChoice ParamType = "choice" // 从 Bounds.Choices 单选（值为 string）
+	ParamBool        ParamType = "bool"
+	ParamInt         ParamType = "int"
+	ParamString      ParamType = "string"
+	ParamChoice      ParamType = "choice"      // 从 Bounds.Choices 单选（值为 string）
+	ParamMultiChoice ParamType = "multichoice" // 从 Bounds.Choices 多选（值为【有序】[]string；顺序有意义时即优先级）
 )
 
 // Bounds 是参数的通用约束/边界，各类型按需使用（零值=不约束）：ParamInt 用 Min/Max，
@@ -57,6 +58,18 @@ func (p Param) validate(v any) error {
 		if len(p.Bounds.Choices) > 0 && !slices.Contains(p.Bounds.Choices, s) {
 			return fmt.Errorf("应为 %v 之一", p.Bounds.Choices)
 		}
+	case ParamMultiChoice:
+		ss, ok := asStringSlice(v)
+		if !ok {
+			return fmt.Errorf("应为字符串数组")
+		}
+		if len(p.Bounds.Choices) > 0 {
+			for _, s := range ss {
+				if !slices.Contains(p.Bounds.Choices, s) {
+					return fmt.Errorf("%q 不在允许取值 %v 内", s, p.Bounds.Choices)
+				}
+			}
+		}
 	}
 	return nil
 }
@@ -77,6 +90,9 @@ func (c Config) Int(name string) int { n, _ := asInt(c[name]); return n }
 
 // String 取字符串参数（缺失/类型不符返回 ""）。
 func (c Config) String(name string) string { s, _ := c[name].(string); return s }
+
+// Strings 取多选参数的【有序】字符串切片（缺失/类型不符返回 nil；顺序即用户所选顺序）。
+func (c Config) Strings(name string) []string { ss, _ := asStringSlice(c[name]); return ss }
 
 // resolve 用参数定义把 provided 补全默认，产出只含【已声明参数】的有效值（不改 provided）。
 func resolve(params []Param, provided map[string]any) Config {
@@ -110,6 +126,28 @@ func Validate(params []Param, provided map[string]any) error {
 		}
 	}
 	return nil
+}
+
+// asStringSlice 把配置值规整为 []string：兼容 []string 与 JSON 解出的 []any（元素须为 string）。
+// nil 视为空选择（合法）。任一元素非字符串则失败。
+func asStringSlice(v any) ([]string, bool) {
+	switch s := v.(type) {
+	case nil:
+		return nil, true
+	case []string:
+		return s, true
+	case []any:
+		out := make([]string, len(s))
+		for i, e := range s {
+			str, ok := e.(string)
+			if !ok {
+				return nil, false
+			}
+			out[i] = str
+		}
+		return out, true
+	}
+	return nil, false
 }
 
 func asInt(v any) (int, bool) {

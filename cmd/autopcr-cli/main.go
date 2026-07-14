@@ -95,10 +95,11 @@ func registerCredFlags(fs *flag.FlagSet) *credFlags {
 // openSession 按 cf 装配并登录一个 app.Session：构造【一个】gtrv 远程求解器（两端复用：游戏服
 // 风控经 app 注入、bilibili 登录经 bsdk 注入），解析凭据（直传或账密冷启动），Login。返回非 0
 // code 时已向 stderr 打印错误。
-func openSession(ctx context.Context, cfg config.Config, name string, cf *credFlags, withMasterdata bool) (*app.Session, int) {
+func openSession(ctx context.Context, cfg config.Config, name string, cf *credFlags, withMasterdata bool, extraOpts ...app.Option) (*app.Session, int) {
 	solver := remote.New() // gtrv 远程求解器（pcrd 默认），游戏风控 + bilibili 登录两端共用
 
 	opts := []app.Option{app.WithCaptchaSolver(solver)}
+	opts = append(opts, extraOpts...)
 	if cf.proxy != "" {
 		proxyURL, err := url.Parse(cf.proxy)
 		if err != nil {
@@ -262,6 +263,7 @@ func runCommand(cfg config.Config, args []string) int {
 		category = fs.String("category", "", "只运行某分类下的模块")
 		preset   = fs.String("preset", "", "运行某批预设")
 		cfgPath  = fs.String("config", "", "模块配置 JSON 文件（模块名→参数名→值）")
+		emit     = fs.Bool("emit", false, "把模块发射的遥测观测(rc.Emit)以 JSON 打到 stderr（前缀 TELEMETRY）")
 	)
 	if err := fs.Parse(args); err != nil {
 		return 2
@@ -292,8 +294,17 @@ func runCommand(cfg config.Config, args []string) int {
 	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
 	defer cancel()
 
+	// 遥测：--emit 时把模块发射的观测以 JSON 打到 stderr（前缀 TELEMETRY），供观察 rc.Emit 载荷。
+	var extraOpts []app.Option
+	if *emit {
+		extraOpts = append(extraOpts, app.WithCollector(func(o app.Observation) {
+			js, _ := json.Marshal(map[string]any{"kind": o.Kind, "fields": o.Fields})
+			fmt.Fprintf(os.Stderr, "TELEMETRY %s\n", js)
+		}))
+	}
+
 	// 按需启用母数据：任一选中模块声明 NeedsMasterdata 时，登录后确保干净库就绪并打开查询面。
-	sess, code := openSession(ctx, cfg, "run", cf, needsMasterdata(mods))
+	sess, code := openSession(ctx, cfg, "run", cf, needsMasterdata(mods), extraOpts...)
 	if code != 0 {
 		return code
 	}

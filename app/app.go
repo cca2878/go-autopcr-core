@@ -50,6 +50,7 @@ type Session struct {
 	proxy       *url.URL
 	insecureTLS bool
 	solver      Solver
+	collector   automation.Collector // 遥测采集端口；nil＝不采集（模块 Emit 为 no-op）
 
 	gc client.GameClient // 登录前为 nil
 }
@@ -69,6 +70,10 @@ func WithInsecureTLS() Option { return func(s *Session) { s.insecureTLS = true }
 // WithCaptchaSolver 注入验证码求解器（外壳侧构造，如 gtrv 远程或本地 wasm）。不注入则
 // 触发风控(is_risk)时以 captcha.ErrNoSolver 硬失败——正常登录不需要它。
 func WithCaptchaSolver(s Solver) Option { return func(sess *Session) { sess.solver = s } }
+
+// WithCollector 注入遥测采集端口（外壳侧构造：缓冲/持久/上传）。不注入则模块的 rc.Emit 为
+// no-op——采集与否不影响模块业务判定与 Run 结果。
+func WithCollector(c Collector) Option { return func(sess *Session) { sess.collector = c } }
 
 // NewSession 创建会话。dirs 提供核心所需的文件系统位置（见 Dirs）。
 func NewSession(dirs Dirs, opts ...Option) *Session {
@@ -135,7 +140,7 @@ func (s *Session) ServerTime() int64 { return s.gc.ServerTime() }
 // obs 是可选的进度端口（见 Observer）：非 nil 时按任务边界推送进度事件，nil 即无进度。返回的
 // error 非 nil 表示【被取消】（ctx 取消/超时），此时 []Result 只含已完成任务；nil 表示全部跑完。
 func (s *Session) Run(ctx context.Context, tasks []Task, obs Observer) ([]Result, error) {
-	return automation.Run(ctx, s.gc, s.registry, tasks, obs)
+	return automation.Run(ctx, s.gc, s.registry, tasks, obs, s.collector)
 }
 
 // Close 释放会话资源（母数据库连接）。未登录时安全返回 nil。

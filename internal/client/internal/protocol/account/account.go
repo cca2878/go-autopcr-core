@@ -65,9 +65,33 @@ type UnitData struct {
 	PromotionLevel int `msgpack:"promotion_level" json:"promotion_level"`
 }
 
-// ExtraEquipInfo 是玩家持有的一件 EX 装备（此处仅取图鉴/计数所需的 ex_equipment_id）。
+// ExtraEquipSubStatus 是一件 EX 装备的一条副属性（对应 ref ExtraEquipSubStatus）。
+// status＝属性类型(eParamType)，step＝档位(1..5，5＝满)，is_lock＝是否锁定。
+type ExtraEquipSubStatus struct {
+	SlotNumber int  `msgpack:"slot_number" json:"slot_number"`
+	Status     int  `msgpack:"status" json:"status"`
+	Step       int  `msgpack:"step" json:"step"`
+	IsLock     bool `msgpack:"is_lock" json:"is_lock"`
+}
+
+// ExtraEquipInfo 是玩家持有的一件 EX 装备（对应 ref ExtraEquipInfo）。彩装炼成/战力搭配需要
+// 完整实例（serial_id/rank/enhancement_pt/sub_status…），故此处取全字段而非仅 id。
 type ExtraEquipInfo struct {
-	ExEquipmentID int `msgpack:"ex_equipment_id" json:"ex_equipment_id"`
+	SerialID       int                   `msgpack:"serial_id" json:"serial_id"`
+	ExEquipmentID  int                   `msgpack:"ex_equipment_id" json:"ex_equipment_id"`
+	EnhancementPt  int                   `msgpack:"enhancement_pt" json:"enhancement_pt"`
+	Rank           int                   `msgpack:"rank" json:"rank"`
+	ProtectionFlag int                   `msgpack:"protection_flag" json:"protection_flag"`
+	SubStatus      []ExtraEquipSubStatus `msgpack:"sub_status" json:"sub_status"`
+	IsAlcesPending int                   `msgpack:"is_alces_pending" json:"is_alces_pending"`
+}
+
+// InventoryInfo 是一条库存条目（对应 ref InventoryInfo，此处仅取折叠库存所需字段）。
+// type＝eInventoryType，id＝物品 id，stock＝持有量（普通物品的库存以 stock 计）。
+type InventoryInfo struct {
+	Type  int `msgpack:"type" json:"type"`
+	ID    int `msgpack:"id" json:"id"`
+	Stock int `msgpack:"stock" json:"stock"`
 }
 
 // LoadIndexResponse 为所需字段的部分定义（玩家档案相关）。
@@ -83,5 +107,7 @@ type LoadIndexResponse struct {
 	UnitList       []UnitData       `msgpack:"unit_list" json:"unit_list"`
 	CF             *CharaFortune    `msgpack:"cf" json:"cf"`
 	UserExEquip    []ExtraEquipInfo `msgpack:"user_ex_equip" json:"user_ex_equip"`
+	MaterialList   []InventoryInfo  `msgpack:"material_list" json:"material_list"`
+	ItemList       []InventoryInfo  `msgpack:"item_list" json:"item_list"`
 	DailyResetTime int64            `msgpack:"daily_reset_time" json:"daily_reset_time"`
 }
