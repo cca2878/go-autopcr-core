@@ -7,14 +7,14 @@
 ![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey)
 
 由原 Python 项目 [cc004/autopcr](https://github.com/cc004/autopcr) 移植而来。对外**唯一公开 Go 包是应用服务
-门面 `app`**——CLI、未来的 web server、以及移动端 wrapper（[go-autopcr-core-mobile](https://github.com/cca2878/go-autopcr-core-mobile)）
+门面 `app`**——CLI、未来的 web server、以及移动端 wrapper（[autopcr-mobile-gocore](https://github.com/cca2878/autopcr-mobile-gocore)）
 都消费它，不碰底下的 `internal/`。
 
 ## 特性
 
 - **无头客户端**：登录（AccessKey 直传 / bilibili 账密冷启动）、传输加密（AES-CBC + 兼容 msgpack）、会话维护、响应折叠为玩家状态。
 - **母数据管线**：不依赖 UnityPy 的纯 Go 解包（UnityFS + LZ4）+ rainbow 反混淆 + 在线版本管理与免登录刷新。
-- **自动化运行器**：按游戏域分包的模块库（收取 / 查询 / 报告，一律「先查后动」），配置驱动、可单可批、结构化结果；支持任务级进度推送与边界取消。
+- **自动化运行器**：按游戏域分包的模块库（收取 / 查询 / 报告，一律「先查后动」），配置驱动、可单可批、结构化结果；**配置候选可依赖账号与母数据**（登录后据实解析并校验，而非编译期写死——如彩装选装、黎明界公会）；支持任务级进度推送与边界取消。
 - **应用服务门面 `app`**：地道 Go（context / 结构体 / error）的产品级操作面，供三前端共享。
 - **零 CGO**：`CGO_ENABLED=0`，SQLite 采用纯 Go 的 `modernc.org/sqlite`，保证跨平台可移植。
 
@@ -64,7 +64,7 @@ go get github.com/cca2878/go-autopcr-core
 
 经 `app` 门面：`app.NewSession(dirs)` → `Login(ctx, channel, uid, accessKey, withMasterdata)` →
 `Run(ctx, tasks, obs)`（`obs` 为可选进度观察者）/ `RefreshMasterdata`。参考消费方见 `autopcr-cli` 仓。
-移动端经 gomobile 皮 [go-autopcr-core-mobile](https://github.com/cca2878/go-autopcr-core-mobile) 出 Android AAR。
+移动端经 gomobile 皮 [autopcr-mobile-gocore](https://github.com/cca2878/autopcr-mobile-gocore) 出 Android AAR。
 
 ## 许可证与署名
 
