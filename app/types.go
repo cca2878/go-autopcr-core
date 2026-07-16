@@ -67,14 +67,19 @@ func TasksFor(mods []Module, src Source) []Task { return automation.TasksFor(mod
 
 // —— 玩家状态 / 母数据只读面 / 验证码端口 ——
 //
-// 注：Solver 的方法签名引用 captcha.Result，而后者未导出，故本模块【外】的外壳目前
-// 无法实现该端口。这不影响现状——is_risk 按既定决策暂作硬失败、无人注入求解器；待真有
-// 外壳要注入时，再一并导出结果类型（守"不导出不必要符号"，不提前开口子）。
+// CaptchaResult 与 Solver 一同导出是必须的：Solver 的方法签名引用它，只导出接口而不导出其
+// 结果类型，模块外就【实现不了】这个端口。名字没跟着 captcha.Result 走，是因为 Result 在本
+// 门面已归任务运行结果所有（见上）；求解结果是另一回事，故显式冠以 Captcha。
 type (
-	PlayerState = gamestate.PlayerState // 聚合玩家状态
-	Reader      = masterdata.Reader     // 母数据只读查询面
-	Solver      = captcha.Solver        // 验证码求解端口（外壳注入其实现）
+	PlayerState   = gamestate.PlayerState // 聚合玩家状态
+	Reader        = masterdata.Reader     // 母数据只读查询面
+	Solver        = captcha.Solver        // 验证码求解端口（外壳注入其实现）
+	CaptchaResult = captcha.Result        // 一次求解的结果（Solver 的返回）
 )
+
+// ErrNoSolver 是「未注入验证码求解器」哨兵（转发 captcha.ErrNoSolver）：触发风控(is_risk)而
+// 无求解器时，登录以它硬失败。外壳可 errors.Is 命中它，据此提示用户或注入求解器。
+var ErrNoSolver = captcha.ErrNoSolver
 
 // MasterdataHandle 是须显式 Close 的母数据只读句柄（RefreshMasterdata 的返回类型——
 // 免登录刷新拿到的库由调用方持有并关闭）。

@@ -40,5 +40,5 @@ jobs:
 
       - name: Verify no CGO
         run: |
-          go build -o bin/autopcr-cli ./cmd/autopcr-cli
-          go version -m bin/autopcr-cli | grep -q 'CGO_ENABLED=0'
+          go build -o bin/datagen ./cmd/datagen
+          go version -m bin/datagen | grep -q 'CGO_ENABLED=0'

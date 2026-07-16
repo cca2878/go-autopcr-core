@@ -36,35 +36,25 @@ app 门面（唯一公开包）
 | 运行器 | `internal/automation` | 模块 / 任务 / 结果 / 注册表框架 + `modules/` 按域分包的模块库 |
 | 无头客户端 | `internal/client` | 装配枢纽；`gameapi` 能力面、`masterdata` 只读查询面、`gamestate` 状态 |
 | 管道（隐藏） | `internal/client/internal` | transport / session / protocol / discovery（Go internal 规则强制隐藏） |
-| 平台 | `internal/platform` | 日志 / 配置 / 路径 |
-| CLI 外壳 | `cmd/autopcr-cli` | flag 解析、账密冷启动、验证码求解器——消费 `app`，不直接依赖核心内部包 |
+| 母数据工具 | `cmd/datagen` | 母数据解包 / 落库（本仓唯一可执行产物；只用 `internal/`，故留在仓内） |
 
 核心凭据只吃 `(channel, uid, access_key)`；登录 SDK（[bsdkv3-go](https://github.com/cca2878/bsdkv3-go)）与
 验证码求解器（[gtrv-go](https://github.com/cca2878/gtrv-go) 远程 / [gtlv-go](https://github.com/cca2878/gtlv-go)
 本地）均属外壳、经端口注入接入，核心不携带二者实现，故依赖极薄（`codec` / `lz4` / `sqlite`）、便于跨平台移植。
 
-## 快速开始（CLI）
+**本仓是库，不含命令行外壳**：日志 / 配置 / 目录默认值同样是外壳的事（门面的目录一律由调用方传入，
+核心不假设工作目录）。开发测试用的 CLI 见 `autopcr-cli`——它作为纯外部消费者存在，因而也是 `app`
+门面的活体检验：门面缺了什么，它会第一个编译不过。
+
+## 快速开始
 
 需要 Go 1.25+。
 
 ```sh
-make build              # 构建 bin/autopcr-cli 与 bin/datagen（CGO_ENABLED=0）
+make build              # 构建 bin/datagen（CGO_ENABLED=0）
 make test vet lint      # 单元测试 + 静态检查 + golangci-lint
 make check-cgo          # 校验产物未链接 CGO
 ```
-
-CLI 子命令：
-
-```sh
-autopcr-cli version                                     # 版本 / 构建信息
-autopcr-cli probe    --uid <U> --access-key <K>         # 验证传输 / 会话连通性
-autopcr-cli inspect  --uid <U> --access-key <K>         # 登录并打印玩家档案 + 母数据示例查询
-autopcr-cli refresh                                     # 免登录 / 免凭证刷新母数据到最新版本
-autopcr-cli run --list                                  # 列出可用模块与预设
-autopcr-cli run --uid <U> --access-key <K> [模块名...]  # 运行自动化模块（位置模块名须放在 flag 之后）
-```
-
-也支持 bilibili 账密登录：`--username <账号> --password <密码>`（仅官服 bsdk 渠道；账密→access_key 的冷启动由外壳完成）。
 
 ## 作为库消费
 
@@ -73,7 +63,7 @@ go get github.com/cca2878/go-autopcr-core
 ```
 
 经 `app` 门面：`app.NewSession(dirs)` → `Login(ctx, channel, uid, accessKey, withMasterdata)` →
-`Run(ctx, tasks, obs)`（`obs` 为可选进度观察者）/ `RefreshMasterdata`。参考消费方见 `cmd/autopcr-cli`。
+`Run(ctx, tasks, obs)`（`obs` 为可选进度观察者）/ `RefreshMasterdata`。参考消费方见 `autopcr-cli` 仓。
 移动端经 gomobile 皮 [go-autopcr-core-mobile](https://github.com/cca2878/go-autopcr-core-mobile) 出 Android AAR。
 
 ## 许可证与署名
