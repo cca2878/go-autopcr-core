@@ -36,24 +36,24 @@ app 门面（唯一公开包）
 | 运行器 | `internal/automation` | 模块 / 任务 / 结果 / 注册表框架 + `modules/` 按域分包的模块库 |
 | 无头客户端 | `internal/client` | 装配枢纽；`gameapi` 能力面、`masterdata` 只读查询面、`gamestate` 状态 |
 | 管道（隐藏） | `internal/client/internal` | transport / session / protocol / discovery（Go internal 规则强制隐藏） |
-| 母数据工具 | `cmd/datagen` | 母数据解包 / 落库（本仓唯一可执行产物；只用 `internal/`，故留在仓内） |
 
 核心凭据只吃 `(channel, uid, access_key)`；登录 SDK（[bsdkv3-go](https://github.com/cca2878/bsdkv3-go)）与
 验证码求解器（[gtrv-go](https://github.com/cca2878/gtrv-go) 远程 / [gtlv-go](https://github.com/cca2878/gtlv-go)
 本地）均属外壳、经端口注入接入，核心不携带二者实现，故依赖极薄（`codec` / `lz4` / `sqlite`）、便于跨平台移植。
 
-**本仓是库，不含命令行外壳**：日志 / 配置 / 目录默认值同样是外壳的事（门面的目录一律由调用方传入，
-核心不假设工作目录）。开发测试用的 CLI 见 `autopcr-cli`——它作为纯外部消费者存在，因而也是 `app`
-门面的活体检验：门面缺了什么，它会第一个编译不过。
+**本仓是纯库，无任何可执行产物**：日志 / 配置 / 目录默认值同样是外壳的事（门面的目录一律由调用方
+传入，核心不假设工作目录）。开发测试用的 CLI 见 `autopcr-cli`——它作为纯外部消费者存在，因而也是
+`app` 门面的活体检验：门面缺了什么，它会第一个编译不过。母数据解包不再需要独立工具，已内化进
+`internal/client/masterdata`（登录与 `RefreshMasterdata` 共用 `Manager.EnsureDB`，rainbow 随客户端内嵌）。
 
 ## 快速开始
 
 需要 Go 1.25+。
 
 ```sh
-make build              # 构建 bin/datagen（CGO_ENABLED=0）
+make build              # go build ./...（CGO_ENABLED=0 下全部包可编译）
 make test vet lint      # 单元测试 + 静态检查 + golangci-lint
-make check-cgo          # 校验产物未链接 CGO
+make check-cgo          # 校验 CGO 确实禁用（读测试二进制的内嵌构建设置）
 ```
 
 ## 作为库消费

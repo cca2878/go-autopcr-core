@@ -1,22 +1,25 @@
 # go-autopcr-core 构建脚手架
 # 硬性约束：禁用 CGO（CGO_ENABLED=0），且不依赖任何使用 CGO 的包，保证跨平台可移植。
 #
-# 本仓是【库】：唯一的可执行产物是 datagen（母数据解包开发工具，只用 internal/ 故必须留在
-# 仓内）。命令行外壳已分出去独立仓（autopcr-cli），故这里没有 cli 目标。
+# 本仓是【纯库】，无任何可执行产物：命令行外壳在 autopcr-cli 仓，母数据解包已内化进
+# internal/client/masterdata（登录与 RefreshMasterdata 共用 Manager.EnsureDB）。
 
 BIN_DIR := bin
+
+# CGO 校验用的临时测试二进制（见 check-cgo）。
+CGO_PROBE := $(BIN_DIR)/cgocheck.test
 
 # 全局强制禁用 CGO。
 export CGO_ENABLED := 0
 
-.PHONY: all build datagen test vet tidy lint check-cgo clean
+.PHONY: all build test vet tidy lint check-cgo clean
 
 all: build
 
-build: datagen
-
-datagen:
-	go build -trimpath -o $(BIN_DIR)/datagen ./cmd/datagen
+# 库没有可链接的产物，build 即「所有包在 CGO_ENABLED=0 下可编译」——这正是库该保证的那
+# 一半（消费者最终怎么链接是消费者的事）。依赖若需要 CGO，这里就会失败。
+build:
+	go build ./...
 
 test:
 	go test ./...
@@ -27,14 +30,18 @@ vet:
 tidy:
 	go mod tidy
 
-# 校验最终二进制未链接 CGO（读取二进制内嵌的构建设置）。挂在 datagen 上——它是本仓唯一的
-# 可执行产物，且吃下了 sqlite/lz4 这两个最可能引入 CGO 的依赖，故足以守住这条约束。
-check-cgo: datagen
+# 校验 CGO 确实禁用（读取二进制内嵌的构建设置）。本仓无可执行产物，故编译一个【测试
+# 二进制】来读：它是真产物（连链接期问题一并暴露，强于 go build ./...），且 masterdata
+# 恰是链接 sqlite 的地方——sqlite 与 lz4 是最可能引入 CGO 的两个依赖。
+check-cgo:
 	@echo ">> 校验 CGO_ENABLED=0 ..."
-	@if go version -m $(BIN_DIR)/datagen | grep -q 'CGO_ENABLED=0'; then \
+	@mkdir -p $(BIN_DIR)
+	@go test -c -o $(CGO_PROBE) ./internal/client/masterdata
+	@if go version -m $(CGO_PROBE) | grep -q 'CGO_ENABLED=0'; then \
 		echo "OK: 未启用 CGO"; \
+		rm -f $(CGO_PROBE); \
 	else \
-		echo "ERROR: 检测到 CGO 或无法确认"; exit 1; \
+		echo "ERROR: 检测到 CGO 或无法确认"; rm -f $(CGO_PROBE); exit 1; \
 	fi
 
 # 若安装了 golangci-lint 则运行，否则跳过（不作为硬性依赖）。

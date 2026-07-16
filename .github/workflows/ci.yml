@@ -38,7 +38,9 @@ jobs:
       - name: Test
         run: go test ./...
 
+      # 本仓是纯库，没有可执行产物可供读取内嵌构建设置，故编译一个测试二进制来读——
+      # masterdata 恰是链接 sqlite（最可能引入 CGO 的依赖）的地方。
       - name: Verify no CGO
         run: |
-          go build -o bin/datagen ./cmd/datagen
-          go version -m bin/datagen | grep -q 'CGO_ENABLED=0'
+          go test -c -o /tmp/cgocheck.test ./internal/client/masterdata
+          go version -m /tmp/cgocheck.test | grep -q 'CGO_ENABLED=0'
