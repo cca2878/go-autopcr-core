@@ -18,6 +18,7 @@ type (
 	Module      = automation.Module      // 单个自动化任务单元
 	Meta        = automation.Meta        // 模块静态元信息
 	Param       = automation.Param       // 模块参数定义
+	ParamType   = automation.ParamType   // 参数类型（Param.Type 的类型）
 	Bounds      = automation.Bounds      // 参数约束/边界
 	Preset      = automation.Preset      // 具名模块批
 	Task        = automation.Task        // 一次待执行任务的纯数据描述（可序列化）
@@ -29,6 +30,17 @@ type (
 	Phase       = automation.Phase       // 进度事件阶段
 	Collector   = automation.Collector   // 只写遥测端口（外壳注入、模块 Emit 推送）
 	Observation = automation.Observation // 一条结构化遥测观测（Kind + Fields）
+)
+
+// 参数类型常量（转发 automation 同名量）。与 ParamType 一同导出是必须的：只导出 Param
+// 而不导出其 Type 字段的类型与取值，外部就无法对参数类型做分支——数据驱动表单（按参数
+// 类型渲染控件）正是门面消费方的典型用法。
+const (
+	ParamBool        = automation.ParamBool        // 布尔
+	ParamInt         = automation.ParamInt         // 整数（Bounds.Min/Max）
+	ParamString      = automation.ParamString      // 字符串
+	ParamChoice      = automation.ParamChoice      // 从 Bounds.Choices 单选
+	ParamMultiChoice = automation.ParamMultiChoice // 从 Bounds.Choices 多选（值为【有序】[]string）
 )
 
 // 进度事件阶段常量（转发 automation 同名量）。
@@ -54,6 +66,10 @@ const (
 func TasksFor(mods []Module, src Source) []Task { return automation.TasksFor(mods, src) }
 
 // —— 玩家状态 / 母数据只读面 / 验证码端口 ——
+//
+// 注：Solver 的方法签名引用 captcha.Result，而后者未导出，故本模块【外】的外壳目前
+// 无法实现该端口。这不影响现状——is_risk 按既定决策暂作硬失败、无人注入求解器；待真有
+// 外壳要注入时，再一并导出结果类型（守"不导出不必要符号"，不提前开口子）。
 type (
 	PlayerState = gamestate.PlayerState // 聚合玩家状态
 	Reader      = masterdata.Reader     // 母数据只读查询面
