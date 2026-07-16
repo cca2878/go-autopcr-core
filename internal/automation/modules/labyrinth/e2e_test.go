@@ -17,13 +17,15 @@ import (
 // --- 假黎明界能力面（gameapi） ---
 
 type fakeLab struct {
-	top     *lab.TopResult
-	enter   *lab.EnterResult
-	retired []int
+	top          *lab.TopResult
+	enter        *lab.EnterResult
+	retired      []int
+	enterGuildID int // 最近一次 Enter 收到的 guild_id（验证配置真的流到了发包处）
 }
 
 func (f *fakeLab) Top(context.Context) (*lab.TopResult, error) { return f.top, nil }
-func (f *fakeLab) Enter(context.Context, int, int) (*lab.EnterResult, error) {
+func (f *fakeLab) Enter(_ context.Context, guildID, _ int) (*lab.EnterResult, error) {
+	f.enterGuildID = guildID
 	return f.enter, nil
 }
 func (f *fakeLab) Retire(_ context.Context, id int) error {
@@ -32,6 +34,13 @@ func (f *fakeLab) Retire(_ context.Context, id int) error {
 }
 
 // --- 假黎明界母数据 ---
+
+// testGuilds 仿母数据 labyrinth_enter_guild：guild_id 升序，名字已抹平换行标记。
+var testGuilds = []mdlab.Guild{
+	{ID: 4, Name: "破晓之星"},
+	{ID: 5, Name: "美食殿堂"},
+	{ID: 6, Name: "小小甜心"},
+}
 
 type fakeMDLab struct {
 	boss   map[int][]int
@@ -82,8 +91,11 @@ func TestStartReroll_E2E(t *testing.T) {
 		enter: &lab.EnterResult{EnterID: 55555, Blocks: blocks},
 	}
 	gc := &moduletest.FakeClient{
-		State:        &gamestate.PlayerState{ClearedQuests: map[int]struct{}{labyrinthUnlockQuest: {}}}, // 迷宫已解锁
-		MD:           fakeMDReader{lab: fakeMDLab{boss: map[int][]int{3007: {312505}}}},                 // 3007→厄勒克特拉夫人(简单，默认已选)
+		State: &gamestate.PlayerState{ClearedQuests: map[int]struct{}{labyrinthUnlockQuest: {}}}, // 迷宫已解锁
+		MD: fakeMDReader{lab: fakeMDLab{
+			boss:   map[int][]int{3007: {312505}}, // 3007→厄勒克特拉夫人(简单，默认已选)
+			guilds: testGuilds,
+		}},
 		LabyrinthAPI: fl,
 	}
 

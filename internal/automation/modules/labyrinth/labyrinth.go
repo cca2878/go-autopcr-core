@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
 	"github.com/cca2878/go-autopcr-core/internal/client"
@@ -97,12 +98,12 @@ func (startReroll) Meta() automation.Meta {
 }
 
 func (startReroll) Params() []automation.Param {
-	i := func(n int) *int { return &n }
 	return []automation.Param{
 		{Name: "labyrinth_reroll_difficulty", Type: automation.ParamChoice, Default: "5",
 			Description: "难度", Bounds: automation.Bounds{Choices: []string{"1", "2", "3", "4", "5"}}},
-		{Name: "labyrinth_reroll_guild_id", Type: automation.ParamInt, Default: 5,
-			Description: "公会", Bounds: automation.Bounds{Min: i(1)}},
+		// 公会候选依赖母数据，故无静态 Choices——由 Candidates 在世界已知时填。
+		{Name: "labyrinth_reroll_guild_id", Type: automation.ParamChoice, Default: "5",
+			Description: "公会"},
 		{Name: "labyrinth_reroll_perfect_start", Type: automation.ParamBool, Default: false, Description: "完美开局"},
 		{Name: "labyrinth_reroll_max_count", Type: automation.ParamChoice, Default: "100",
 			Description: "最多重开次数（完美开局）", Bounds: automation.Bounds{Choices: []string{"100", "1000", "2000"}}},
@@ -113,6 +114,24 @@ func (startReroll) Params() []automation.Param {
 		{Name: "labyrinth_reroll_area5_boss", Type: automation.ParamMultiChoice, Default: simpleBossNamesOf(area5Bosses),
 			Description: "区域5Boss", Bounds: automation.Bounds{Choices: bossNamesOf(area5Bosses)}},
 	}
+}
+
+// Candidates 把「公会」解析成母数据里可进入的公会：值是 guild_id、显示是公会名（对应 ref
+// LabyrinthGuildConfig——candidates=db.labyrinth_enter_guild、candidate_display=guild_name）。
+func (startReroll) Candidates(ctx context.Context, gc client.GameClient) (map[string][]automation.Option, error) {
+	md := gc.Masterdata()
+	if md == nil {
+		return nil, fmt.Errorf("黎明界刷开局需要母数据，但未启用")
+	}
+	guilds, err := md.Labyrinth().EnterGuilds(ctx)
+	if err != nil {
+		return nil, err
+	}
+	opts := make([]automation.Option, len(guilds))
+	for i, g := range guilds {
+		opts[i] = automation.Option{Value: strconv.Itoa(g.ID), Label: g.Name}
+	}
+	return map[string][]automation.Option{"labyrinth_reroll_guild_id": opts}, nil
 }
 
 func (startReroll) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
@@ -129,7 +148,7 @@ func (startReroll) Run(ctx context.Context, gc client.GameClient, rc *automation
 	}
 
 	difficulty := choiceInt(rc.String("labyrinth_reroll_difficulty"), 5)
-	guildID := rc.Int("labyrinth_reroll_guild_id")
+	guildID := choiceInt(rc.String("labyrinth_reroll_guild_id"), 5)
 	perfectStart := rc.Bool("labyrinth_reroll_perfect_start")
 	maxCount := 100
 	if perfectStart {
