@@ -32,6 +32,68 @@ type Param struct {
 	Bounds      Bounds
 }
 
+// Option 是一个候选项：写回配置的【值】与给人看的【显示名】分开。依赖世界的候选里裸值常常
+// 对人毫无意义（彩装是 serial_id、公会是 guild_id），而怎么把它显示成人话是【模块知识】，
+// 故与候选解析写在一处（见 Candidates）。校验只认 Value。
+type Option struct {
+	Value string
+	Label string
+}
+
+// isChoice 报告某参数类型的取值是否受候选约束——这类参数没有候选就是无意义的（不约束的
+// Choice 即 String），故「Choice 且无候选」不是一种合法声明，见 bindCandidates。
+func isChoice(t ParamType) bool { return t == ParamChoice || t == ParamMultiChoice }
+
+// hasUnboundChoice 报告 params 里是否有【无静态候选】的 Choice 类参数——即其候选只能依赖
+// 世界解析，模块因此必须实现 Candidates。供 Registry.Register 在注册期核对。
+func hasUnboundChoice(params []Param) (Param, bool) {
+	for _, p := range params {
+		if isChoice(p.Type) && len(p.Bounds.Choices) == 0 {
+			return p, true
+		}
+	}
+	return Param{}, false
+}
+
+// bindCandidates 把解析出的候选填进对应参数的 Bounds.Choices，产出【已绑定】的参数定义（不改
+// 入参）。Bounds.Choices 始终是唯一的候选源——依赖世界的参数只是要到 gc 可用时才填得上。
+//
+// 两处防御都【响亮失败】，因为二者都会让参数静默退回零校验，而零校验正是本机制要消灭的：
+//   - 候选给了未声明的参数：多半是参数名拼错，静默则该参数永远拿不到候选；
+//   - Choice 类参数既无静态候选、Candidates 也没给：Bounds.Choices 空＝不约束，静默则可传任意值。
+//
+// 【给了空候选】不在此列：它表示「世界里当前没有可选项」（如新号一件彩装都没有），是合法
+// 状态，此时无可校验，由模块自己的 Skip 守卫接管。故这里以 map 的 key 是否存在区分「给了但
+// 是空的」与「压根没给」。
+func bindCandidates(params []Param, cands map[string][]Option) ([]Param, error) {
+	declared := make(map[string]bool, len(params))
+	for _, p := range params {
+		declared[p.Name] = true
+	}
+	for name := range cands {
+		if !declared[name] {
+			return nil, fmt.Errorf("候选给了未声明的参数 %q", name)
+		}
+	}
+
+	out := make([]Param, len(params))
+	copy(out, params)
+	for i := range out {
+		if opts, given := cands[out[i].Name]; given {
+			vals := make([]string, len(opts))
+			for j, o := range opts {
+				vals[j] = o.Value
+			}
+			out[i].Bounds.Choices = vals
+			continue
+		}
+		if isChoice(out[i].Type) && len(out[i].Bounds.Choices) == 0 {
+			return nil, fmt.Errorf("参数 %q 声明为 %s，却既无静态候选、Candidates 也未给出", out[i].Name, out[i].Type)
+		}
+	}
+	return out, nil
+}
+
 // validate 校验单个值是否满足该参数的类型与边界。
 func (p Param) validate(v any) error {
 	switch p.Type {

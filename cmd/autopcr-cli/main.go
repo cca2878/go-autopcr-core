@@ -414,7 +414,7 @@ func printModules(w io.Writer, registry *app.Registry) {
 		meta := m.Meta()
 		fmt.Fprintf(&b, "  %-10s [%s] %s — %s\n", meta.Name, meta.Category, meta.Title, meta.Description)
 		for _, p := range m.Params() {
-			fmt.Fprintf(&b, "      · %s (%s，默认 %v%s) — %s\n", p.Name, p.Type, p.Default, boundsHint(p.Bounds), p.Description)
+			fmt.Fprintf(&b, "      · %s (%s，默认 %v%s) — %s\n", p.Name, p.Type, p.Default, boundsHint(p), p.Description)
 		}
 	}
 	if presets := registry.Presets(); len(presets) > 0 {
@@ -427,10 +427,15 @@ func printModules(w io.Writer, registry *app.Registry) {
 }
 
 // boundsHint 把参数边界渲染成简短提示（无边界返回空串）。
-func boundsHint(b app.Bounds) string {
+func boundsHint(p app.Param) string {
+	b := p.Bounds
 	switch {
 	case len(b.Choices) > 0:
 		return "，取值 " + strings.Join(b.Choices, "/")
+	case p.Type == app.ParamChoice || p.Type == app.ParamMultiChoice:
+		// Choice 类参数无静态候选＝其候选依赖世界（母数据/账号库存），登录后由模块解析。
+		// --list 不登录，故此处只报告这个事实，而不是显得它没有取值可填。
+		return "，取值登录后可选"
 	case b.Min != nil && b.Max != nil:
 		return fmt.Sprintf("，范围 %d~%d", *b.Min, *b.Max)
 	case b.Min != nil:

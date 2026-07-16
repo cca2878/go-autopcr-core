@@ -46,10 +46,6 @@ func ParamNameCh(status int) string {
 	return fmt.Sprintf("未知属性%d", status)
 }
 
-// SubStatusCandidateCh 是彩装副属性可选项的中文名（供配置选项；对应 ref ex_equip_sub_status_candidate，
-// 取常见副属性并按属性稳定排序展示）。
-var SubStatusCandidateCh = []string{"血量", "物攻", "物防", "魔攻", "魔防", "物爆", "法爆", "闪避", "吸血", "物贯", "法贯", "命中"}
-
 // statusByNameCh 是 paramNameCh 的反查（中文→status）。
 var statusByNameCh = func() map[string]int {
 	m := make(map[string]int, len(paramNameCh))
@@ -240,6 +236,26 @@ func (s *Snapshot) ItemName(itemID int) string {
 		return n
 	}
 	return fmt.Sprintf("未知物品(%d)", itemID)
+}
+
+// SubStatusCandidates 返回本快照中出现过的全部副属性(status)，升序去重——即彩装副属性的候选集
+// （对应 ref ex_equip_sub_status_candidate：取 ex_equipment_sub_status 全表 distinct status）。
+// 不含 0：ref 里的 0＝「任意」是配置层语义，由模块自行添加。
+//
+// 从已加载的快照里收集而不另发查询，故与炼成主流程共用同一次 LoadSnapshot。
+func (s *Snapshot) SubStatusCandidates() []int {
+	seen := map[int]bool{}
+	for _, byStatus := range s.values {
+		for st := range byStatus {
+			seen[st] = true
+		}
+	}
+	out := make([]int, 0, len(seen))
+	for st := range seen {
+		out = append(out, st)
+	}
+	sort.Ints(out)
+	return out
 }
 
 // StatusSupported 报告某 EX 装备是否支持某副属性（对应 ref status not in sub_status_data 的反）。

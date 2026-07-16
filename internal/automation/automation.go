@@ -92,6 +92,45 @@ type Module interface {
 	Run(ctx context.Context, gc client.GameClient, rc *RunContext) error
 }
 
+// Candidates 是 Module 的【可选】扩展：声明那些候选依赖世界（母数据 / 账号态）的参数如何解析。
+//
+// 为什么要它：Params() 是纯静态声明、够不着 gc，故只表达得了编译期就固定的候选。而「炼成哪件
+// 彩装」这类参数的候选是玩家库存——登录后才知道。没有这个口子，这类参数只能退化成不受约束的
+// 自由文本，选单与校验一起失去。
+//
+// 契约：只读【已有的世界】（母数据库 + gc.Data() 的玩家态快照），【不发新的网络请求】。满足
+// 这条，它读的就是 Run 本就依赖的同一个世界，不给确定性引入新的隐藏输入。
+//
+// 返回「参数名 → 候选」。一次调用可服务多个参数，同一次母数据加载因此能摊给它们（如彩装模块
+// 的四个副属性槽与「炼成哪件」共用一次快照）。参数名须已在 Params() 声明；每个无静态候选的
+// Choice 类参数都须在此给出候选（空切片＝世界里当前没有可选项，合法）——两条都由
+// bindCandidates 强制。
+type Candidates interface {
+	Candidates(ctx context.Context, gc client.GameClient) (map[string][]Option, error)
+}
+
+// CheckCandidates 在给定世界下解析模块的参数候选并报告其是否自洽，供模块单测做契约检查——
+// runOne 每次运行都做同样的解析，故它就是「这个模块跑起来会不会因参数候选而失败」的提前问询。
+//
+// Registry.Register 只抓得住「整个 Candidates 接口都没实现」（无需世界即可判定）；漏掉其中
+// 【某一个】参数则要真解析一次才知道，那正是本函数的位置。gc 用模块单测现成的假客户端即可。
+func CheckCandidates(ctx context.Context, gc client.GameClient, m Module) error {
+	_, err := resolveParams(ctx, gc, m)
+	return err
+}
+
+// resolveParams 取模块的参数定义，并在其实现了 Candidates 时解析依赖世界的候选、填进 Bounds。
+func resolveParams(ctx context.Context, gc client.GameClient, m Module) ([]Param, error) {
+	var cands map[string][]Option
+	if c, ok := m.(Candidates); ok {
+		var err error
+		if cands, err = c.Candidates(ctx, gc); err != nil {
+			return nil, err
+		}
+	}
+	return bindCandidates(m.Params(), cands)
+}
+
 // skipError 表示「主动跳过」，由 Skip 构造，Run 据此区分跳过与失败。
 type skipError struct{ reason string }
 
@@ -211,12 +250,19 @@ func cloneResult(r Result) Result {
 }
 
 func runOne(ctx context.Context, gc client.GameClient, m Module, values map[string]any, col Collector) Result {
-	if err := Validate(m.Params(), values); err != nil {
+	// 先按【当前世界】把依赖它的候选解析出来，校验才是真校验：配置的合法性本就是相对世界而言
+	// 的（彩装 #123 合不合法，取决于你有没有这件），故这步必须在 Validate 之前、且在 gc 已备好
+	// 之后——这也正是它在 runOne 而不在 Params() 里的原因。
+	params, err := resolveParams(ctx, gc, m)
+	if err != nil {
+		return Result{Meta: m.Meta(), Status: StatusError, Err: fmt.Errorf("解析参数候选: %w", err)}
+	}
+	if err := Validate(params, values); err != nil {
 		return Result{Meta: m.Meta(), Status: StatusError, Err: fmt.Errorf("配置无效: %w", err)}
 	}
 	rep := &Reporter{}
-	rc := &RunContext{Config: resolve(m.Params(), values), rep: rep, collector: col}
-	err := m.Run(ctx, gc, rc)
+	rc := &RunContext{Config: resolve(params, values), rep: rep, collector: col}
+	err = m.Run(ctx, gc, rc)
 	res := Result{Meta: m.Meta(), Log: rep.lines}
 	switch {
 	case err == nil:

@@ -41,28 +41,83 @@ func (rainbowEnhance) Meta() automation.Meta {
 	}
 }
 
+// Params 见 automation.Module。「彩装」与四个「炼成属性」「属性优先级」都不给静态候选——它们
+// 依赖世界（前者是玩家库存、后者是母数据），由 Candidates 在登录后解析。
 func (rainbowEnhance) Params() []automation.Param {
-	subChoices := append([]string{"任意"}, mdexequip.SubStatusCandidateCh...)
 	return []automation.Param{
 		{Name: "ex_equip_rainbow_enchance_action", Type: automation.ParamChoice, Default: "看属性",
 			Description: "做什么", Bounds: automation.Bounds{Choices: []string{"看属性", "炼成", "看概率"}}},
-		{Name: "ex_equip_rainbow_enchance_id", Type: automation.ParamString, Default: "0", Description: "彩装id"},
-		{Name: "ex_equip_rainbow_enchance_sub_status_1", Type: automation.ParamChoice, Default: "物贯",
-			Description: "炼成属性1", Bounds: automation.Bounds{Choices: subChoices}},
-		{Name: "ex_equip_rainbow_enchance_sub_status_2", Type: automation.ParamChoice, Default: "物贯",
-			Description: "炼成属性2", Bounds: automation.Bounds{Choices: subChoices}},
-		{Name: "ex_equip_rainbow_enchance_sub_status_3", Type: automation.ParamChoice, Default: "物贯",
-			Description: "炼成属性3", Bounds: automation.Bounds{Choices: subChoices}},
-		{Name: "ex_equip_rainbow_enchance_sub_status_4", Type: automation.ParamChoice, Default: "物贯",
-			Description: "炼成属性4", Bounds: automation.Bounds{Choices: subChoices}},
+		{Name: "ex_equip_rainbow_enchance_id", Type: automation.ParamChoice, Default: "0", Description: "彩装"},
+		{Name: "ex_equip_rainbow_enchance_sub_status_1", Type: automation.ParamChoice, Default: "物贯", Description: "炼成属性1"},
+		{Name: "ex_equip_rainbow_enchance_sub_status_2", Type: automation.ParamChoice, Default: "物贯", Description: "炼成属性2"},
+		{Name: "ex_equip_rainbow_enchance_sub_status_3", Type: automation.ParamChoice, Default: "物贯", Description: "炼成属性3"},
+		{Name: "ex_equip_rainbow_enchance_sub_status_4", Type: automation.ParamChoice, Default: "物贯", Description: "炼成属性4"},
 		{Name: "ex_equip_rainbow_enhance_no_max_num", Type: automation.ParamInt, Default: 1,
 			Description: "非满属性个数", Bounds: automation.Bounds{Min: intPtr(0), Max: intPtr(4)}},
 		{Name: "ex_equip_rainbow_enhance_rank", Type: automation.ParamMultiChoice,
-			Default: []string{"物贯", "法贯", "物攻", "魔攻"}, Description: "属性优先级",
-			Bounds: automation.Bounds{Choices: mdexequip.SubStatusCandidateCh}},
+			Default: []string{"物贯", "法贯", "物攻", "魔攻"}, Description: "属性优先级"},
 		{Name: "ex_equip_rainbow_enhance_pt_hold", Type: automation.ParamInt, Default: 10,
 			Description: "保留pt数(w)", Bounds: automation.Bounds{Min: intPtr(0), Max: intPtr(1000)}},
 	}
+}
+
+// Candidates 见 automation.Candidates：解析依赖世界的候选——「彩装」来自玩家库存（登录后才知道
+// 有哪几件），副属性来自母数据。一次 LoadSnapshot 摊给全部六个参数。
+//
+// 只读已有的世界：母数据快照 + gc.Data() 的玩家态，不发网络请求。
+func (rainbowEnhance) Candidates(ctx context.Context, gc client.GameClient) (map[string][]automation.Option, error) {
+	md := gc.Masterdata()
+	if md == nil {
+		return nil, fmt.Errorf("彩装究极炼成需要母数据，但未启用")
+	}
+	snap, err := md.Exequip().LoadSnapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// 副属性：母数据里出现过的全部属性（值即中文名，与 StatusByNameCh 对称）。
+	statuses := snap.SubStatusCandidates()
+	subs := make([]automation.Option, 0, len(statuses))
+	for _, st := range statuses {
+		name := mdexequip.ParamNameCh(st)
+		subs = append(subs, automation.Option{Value: name, Label: name})
+	}
+	// 炼成目标额外可选「任意」＝不指定该槽（对应 ref 的 status 0）。
+	targets := append([]automation.Option{{Value: "任意", Label: "任意"}}, subs...)
+
+	out := map[string][]automation.Option{
+		"ex_equip_rainbow_enchance_id":  rainbowOptions(gc, snap),
+		"ex_equip_rainbow_enhance_rank": subs,
+	}
+	for i := 1; i <= 4; i++ {
+		out[fmt.Sprintf("ex_equip_rainbow_enchance_sub_status_%d", i)] = targets
+	}
+	return out, nil
+}
+
+// rainbowOptions 是玩家持有的彩装候选：值＝serial_id，显示＝名称+当前副属性。按 serial_id 升序
+// （玩家态是 map，迭代序不定）。无彩装→空切片，即「世界里当前没有可选项」，由 Run 的守卫报
+// Skip("无彩装")。
+func rainbowOptions(gc client.GameClient, snap *mdexequip.Snapshot) []automation.Option {
+	equips := gc.Data().ExEquips
+	serials := make([]int, 0, len(equips))
+	for sid := range equips {
+		serials = append(serials, sid)
+	}
+	sort.Ints(serials)
+
+	out := make([]automation.Option, 0, len(serials))
+	for _, sid := range serials {
+		e := equips[sid]
+		if snap.Rarity(e.ExEquipmentID) != 5 {
+			continue
+		}
+		out = append(out, automation.Option{
+			Value: strconv.Itoa(sid),
+			Label: fmt.Sprintf("%s %s", snap.ExEquipName(e.ExEquipmentID), subStatusStr(snap, e)),
+		})
+	}
+	return out
 }
 
 func (rainbowEnhance) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
