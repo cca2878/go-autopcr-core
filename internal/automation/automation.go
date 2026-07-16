@@ -51,15 +51,37 @@ func (r *Reporter) Logf(format string, args ...any) {
 	r.lines = append(r.lines, fmt.Sprintf(format, args...))
 }
 
+// Observation 是模块发射的一条结构化遥测观测（核心侧中性载荷）。核心不关心其去向：
+// 缓冲/持久化/上传由外壳注入的 Collector 处理；具体线缆 schema 归遥测侧适配（core.Event →
+// schema.Record）。Kind 为观测类别，Fields 为载荷（键名由各模块以常量约定）。
+type Observation struct {
+	Kind   string
+	Fields map[string]any
+}
+
+// Collector 是 Run 的【只写遥测端口】：外壳注入，模块经 rc.Emit 同步推送 Observation。
+// 契约同 Observer（尽快返回、不得 panic、勿依赖时序）。为 nil 时 Emit 为 no-op——不注入
+// 采集器时模块行为不变、Run 返回的结果逐字节相同（确定性不受采集器影响）。
+type Collector func(Observation)
+
 // RunContext 是模块 Run 期间的上下文：提供本模块解析后的配置访问（嵌入 Config，故可直接
-// rc.Bool/Int/String）与日志记录（rc.Logf）。后续如需扩展只在此累加，不再改 Run 签名。
+// rc.Bool/Int/String）、日志记录（rc.Logf）与遥测发射（rc.Emit）。后续如需扩展只在此累加。
 type RunContext struct {
 	Config
-	rep *Reporter
+	rep       *Reporter
+	collector Collector
 }
 
 // Logf 追加一行过程日志。
 func (rc *RunContext) Logf(format string, args ...any) { rc.rep.Logf(format, args...) }
+
+// Emit 向外壳注入的采集器推送一条遥测观测（未注入=no-op）。kind 为观测类别（如 "alces_roll"），
+// fields 为载荷。发射是旁路：不影响模块的业务判定与 Run 结果。
+func (rc *RunContext) Emit(kind string, fields map[string]any) {
+	if rc.collector != nil {
+		rc.collector(Observation{Kind: kind, Fields: fields})
+	}
+}
 
 // Module 是一个自动化任务单元：操作客户端能力面完成一件事。
 type Module interface {
@@ -68,6 +90,45 @@ type Module interface {
 	Params() []Param
 	// Run 执行任务：返回 nil=成功；返回 Skip(...)=前置不满足而跳过；其它 error=失败。
 	Run(ctx context.Context, gc client.GameClient, rc *RunContext) error
+}
+
+// Candidates 是 Module 的【可选】扩展：声明那些候选依赖世界（母数据 / 账号态）的参数如何解析。
+//
+// 为什么要它：Params() 是纯静态声明、够不着 gc，故只表达得了编译期就固定的候选。而「炼成哪件
+// 彩装」这类参数的候选是玩家库存——登录后才知道。没有这个口子，这类参数只能退化成不受约束的
+// 自由文本，选单与校验一起失去。
+//
+// 契约：只读【已有的世界】（母数据库 + gc.Data() 的玩家态快照），【不发新的网络请求】。满足
+// 这条，它读的就是 Run 本就依赖的同一个世界，不给确定性引入新的隐藏输入。
+//
+// 返回「参数名 → 候选」。一次调用可服务多个参数，同一次母数据加载因此能摊给它们（如彩装模块
+// 的四个副属性槽与「炼成哪件」共用一次快照）。参数名须已在 Params() 声明；每个无静态候选的
+// Choice 类参数都须在此给出候选（空切片＝世界里当前没有可选项，合法）——两条都由
+// bindCandidates 强制。
+type Candidates interface {
+	Candidates(ctx context.Context, gc client.GameClient) (map[string][]Option, error)
+}
+
+// CheckCandidates 在给定世界下解析模块的参数候选并报告其是否自洽，供模块单测做契约检查——
+// runOne 每次运行都做同样的解析，故它就是「这个模块跑起来会不会因参数候选而失败」的提前问询。
+//
+// Registry.Register 只抓得住「整个 Candidates 接口都没实现」（无需世界即可判定）；漏掉其中
+// 【某一个】参数则要真解析一次才知道，那正是本函数的位置。gc 用模块单测现成的假客户端即可。
+func CheckCandidates(ctx context.Context, gc client.GameClient, m Module) error {
+	_, err := resolveParams(ctx, gc, m)
+	return err
+}
+
+// resolveParams 取模块的参数定义，并在其实现了 Candidates 时解析依赖世界的候选、填进 Bounds。
+func resolveParams(ctx context.Context, gc client.GameClient, m Module) ([]Param, error) {
+	var cands map[string][]Option
+	if c, ok := m.(Candidates); ok {
+		var err error
+		if cands, err = c.Candidates(ctx, gc); err != nil {
+			return nil, err
+		}
+	}
+	return bindCandidates(m.Params(), cands)
 }
 
 // skipError 表示「主动跳过」，由 Skip 构造，Run 据此区分跳过与失败。
@@ -138,7 +199,9 @@ type Observer func(Event)
 // 部分】+ ctx.Err()。正在执行的任务因共享 ctx 被中断而失败时，归为取消而非失败——丢弃该结果、就地
 // 停止。故返回的 error 非 nil 即“被取消，只跑了这些”，而结果里的 StatusError 永远只表示【真实失败】，
 // 不含取消假象。
-func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task, obs Observer) ([]Result, error) {
+// col 是可选的遥测采集端口（见 Collector）：非 nil 时模块经 rc.Emit 推送的观测转交外壳；
+// nil 即无遥测、行为与不传采集器完全一致。
+func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task, obs Observer, col Collector) ([]Result, error) {
 	total := len(tasks)
 	results := make([]Result, 0, total)
 	for i, t := range tasks {
@@ -158,7 +221,7 @@ func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task,
 		if !known {
 			res = Result{Meta: meta, Status: StatusError, Err: fmt.Errorf("未知模块 %q", t.Module)}
 		} else {
-			res = runOne(ctx, gc, m, t.Values)
+			res = runOne(ctx, gc, m, t.Values, col)
 			// 取消判定：任务因 ctx 取消被中断而失败时归为取消而非失败——丢弃结果、就地停止。
 			if res.Status == StatusError && ctx.Err() != nil {
 				return results, ctx.Err()
@@ -186,13 +249,20 @@ func cloneResult(r Result) Result {
 	return r
 }
 
-func runOne(ctx context.Context, gc client.GameClient, m Module, values map[string]any) Result {
-	if err := Validate(m.Params(), values); err != nil {
+func runOne(ctx context.Context, gc client.GameClient, m Module, values map[string]any, col Collector) Result {
+	// 先按【当前世界】把依赖它的候选解析出来，校验才是真校验：配置的合法性本就是相对世界而言
+	// 的（彩装 #123 合不合法，取决于你有没有这件），故这步必须在 Validate 之前、且在 gc 已备好
+	// 之后——这也正是它在 runOne 而不在 Params() 里的原因。
+	params, err := resolveParams(ctx, gc, m)
+	if err != nil {
+		return Result{Meta: m.Meta(), Status: StatusError, Err: fmt.Errorf("解析参数候选: %w", err)}
+	}
+	if err := Validate(params, values); err != nil {
 		return Result{Meta: m.Meta(), Status: StatusError, Err: fmt.Errorf("配置无效: %w", err)}
 	}
 	rep := &Reporter{}
-	rc := &RunContext{Config: resolve(m.Params(), values), rep: rep}
-	err := m.Run(ctx, gc, rc)
+	rc := &RunContext{Config: resolve(params, values), rep: rep, collector: col}
+	err = m.Run(ctx, gc, rc)
 	res := Result{Meta: m.Meta(), Log: rep.lines}
 	switch {
 	case err == nil:

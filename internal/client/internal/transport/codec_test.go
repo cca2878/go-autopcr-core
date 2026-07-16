@@ -203,3 +203,49 @@ func TestDecodeEnvelopeJSONServerError(t *testing.T) {
 		t.Fatalf("server_error 解析错误: %+v", se)
 	}
 }
+
+// TestDecodeEnvelopeRiskExtra 锁定风控数据采集：tool/sdk_login 响应 data 里除已声明的 is_risk
+// 外的所有【未声明】字段，应经 codec.MissingFielder 原样落入 ToolSdkLoginResponse.Extra（而非被
+// 丢弃），以便看清 is_risk 到底带了什么。
+func TestDecodeEnvelopeRiskExtra(t *testing.T) {
+	serverHandle := &codec.MsgpackHandle{WriteExt: true}
+	env := map[string]any{
+		"data_headers": map[string]any{"result_code": 1, "servertime": int64(1700000000)},
+		"data": map[string]any{
+			"is_risk":   true,
+			"risk_type": "一个足够长的未知字段值以触发长字符串编码路径", // str 家族
+			"threshold": int64(42),
+			"detail":    map[string]any{"code": int64(9)}, // 嵌套 map 也应保留
+		},
+	}
+	mp := marshalWith(t, serverHandle, env)
+	enc, err := encrypt(mp, testKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b64 := base64.StdEncoding.EncodeToString(enc)
+
+	var header protocol.ResponseHeader
+	var out sdk.ToolSdkLoginResponse
+	if err := decodeEnvelope([]byte(b64), true, &header, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !out.IsRisk {
+		t.Fatal("is_risk 应解为 true")
+	}
+	if out.Extra == nil {
+		t.Fatal("未声明字段应落入 Extra，实际为 nil")
+	}
+	if _, ok := out.Extra["is_risk"]; ok {
+		t.Error("已声明字段 is_risk 不应出现在 Extra 中")
+	}
+	if v, ok := out.Extra["risk_type"].(string); !ok || v == "" {
+		t.Errorf("Extra[risk_type]=%v，期望非空字符串", out.Extra["risk_type"])
+	}
+	if v := asInt64(out.Extra["threshold"]); v != 42 {
+		t.Errorf("Extra[threshold]=%v，期望 42", out.Extra["threshold"])
+	}
+	if _, ok := out.Extra["detail"].(map[string]any); !ok {
+		t.Errorf("Extra[detail] 应保留为嵌套 map，实际 %T", out.Extra["detail"])
+	}
+}

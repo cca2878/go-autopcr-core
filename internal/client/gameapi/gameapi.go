@@ -14,6 +14,8 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/daily"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/dungeon"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/emblem"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/exequip"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/labyrinth"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/mirage"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/race"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/room"
@@ -48,6 +50,10 @@ type GameAPI interface {
 	Mirage() mirage.API
 	// Tower 返回露娜塔域能力面（tower/top 回廊状态…）。
 	Tower() tower.API
+	// Exequip 返回 EX 装备域能力面（彩装究极炼成 alces_* …）。
+	Exequip() exequip.API
+	// Labyrinth 返回黎明界域能力面（刷开局 top/enter/retire …）。
+	Labyrinth() labyrinth.API
 }
 
 // set 是 GameAPI 的实现：持有各域实现，经访问器暴露。
@@ -64,6 +70,8 @@ type set struct {
 	clanbattle *clanbattle.Impl
 	mirage     *mirage.Impl
 	tower      *tower.Impl
+	exequip    *exequip.Impl
+	labyrinth  *labyrinth.Impl
 }
 
 // New 用传输句柄装配全部域能力面。
@@ -81,6 +89,8 @@ func New(tr *transport.Client) GameAPI {
 		clanbattle: clanbattle.New(tr),
 		mirage:     mirage.New(tr),
 		tower:      tower.New(tr),
+		exequip:    exequip.New(tr),
+		labyrinth:  labyrinth.New(tr),
 	}
 }
 
@@ -96,3 +106,5 @@ func (s *set) Seasonpass() seasonpass.API { return s.seasonpass }
 func (s *set) ClanBattle() clanbattle.API { return s.clanbattle }
 func (s *set) Mirage() mirage.API         { return s.mirage }
 func (s *set) Tower() tower.API           { return s.tower }
+func (s *set) Exequip() exequip.API       { return s.exequip }
+func (s *set) Labyrinth() labyrinth.API   { return s.labyrinth }

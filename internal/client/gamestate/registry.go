@@ -5,6 +5,7 @@ import (
 
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/discovery"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/account"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/alces"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/sdk"
 )
 
@@ -39,7 +40,62 @@ func DefaultRegistry() *Registry {
 	r.Register((*account.LoadIndexResponse)(nil), foldLoadIndex)
 	r.Register((*account.HomeIndexResponse)(nil), foldHomeIndex)
 	r.Register((*sdk.SourceIniGetMaintenanceStatusResponse)(nil), foldMaintenance)
+	r.Register((*alces.ExecResponse)(nil), foldAlcesExec)
+	r.Register((*alces.FixResultResponse)(nil), foldAlcesFixResult)
+	r.Register((*alces.LockSlotResponse)(nil), foldAlcesLockSlot)
 	return r
+}
+
+// subStatusFromAlces 把 alces 协议副属性转为 gamestate 形态。
+func subStatusFromAlces(ss []alces.SubStatus) []ExEquipSubStatus {
+	out := make([]ExEquipSubStatus, len(ss))
+	for i, s := range ss {
+		out[i] = ExEquipSubStatus{SlotNumber: s.SlotNumber, Status: s.Status, Step: s.Step, IsLock: s.IsLock}
+	}
+	return out
+}
+
+// foldAlcesExec 把 exec 回传的炼成 PT 余量折进库存（pending 副属性尚未定案，不改装备）。
+func foldAlcesExec(s *PlayerState, resp any) {
+	r := resp.(*alces.ExecResponse)
+	if r.CurrentAlcesPoint != nil && s.Inventory != nil {
+		p := r.CurrentAlcesPoint
+		s.Inventory[InventoryKey{Type: p.Type, ID: p.ID}] = p.Stock
+	}
+}
+
+// foldAlcesFixResult 用定案回传的完整实例更新对应彩装（副属性/锁定态随之刷新）。
+func foldAlcesFixResult(s *PlayerState, resp any) {
+	r := resp.(*alces.FixResultResponse)
+	if r.FixedAlcesData == nil || s.ExEquips == nil {
+		return
+	}
+	e := r.FixedAlcesData
+	s.ExEquips[e.SerialID] = ExEquip{
+		SerialID:       e.SerialID,
+		ExEquipmentID:  e.ExEquipmentID,
+		EnhancementPt:  e.EnhancementPt,
+		Rank:           e.Rank,
+		ProtectionFlag: e.ProtectionFlag,
+		SubStatus:      subStatusFromAlces(e.SubStatus),
+		IsAlcesPending: e.IsAlcesPending != 0,
+	}
+}
+
+// foldAlcesLockSlot 用锁定后的炼成数据列表更新对应彩装的副属性（锁定标志）。
+func foldAlcesLockSlot(s *PlayerState, resp any) {
+	r := resp.(*alces.LockSlotResponse)
+	if s.ExEquips == nil {
+		return
+	}
+	for _, d := range r.AlcesDataList {
+		e, ok := s.ExEquips[d.SerialID]
+		if !ok {
+			continue
+		}
+		e.SubStatus = subStatusFromAlces(d.SubStatus)
+		s.ExEquips[d.SerialID] = e
+	}
 }
 
 func foldHomeIndex(s *PlayerState, resp any) {
@@ -104,10 +160,34 @@ func foldLoadIndex(s *PlayerState, resp any) {
 		s.CharaFortune = nil
 	}
 	exIDs := make([]int, len(lr.UserExEquip))
+	exEquips := make(map[int]ExEquip, len(lr.UserExEquip))
 	for i, e := range lr.UserExEquip {
 		exIDs[i] = e.ExEquipmentID
+		subs := make([]ExEquipSubStatus, len(e.SubStatus))
+		for j, ss := range e.SubStatus {
+			subs[j] = ExEquipSubStatus{SlotNumber: ss.SlotNumber, Status: ss.Status, Step: ss.Step, IsLock: ss.IsLock}
+		}
+		exEquips[e.SerialID] = ExEquip{
+			SerialID:       e.SerialID,
+			ExEquipmentID:  e.ExEquipmentID,
+			EnhancementPt:  e.EnhancementPt,
+			Rank:           e.Rank,
+			ProtectionFlag: e.ProtectionFlag,
+			SubStatus:      subs,
+			IsAlcesPending: e.IsAlcesPending != 0,
+		}
 	}
 	s.ExEquipIDs = exIDs
+	s.ExEquips = exEquips
+
+	inv := make(map[InventoryKey]int, len(lr.ItemList)+len(lr.MaterialList))
+	for _, it := range lr.ItemList {
+		inv[InventoryKey{Type: it.Type, ID: it.ID}] = it.Stock
+	}
+	for _, it := range lr.MaterialList {
+		inv[InventoryKey{Type: it.Type, ID: it.ID}] = it.Stock
+	}
+	s.Inventory = inv
 }
 
 func foldMaintenance(s *PlayerState, resp any) {

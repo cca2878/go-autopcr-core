@@ -10,6 +10,8 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/automation/modules/account"
 	"github.com/cca2878/go-autopcr-core/internal/automation/modules/clan"
 	"github.com/cca2878/go-autopcr-core/internal/automation/modules/daily"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/exequip"
+	"github.com/cca2878/go-autopcr-core/internal/automation/modules/labyrinth"
 	"github.com/cca2878/go-autopcr-core/internal/automation/modules/room"
 	"github.com/cca2878/go-autopcr-core/internal/automation/modules/story"
 	"github.com/cca2878/go-autopcr-core/internal/automation/modules/sweep"
@@ -22,6 +24,8 @@ func DefaultRegistry() *automation.Registry {
 	r := automation.NewRegistry()
 	account.Register(r)
 	daily.Register(r)
+	exequip.Register(r)
+	labyrinth.Register(r)
 	room.Register(r)
 	clan.Register(r)
 	story.Register(r)

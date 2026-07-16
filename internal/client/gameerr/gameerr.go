@@ -6,6 +6,7 @@
 package gameerr
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -27,25 +28,37 @@ func Panic(format string, a ...any) *PanicError {
 // 这是一个 distinct、可诊断的错误（区别于泛化 PanicError）：外壳可用 errors.As 命中它，
 // 用 errors.Is 命中其成因（如 captcha.ErrNoSolver 表示未注入求解器）。
 //
-// 当前 tool/sdk_login 响应只暴露 is_risk 布尔、不含 challenge/gt 等票据；将来该场景频发、
-// 需按真实字段设计求解时，应扩展 sdk.ToolSdkLoginResponse 采集服务器 payload 并在此携带，
-// 以便积累数据（见架构决策：captcha 移出核心，is_risk 暂硬失败但需响亮可诊断）。
+// Payload 携带触发风控的服务器响应里【未建模的原始字段】快照（见 sdk.ToolSdkLoginResponse.Extra）：
+// tool/sdk_login 已声明字段只有 is_risk，故此处收纳的是其余未知键，用于积累数据、便于将来按真实
+// 字段设计求解（见架构决策：captcha 移出核心，is_risk 暂硬失败但需响亮可诊断）。可能为空。
 type RiskError struct {
-	Attempts int   // 已完成的「求解→重登」尝试轮数（0 表示求解阶段即失败、未发出重登）
-	Cause    error // 最近一次失败成因（无求解器时 Unwrap 命中 captcha.ErrNoSolver）
+	Attempts int            // 已完成的「求解→重登」尝试轮数（0 表示求解阶段即失败、未发出重登）
+	Cause    error          // 最近一次失败成因（无求解器时 Unwrap 命中 captcha.ErrNoSolver）
+	Payload  map[string]any // 触发风控的响应中未建模字段的快照（可能为空）
 }
 
 func (e *RiskError) Error() string {
+	var msg string
 	if e.Cause != nil {
-		return fmt.Sprintf("帐号触发风控(is_risk)未通过：%v（已尝试 %d 轮）", e.Cause, e.Attempts)
+		msg = fmt.Sprintf("帐号触发风控(is_risk)未通过：%v（已尝试 %d 轮）", e.Cause, e.Attempts)
+	} else {
+		msg = fmt.Sprintf("帐号触发风控(is_risk)，%d 轮验证码后仍未通过", e.Attempts)
 	}
-	return fmt.Sprintf("帐号触发风控(is_risk)，%d 轮验证码后仍未通过", e.Attempts)
+	// 有未知载荷时附上其 JSON，使其在任何仅取错误字符串的场景（CLI 日志、gomobile 异常消息）都可见。
+	if len(e.Payload) > 0 {
+		if js, err := json.Marshal(e.Payload); err == nil {
+			msg += fmt.Sprintf("；风控响应载荷=%s", js)
+		}
+	}
+	return msg
 }
 
 func (e *RiskError) Unwrap() error { return e.Cause }
 
-// Risk 构造一个 RiskError。
-func Risk(attempts int, cause error) *RiskError { return &RiskError{Attempts: attempts, Cause: cause} }
+// Risk 构造一个 RiskError。payload 为触发风控响应的未建模字段快照，可为 nil。
+func Risk(attempts int, cause error, payload map[string]any) *RiskError {
+	return &RiskError{Attempts: attempts, Cause: cause, Payload: payload}
+}
 
 // NetworkError 表示网络层失败（连接错误、超时、非 200、解码失败）。
 type NetworkError struct {

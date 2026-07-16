@@ -7,6 +7,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/dungeon"
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/emblem"
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/exequip"
+	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/labyrinth"
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mirage"
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mission"
@@ -35,6 +36,7 @@ type Reader interface {
 	Emblem() emblem.API
 	Dungeon() dungeon.API
 	Exequip() exequip.API
+	Labyrinth() labyrinth.API
 	Seasonpass() seasonpass.API
 	Schedule() schedule.API
 	Mirage() mirage.API
@@ -58,6 +60,7 @@ type Query struct {
 	emblem     *emblem.Impl
 	dungeon    *dungeon.Impl
 	exequip    *exequip.Impl
+	labyrinth  *labyrinth.Impl
 	seasonpass *seasonpass.Impl
 	schedule   *schedule.Impl
 	mirage     *mirage.Impl
@@ -79,6 +82,7 @@ func Open(path string) (*Query, error) {
 		emblem:     emblem.New(db),
 		dungeon:    dungeon.New(db),
 		exequip:    exequip.New(db),
+		labyrinth:  labyrinth.New(db),
 		seasonpass: seasonpass.New(db),
 		schedule:   schedule.New(db),
 		mirage:     mirage.New(db),
@@ -93,6 +97,7 @@ func (q *Query) Race() race.API             { return q.race }
 func (q *Query) Emblem() emblem.API         { return q.emblem }
 func (q *Query) Dungeon() dungeon.API       { return q.dungeon }
 func (q *Query) Exequip() exequip.API       { return q.exequip }
+func (q *Query) Labyrinth() labyrinth.API   { return q.labyrinth }
 func (q *Query) Seasonpass() seasonpass.API { return q.seasonpass }
 func (q *Query) Schedule() schedule.API     { return q.schedule }
 func (q *Query) Mirage() mirage.API         { return q.mirage }

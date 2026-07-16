@@ -3,6 +3,8 @@ package session
 import (
 	"context"
 	"errors"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/credential/captcha"
@@ -66,7 +68,7 @@ func TestPassRiskSucceedsAfterCaptcha(t *testing.T) {
 	// 前两轮仍 is_risk，第三轮通过。
 	scriptedLogin(t, c, []bool{true, true, false}, &got)
 
-	if err := passRisk(context.Background(), c, cred, "u", "k"); err != nil {
+	if err := passRisk(context.Background(), c, cred, "u", "k", nil); err != nil {
 		t.Fatalf("passRisk 应成功，得到 %v", err)
 	}
 	if cred.captchaCalls != 3 {
@@ -106,7 +108,7 @@ func TestPassRiskExhaustsAttempts(t *testing.T) {
 	var got []*sdk.ToolSdkLoginRequest
 	scriptedLogin(t, c, nil, &got) // 恒 is_risk
 
-	err := passRisk(context.Background(), c, cred, "u", "k")
+	err := passRisk(context.Background(), c, cred, "u", "k", nil)
 	if err == nil {
 		t.Fatal("恒风控应返回错误")
 	}
@@ -129,7 +131,7 @@ func TestPassRiskCaptchaError(t *testing.T) {
 	var got []*sdk.ToolSdkLoginRequest
 	scriptedLogin(t, c, nil, &got)
 
-	err := passRisk(context.Background(), c, cred, "u", "k")
+	err := passRisk(context.Background(), c, cred, "u", "k", nil)
 	if err == nil {
 		t.Fatal("求解失败应返回错误")
 	}
@@ -154,7 +156,7 @@ func TestPassRiskNoSolverHardFails(t *testing.T) {
 	var got []*sdk.ToolSdkLoginRequest
 	scriptedLogin(t, c, nil, &got)
 
-	err := passRisk(context.Background(), c, cred, "u", "k")
+	err := passRisk(context.Background(), c, cred, "u", "k", nil)
 	if err == nil {
 		t.Fatal("无求解器应硬失败")
 	}
@@ -170,5 +172,59 @@ func TestPassRiskNoSolverHardFails(t *testing.T) {
 	}
 	if cred.captchaCalls != 1 {
 		t.Errorf("DoCaptcha 调用 %d 次，期望 1", cred.captchaCalls)
+	}
+}
+
+// TestPassRiskThreadsInitialPayload 覆盖「无求解器（mobile）」路径：DoCaptcha 首轮即失败、不发
+// 重登，故透出的 RiskError.Payload 应为传入的首个风控响应载荷（原样保留），且被内联进错误消息。
+func TestPassRiskThreadsInitialPayload(t *testing.T) {
+	cred := &fakeCred{captchaErr: captcha.ErrNoSolver}
+	c := transport.New(cred)
+	var got []*sdk.ToolSdkLoginRequest
+	scriptedLogin(t, c, nil, &got)
+
+	initial := map[string]any{"risk_type": "device", "n": int64(7)}
+	err := passRisk(context.Background(), c, cred, "u", "k", initial)
+
+	var re *gameerr.RiskError
+	if !errors.As(err, &re) {
+		t.Fatalf("应为 *gameerr.RiskError，得到 %T", err)
+	}
+	if re.Attempts != 0 {
+		t.Errorf("无求解器应在首轮失败，Attempts=%d 期望 0", re.Attempts)
+	}
+	if !reflect.DeepEqual(re.Payload, initial) {
+		t.Errorf("Payload=%v，期望原样保留首个风控载荷 %v", re.Payload, initial)
+	}
+	if !strings.Contains(re.Error(), "风控响应载荷") {
+		t.Errorf("错误消息应内联风控载荷，得到 %q", re.Error())
+	}
+}
+
+// TestPassRiskThreadsReloginPayload 覆盖「求解后仍风控直至耗尽」：透出的 Payload 应刷新为最近
+// 一次重登风控响应的 Extra（而非最初传入的 nil）。
+func TestPassRiskThreadsReloginPayload(t *testing.T) {
+	cred := &fakeCred{}
+	c := transport.New(cred)
+	// 每次 tool/sdk_login 都回 is_risk，并在响应上挂一个未知载荷。
+	c.Use(func(next transport.Handler) transport.Handler {
+		return func(ctx context.Context, req protocol.Request, out any) (protocol.ResponseHeader, error) {
+			resp, ok := out.(*sdk.ToolSdkLoginResponse)
+			if !ok {
+				t.Fatalf("非预期响应类型 %T", out)
+			}
+			resp.IsRisk = true
+			resp.Extra = map[string]any{"round_marker": "x"}
+			return protocol.ResponseHeader{}, nil
+		}
+	})
+
+	err := passRisk(context.Background(), c, cred, "u", "k", nil)
+	var re *gameerr.RiskError
+	if !errors.As(err, &re) {
+		t.Fatalf("应为 *gameerr.RiskError，得到 %T", err)
+	}
+	if want := map[string]any{"round_marker": "x"}; !reflect.DeepEqual(re.Payload, want) {
+		t.Errorf("Payload=%v，期望刷新为重登载荷 %v", re.Payload, want)
 	}
 }

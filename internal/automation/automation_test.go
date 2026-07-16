@@ -28,7 +28,7 @@ func TestRunStatuses(t *testing.T) {
 	reg.Register(stubModule{meta: Meta{Name: "err"}, fn: func(rc *RunContext) error { return errors.New("boom") }})
 	tasks := []Task{{Module: "ok"}, {Module: "skip"}, {Module: "err"}, {Module: "ghost"}}
 
-	res, err := Run(context.Background(), nil, reg, tasks, nil) // gc=nil：stub 不使用它，验证 Runner 与客户端解耦
+	res, err := Run(context.Background(), nil, reg, tasks, nil, nil) // gc=nil：stub 不使用它，验证 Runner 与客户端解耦
 	if err != nil {
 		t.Fatalf("未取消不应返回 error: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestPerInstanceConfig(t *testing.T) {
 		{Module: "echo", Values: map[string]any{"n": 2}},
 		{Module: "echo"}, // 无值→默认 0
 	}
-	res, _ := Run(context.Background(), nil, reg, tasks, nil)
+	res, _ := Run(context.Background(), nil, reg, tasks, nil, nil)
 	got := []string{res[0].Log[0], res[1].Log[0], res[2].Log[0]}
 	want := []string{"n=1", "n=2", "n=0"}
 	for i := range want {
@@ -110,7 +110,7 @@ func TestRunRejectsInvalidConfig(t *testing.T) {
 		params: []Param{{Name: "mode", Type: ParamChoice, Bounds: Bounds{Choices: []string{"a"}}}},
 		fn:     func(rc *RunContext) error { t.Fatal("非法配置不应执行 Run"); return nil },
 	})
-	res, _ := Run(context.Background(), nil, reg, []Task{{Module: "x", Values: map[string]any{"mode": "z"}}}, nil)
+	res, _ := Run(context.Background(), nil, reg, []Task{{Module: "x", Values: map[string]any{"mode": "z"}}}, nil, nil)
 	if res[0].Status != StatusError || res[0].Err == nil {
 		t.Fatalf("非法配置应 error: %+v", res[0])
 	}
@@ -179,7 +179,7 @@ func TestRunObserverEvents(t *testing.T) {
 	tasks := []Task{{Module: "a"}, {Module: "b"}}
 
 	var events []Event
-	res, err := Run(context.Background(), nil, reg, tasks, func(ev Event) { events = append(events, ev) })
+	res, err := Run(context.Background(), nil, reg, tasks, func(ev Event) { events = append(events, ev) }, nil)
 	if err != nil {
 		t.Fatalf("未取消不应返回 error: %v", err)
 	}
@@ -207,7 +207,7 @@ func TestRunObserverEvents(t *testing.T) {
 		t.Fatal("事件 Result.Log 未与返回结果隔离")
 	}
 	// 确定性：nil observer 与有 observer 返回一致。
-	res2, _ := Run(context.Background(), nil, reg, tasks, nil)
+	res2, _ := Run(context.Background(), nil, reg, tasks, nil, nil)
 	if len(res) != len(res2) || res[0].Status != res2[0].Status || res[1].Status != res2[1].Status {
 		t.Fatalf("observer 影响了返回结果: %+v vs %+v", res, res2)
 	}
@@ -221,7 +221,7 @@ func TestRunCancelStopsAtBoundary(t *testing.T) {
 	reg.Register(stubModule{meta: Meta{Name: "a"}, fn: func(rc *RunContext) error { cancel(); return nil }}) // 跑完即取消
 	reg.Register(stubModule{meta: Meta{Name: "b"}, fn: func(rc *RunContext) error { t.Fatal("取消后不应执行后续任务"); return nil }})
 
-	res, err := Run(ctx, nil, reg, []Task{{Module: "a"}, {Module: "b"}}, nil)
+	res, err := Run(ctx, nil, reg, []Task{{Module: "a"}, {Module: "b"}}, nil, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("应返回 context.Canceled，得 %v", err)
 	}
@@ -242,7 +242,7 @@ func TestRunCancelDuringTaskNotError(t *testing.T) {
 	}})
 	reg.Register(stubModule{meta: Meta{Name: "c"}, fn: func(rc *RunContext) error { t.Fatal("取消后不应执行 c"); return nil }})
 
-	res, err := Run(ctx, nil, reg, []Task{{Module: "a"}, {Module: "b"}, {Module: "c"}}, nil)
+	res, err := Run(ctx, nil, reg, []Task{{Module: "a"}, {Module: "b"}, {Module: "c"}}, nil, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("应返回 context.Canceled，得 %v", err)
 	}

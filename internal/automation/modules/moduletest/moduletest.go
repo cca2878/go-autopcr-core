@@ -16,6 +16,8 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/daily"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/dungeon"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/emblem"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/exequip"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/labyrinth"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/mirage"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/race"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi/room"
@@ -44,6 +46,8 @@ type FakeClient struct {
 	ClanBattleAPI clanbattle.API
 	MirageAPI     mirage.API
 	TowerAPI      tower.API
+	ExequipAPI    exequip.API
+	LabyrinthAPI  labyrinth.API
 }
 
 func (f *FakeClient) Data() *gamestate.PlayerState  { return f.State }
@@ -61,11 +65,13 @@ func (f *FakeClient) Seasonpass() seasonpass.API    { return f.SeasonpassAPI }
 func (f *FakeClient) ClanBattle() clanbattle.API    { return f.ClanBattleAPI }
 func (f *FakeClient) Mirage() mirage.API            { return f.MirageAPI }
 func (f *FakeClient) Tower() tower.API              { return f.TowerAPI }
+func (f *FakeClient) Exequip() exequip.API          { return f.ExequipAPI }
+func (f *FakeClient) Labyrinth() labyrinth.API      { return f.LabyrinthAPI }
 
 // RunOne 用给定模块与假客户端跑单任务并返回结果（经真实 Runner，覆盖校验/隔离逻辑）。
 func RunOne(gc client.GameClient, m automation.Module, values map[string]any) automation.Result {
 	reg := automation.NewRegistry()
 	reg.Register(m)
-	res, _ := automation.Run(context.Background(), gc, reg, []automation.Task{{Module: m.Meta().Name, Values: values}}, nil)
+	res, _ := automation.Run(context.Background(), gc, reg, []automation.Task{{Module: m.Meta().Name, Values: values}}, nil, nil)
 	return res[0]
 }

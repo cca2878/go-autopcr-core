@@ -29,6 +29,33 @@ type CharaFortune struct {
 	Rank      int // 今日名次
 }
 
+// InventoryKey 是库存物品的 (类型, id) 键（对应 ref ItemType＝(eInventoryType, id)）。
+type InventoryKey struct {
+	Type int // eInventoryType
+	ID   int
+}
+
+// ExEquipSubStatus 是一件 EX 装备的一条副属性（登录/炼成响应折叠而来）。
+// Status＝属性类型(eParamType)，Step＝档位(1..5，5＝满级)，IsLock＝是否锁定该槽。
+type ExEquipSubStatus struct {
+	SlotNumber int
+	Status     int
+	Step       int
+	IsLock     bool
+}
+
+// ExEquip 是玩家持有的一件 EX 装备的完整实例（登录时由 load/index 折叠）。彩装究极炼成、
+// EX 装战力搭配等需要 serial_id/rank/enhancement_pt/sub_status，故保留完整实例而非仅 id。
+type ExEquip struct {
+	SerialID       int
+	ExEquipmentID  int
+	EnhancementPt  int
+	Rank           int
+	ProtectionFlag int
+	SubStatus      []ExEquipSubStatus
+	IsAlcesPending bool
+}
+
 // PlayerState 是无头客户端聚合的玩家状态。
 type PlayerState struct {
 	ViewerID  int64
@@ -64,7 +91,16 @@ type PlayerState struct {
 	CharaFortune *CharaFortune
 
 	// ExEquipIDs 是玩家持有的 EX 装备 ex_equipment_id 列表（登录时由 load/index 折叠），供计数/图鉴报告。
+	// 与 ExEquips 同源折叠，保留以兼容只需 id 的旧调用（如查ex装备计数）。
 	ExEquipIDs []int
+
+	// ExEquips 是玩家持有的 EX 装备完整实例（serial_id→实例，登录时由 load/index 折叠、炼成响应
+	// 增量更新），供彩装炼成/战力搭配。按 serial_id 键以便炼成定案/锁定按序更新（对应 ref ex_equips dict）。
+	ExEquips map[int]ExEquip
+
+	// Inventory 是普通库存物品持有量（(类型,id)→stock，登录时由 load/index 的 item_list +
+	// material_list 折叠），供 get_inventory 查询（如彩装炼成 PT、炼成材料）。经 GetInventory 读取。
+	Inventory map[InventoryKey]int
 
 	// 训练（探索）扫荡次数（登录时由 home/index 折叠），供 EXP/Mana 探索扫荡量报告。
 	TrainingExpDone  int // 今日已用 exp 探索次数
@@ -117,6 +153,12 @@ func (s *PlayerState) IsQuestUnlocked(questID int) bool {
 	}
 	_, ok := s.ClearedBywayQuests[questID]
 	return ok
+}
+
+// GetInventory 返回某库存物品 (类型,id) 的持有量（不在库存中＝0）。对应 ref get_inventory 的普通
+// 物品分支；mana/jewel 等特殊货币另有专用字段，如需再在此特判。
+func (s *PlayerState) GetInventory(typ, id int) int {
+	return s.Inventory[InventoryKey{Type: typ, ID: id}]
 }
 
 // New 返回一个空的 PlayerState。
