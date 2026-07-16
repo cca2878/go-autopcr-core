@@ -33,9 +33,13 @@ func (f *fakeLab) Retire(_ context.Context, id int) error {
 
 // --- 假黎明界母数据 ---
 
-type fakeMDLab struct{ boss map[int][]int }
+type fakeMDLab struct {
+	boss   map[int][]int
+	guilds []mdlab.Guild
+}
 
 func (f fakeMDLab) BossUnitIDsByQuest(context.Context) (map[int][]int, error) { return f.boss, nil }
+func (f fakeMDLab) EnterGuilds(context.Context) ([]mdlab.Guild, error)        { return f.guilds, nil }
 
 type fakeMDReader struct {
 	masterdata.Reader

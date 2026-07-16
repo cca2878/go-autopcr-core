@@ -5,15 +5,25 @@ package labyrinth
 import (
 	"context"
 	"sort"
+	"strings"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
+
+// Guild 是一个可进入的公会（黎明界固定那几个）。
+type Guild struct {
+	ID   int
+	Name string
+}
 
 // API 是黎明界域查询契约（随功能在本包内累加）。
 type API interface {
 	// BossUnitIDsByQuest 返回 quest_id → 该关卡波次内敌方 unit_id 列表（去重升序），供按 quest 解析
 	// Boss 单位（对应 ref _boss_unit_ids：quest→wave_group→enemy→unit_id）。
 	BossUnitIDsByQuest(ctx context.Context) (map[int][]int, error)
+	// EnterGuilds 返回可进入的公会（guild_id 升序），供前端把「公会id」呈现成可读选单而非让
+	// 用户裸填数字（对应 ref labyrinth_enter_guild / LabyrinthGuildConfig）。
+	EnterGuilds(ctx context.Context) ([]Guild, error)
 }
 
 // Impl 是 API 的实现，只持有低层只读 DB 句柄。
@@ -39,6 +49,32 @@ func (a *Impl) scan(ctx context.Context, query string, fn func(scanner) error) e
 		}
 	}
 	return rows.Err()
+}
+
+// EnterGuilds 见 API.EnterGuilds。
+func (a *Impl) EnterGuilds(ctx context.Context) ([]Guild, error) {
+	var out []Guild
+	if err := a.scan(ctx, "SELECT guild_id, guild_name FROM labyrinth_enter_guild", func(r scanner) error {
+		var g Guild
+		if err := r.Scan(&g.ID, &g.Name); err != nil {
+			return err
+		}
+		g.Name = cleanGuildName(g.Name)
+		out = append(out, g)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
+}
+
+// cleanGuildName 抹平公会名里的换行标记：母数据里存的是【字面量】反斜杠 n（如
+// `破晓\n之星`，游戏内用于折行），直接显示会露出转义符，故替换成空格。
+func cleanGuildName(s string) string {
+	s = strings.ReplaceAll(s, `\n`, " ")
+	s = strings.ReplaceAll(s, "\n", " ")
+	return strings.TrimSpace(s)
 }
 
 func (a *Impl) BossUnitIDsByQuest(ctx context.Context) (map[int][]int, error) {

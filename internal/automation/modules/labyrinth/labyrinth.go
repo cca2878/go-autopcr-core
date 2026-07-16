@@ -102,7 +102,7 @@ func (startReroll) Params() []automation.Param {
 		{Name: "labyrinth_reroll_difficulty", Type: automation.ParamChoice, Default: "5",
 			Description: "难度", Bounds: automation.Bounds{Choices: []string{"1", "2", "3", "4", "5"}}},
 		{Name: "labyrinth_reroll_guild_id", Type: automation.ParamInt, Default: 5,
-			Description: "公会id", Bounds: automation.Bounds{Min: i(1)}},
+			Description: "公会", Bounds: automation.Bounds{Min: i(1)}},
 		{Name: "labyrinth_reroll_perfect_start", Type: automation.ParamBool, Default: false, Description: "完美开局"},
 		{Name: "labyrinth_reroll_max_count", Type: automation.ParamChoice, Default: "100",
 			Description: "最多重开次数（完美开局）", Bounds: automation.Bounds{Choices: []string{"100", "1000", "2000"}}},
