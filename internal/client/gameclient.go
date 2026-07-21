@@ -77,6 +77,7 @@ type client struct {
 	state *gamestate.PlayerState
 	rt    *http.Transport // 共享底层传输：游戏 API 与资源 CDN 下载共用
 	md    *masterdata.Query
+	guard *sessionGuard // 严重错误码 → 重走登录序列（见 relogin.go）
 
 	// masterdata 装配所需（登录后用下发 res 构建源与 Manager）。
 	mdEnabled  bool
@@ -98,13 +99,8 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 
 	state := gamestate.New()
 	registry := gamestate.DefaultRegistry()
-	// 中间件链（外→内）：错误处理 → 状态折叠 → 传输。
-	tr.Use(
-		transport.ErrorHandler(transport.DefaultRetries),
-		foldingMiddleware(state, registry),
-	)
 
-	return &client{
+	g := &client{
 		GameAPI:    gameapi.New(tr),
 		cred:       cred,
 		tr:         tr,
@@ -114,17 +110,33 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 		mdCacheDir: o.mdCacheDir,
 		logger:     o.logger,
 	}
+	g.guard = &sessionGuard{login: g.relogin, logger: o.logger}
+
+	// 中间件链（外→内）：会话重登 → 错误处理 → 状态折叠 → 传输。
+	// 重登在最外层：网络重试应先耗尽，且重登发出的登录请求要经过折叠中间件才能更新状态。
+	tr.Use(
+		g.guard.middleware(),
+		transport.ErrorHandler(transport.DefaultRetries),
+		foldingMiddleware(state, registry),
+	)
+	return g
 }
 
 func (g *client) Login(ctx context.Context) error {
-	if err := session.Login(ctx, g.tr, g.cred); err != nil {
+	if err := session.Login(markRelogin(ctx), g.tr, g.cred); err != nil {
 		return err
 	}
+	g.guard.markFresh()
 	if g.mdEnabled {
 		return g.ensureMasterdata(ctx)
 	}
 	return nil
 }
+
+// relogin 是会话失效时的自愈动作：用【同一凭据】重跑登录序列（重新获取 access_key 是
+// 外壳的事，核心不碰）。不重建母数据——会话失效与母数据版本无关，且查询句柄可能正被
+// 模块持有，中途换掉它比留着更危险；真的版本变更会走维护/版本升级路径。
+func (g *client) relogin(ctx context.Context) error { return session.Login(ctx, g.tr, g.cred) }
 
 // ensureMasterdata 用登录折叠得到的 manifest_ver + res 确保干净库就绪并打开查询句柄。
 //
