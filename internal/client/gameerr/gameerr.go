@@ -88,6 +88,33 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("api error (result_code=%d, status=%d): %s", e.ResultCode, e.Status, e.Message)
 }
 
+// SessionBreakError 表示请求在【会话失效】处被打断：服务端丢弃了会话（顶号、数据不一致等），
+// 客户端已自愈（重新登录），但这次请求所在的那段逻辑跨越了一次世界断点。
+//
+// 它存在的理由是自愈救不了调用方的推理：模块的中间结论存在 Go 局部变量里（「刚查到礼物箱有 3
+// 件」「刚拿到的 enter_id」），断点之后这些快照可能已与线上不符，而框架看不见也修不了它们。
+// 故对不能容忍断点的模块，这里【当场失败】而不是悄悄重发——让它在断点处 unwind，好过带着旧
+// 世界的结论继续往下写。是否容忍由模块自己声明（见 automation 的 SessionAware）。
+type SessionBreakError struct {
+	Cause error // 触发断点的原始错误（通常是 *APIError）
+}
+
+func (e *SessionBreakError) Error() string {
+	return fmt.Sprintf("会话在执行期间失效并已重新登录：本任务结果不可信、可能已部分执行，"+
+		"请复查后重跑（成因: %v）", e.Cause)
+}
+
+func (e *SessionBreakError) Unwrap() error { return e.Cause }
+
+// AsSessionBreak 在 err 为 SessionBreakError 时返回它。
+func AsSessionBreak(err error) (*SessionBreakError, bool) {
+	var b *SessionBreakError
+	if errors.As(err, &b) {
+		return b, true
+	}
+	return nil, false
+}
+
 // AsPanic 在 err 为 PanicError 时返回它。
 func AsPanic(err error) (*PanicError, bool) {
 	var p *PanicError

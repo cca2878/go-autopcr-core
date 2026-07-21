@@ -71,6 +71,38 @@ func classifySession(err error) (*gameerr.APIError, sessionFault) {
 	return api, faultNone
 }
 
+// BreakPolicy 声明一段逻辑（通常是一个自动化模块）如何应对执行期间的会话断点。
+//
+// 自愈能修复会话，但修不了调用方的推理：中间结论存在调用方的局部变量里，断点之后可能已与
+// 线上不符。故「断点后怎么办」只有调用方自己知道，由它经 WithBreakPolicy 声明。
+type BreakPolicy int
+
+const (
+	// BreakAbort 是默认：当场返回 gameerr.SessionBreakError，让调用方在断点处 unwind。
+	// 适用于有副作用且不可重入的逻辑——带着旧世界的结论继续往下写，比失败危险得多。
+	BreakAbort BreakPolicy = iota
+	// BreakRestart 与 BreakAbort 在传输层行为一致（当场失败），差别在调用方接住后从头重跑。
+	BreakRestart
+	// BreakIgnore 表示断点无所谓：会话错误照常自愈重发，调用方无感。仅适用于不写入的逻辑。
+	BreakIgnore
+)
+
+// breakPolicyKey 在 ctx 里携带断点策略。
+type breakPolicyKey struct{}
+
+// WithBreakPolicy 声明本 ctx 下的请求遇到会话断点时如何处置。未声明即 BreakAbort。
+func WithBreakPolicy(ctx context.Context, p BreakPolicy) context.Context {
+	return context.WithValue(ctx, breakPolicyKey{}, p)
+}
+
+// BreakPolicyFrom 取出 ctx 携带的断点策略；未声明即 BreakAbort（最保守的一档）。
+func BreakPolicyFrom(ctx context.Context) BreakPolicy {
+	if p, ok := ctx.Value(breakPolicyKey{}).(BreakPolicy); ok {
+		return p
+	}
+	return BreakAbort
+}
+
 // reloginKey 标记「本请求属于重登序列自身」，使其绕过重登中间件（否则登录序列里的
 // 请求一旦失败会再次触发重登，无限递归）。
 type reloginKey struct{}
@@ -143,7 +175,16 @@ func (g *sessionGuard) middleware() transport.Middleware {
 				if fault == faultNone {
 					return header, err
 				}
+				// 会话总是要修的——不修，后续请求全废。分歧只在【这一次调用怎么办】。
 				g.invalidate()
+
+				// 不容忍断点者（默认）当场失败：自愈修得了会话，修不了调用方局部变量里
+				// 那份已经过时的世界快照。
+				if BreakPolicyFrom(ctx) != BreakIgnore {
+					g.logger.Warn("会话失效，按策略中止本次调用",
+						"url", req.URL(), "result_code", api.ResultCode)
+					return header, &gameerr.SessionBreakError{Cause: err}
+				}
 				if fault != faultRetry || attempt >= maxReloginRetries {
 					return header, err
 				}

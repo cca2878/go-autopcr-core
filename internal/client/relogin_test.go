@@ -59,6 +59,11 @@ func runGuard(ctx context.Context, g *sessionGuard, out any, script []error) (in
 	return calls, err
 }
 
+// tolerantCtx 是「模块声明容忍断点」的 ctx——自愈重发只在这一档下发生。
+func tolerantCtx() context.Context {
+	return WithBreakPolicy(context.Background(), BreakIgnore)
+}
+
 // --- 判定 ---
 
 func TestClassifySession(t *testing.T) {
@@ -89,13 +94,13 @@ func TestClassifySession(t *testing.T) {
 
 // --- 中间件 ---
 
-// TestRelogin_RetriesAfterKick 是本功能的核心收益：被顶号后自动重登并原样重发，
+// TestRelogin_RetriesAfterKick 断言【容忍断点的模块】被顶号后自动重登并原样重发，
 // 模块层看到的是成功，而不是一个它无从处理的会话错误。
 func TestRelogin_RetriesAfterKick(t *testing.T) {
 	g, logins := newGuard()
 	out := &fakeResp{}
 
-	calls, err := runGuard(context.Background(), g, out, []error{apiErr(6002, 1, "请回到标题界面")})
+	calls, err := runGuard(tolerantCtx(), g, out, []error{apiErr(6002, 1, "请回到标题界面")})
 
 	if err != nil {
 		t.Fatalf("重登后重发应成功，得 %v", err)
@@ -117,7 +122,7 @@ func TestRelogin_RetriesAfterKick(t *testing.T) {
 func TestRelogin_MarkerOnlyDoesNotResend(t *testing.T) {
 	g, logins := newGuard()
 
-	calls, err := runGuard(context.Background(), g, &fakeResp{},
+	calls, err := runGuard(tolerantCtx(), g, &fakeResp{},
 		[]error{apiErr(9999, 1, "数据异常，请回到标题界面")})
 
 	if err == nil {
@@ -134,12 +139,55 @@ func TestRelogin_MarkerOnlyDoesNotResend(t *testing.T) {
 	}
 
 	// 惰性重登：下一次请求前才补上，且随后正常放行。
-	calls, err = runGuard(context.Background(), g, &fakeResp{}, nil)
+	calls, err = runGuard(tolerantCtx(), g, &fakeResp{}, nil)
 	if err != nil {
 		t.Fatalf("重登后应正常放行，得 %v", err)
 	}
 	if *logins != 1 || calls != 1 {
 		t.Errorf("下次请求前应重登 1 次并发出 1 次请求，得 logins=%d calls=%d", *logins, calls)
+	}
+}
+
+// TestRelogin_DefaultPolicyFailsFast 是断点语义的核心：默认（未声明策略）下，会话失效
+// 【当场】变成 SessionBreakError 上抛，不悄悄重发。自愈修得了会话，修不了调用方局部变量
+// 里那份已过时的世界快照——让它在断点处 unwind，好过带着旧结论继续往下写。
+func TestRelogin_DefaultPolicyFailsFast(t *testing.T) {
+	for _, p := range []struct {
+		name   string
+		policy BreakPolicy
+	}{
+		{"默认(未声明)", BreakAbort}, // 走 context.Background()，不放策略
+		{"显式 abort", BreakAbort},
+		{"restart(传输层同 abort，重跑由运行器做)", BreakRestart},
+	} {
+		t.Run(p.name, func(t *testing.T) {
+			g, logins := newGuard()
+			ctx := context.Background()
+			if p.name != "默认(未声明)" {
+				ctx = WithBreakPolicy(ctx, p.policy)
+			}
+			cause := apiErr(6002, 1, "请回到标题界面")
+
+			calls, err := runGuard(ctx, g, &fakeResp{}, []error{cause})
+
+			var br *gameerr.SessionBreakError
+			if !errors.As(err, &br) {
+				t.Fatalf("应返回 SessionBreakError，得 %v", err)
+			}
+			if !errors.Is(err, cause) {
+				t.Error("应保留原始成因，便于诊断真正发生了什么")
+			}
+			if calls != 1 {
+				t.Errorf("不应重发，得 %d 次", calls)
+			}
+			if *logins != 0 {
+				t.Errorf("本次调用不应就地重登（下次请求前才补），得 %d 次", *logins)
+			}
+			// 会话仍然要修——不修后续请求全废；分歧只在这一次调用怎么办。
+			if !g.stale {
+				t.Error("会话应被标记失效，下次请求前重登")
+			}
+		})
 	}
 }
 
@@ -169,7 +217,7 @@ func TestRelogin_BudgetExhausted(t *testing.T) {
 		always[i] = apiErr(6002, 1, "请回到标题界面")
 	}
 
-	calls, err := runGuard(context.Background(), g, &fakeResp{}, always)
+	calls, err := runGuard(tolerantCtx(), g, &fakeResp{}, always)
 
 	if err == nil {
 		t.Fatal("重发耗尽后错误应上抛")

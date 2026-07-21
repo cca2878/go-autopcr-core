@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/cca2878/go-autopcr-core/internal/client"
+	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
 )
 
 // Status 是单个模块的执行结果状态。
@@ -107,6 +108,48 @@ type Module interface {
 // bindCandidates 强制。
 type Candidates interface {
 	Candidates(ctx context.Context, gc client.GameClient) (map[string][]Option, error)
+}
+
+// BreakPolicy 是模块对「执行到一半会话被顶掉、客户端已重登」的处置声明。别名自 client 包
+// （策略要传到传输层才起作用），模块只需用这里的名字。
+type BreakPolicy = client.BreakPolicy
+
+const (
+	// BreakAbort 是默认（不实现 SessionAware 即此值）：断点处当场失败，任务报错、交用户重跑。
+	BreakAbort = client.BreakAbort
+	// BreakRestart 表示本模块从头重跑一遍即可，运行器会在断点后自动重跑一次。
+	BreakRestart = client.BreakRestart
+	// BreakIgnore 表示断点无所谓，会话错误照常自愈重发，模块无感。
+	BreakIgnore = client.BreakIgnore
+)
+
+// SessionAware 是 Module 的【可选】扩展：声明模块如何应对执行期间的会话断点。
+//
+// 为什么要它：会话失效（被其他客户端顶号、数据不一致）时客户端会自动重登，但重登只修得了
+// 会话——修不了模块【已经查到、存在局部变量里】的那份世界快照。「刚查到礼物箱有 3 件」在
+// 断点之后可能已经不成立，而框架看不见这些局部变量，无从校正。故断点后怎么办只有模块自己
+// 知道，这里是它表态的唯一位置。
+//
+// 不实现即 BreakAbort——最保守的一档：宁可让任务失败让用户重跑，也不拿旧世界的结论去写新世界。
+//
+// 选 BreakRestart 前请确认【重跑一遍不会重复扣资源】：这正是「先查后动」铁律的红利——收取类
+// 模块重跑时会先查、发现已领完即无操作。若模块按次数循环消耗（如按配置扫荡 N 次），重跑就是
+// 又扣 N 次，那它【不能】声明 BreakRestart。
+// 选 BreakIgnore 请确认模块【完全不写入】（纯查询/报告）：此档下断点被静默重发掩盖，模块会
+// 拿着可能过时的快照继续跑完。
+//
+// 另注：BreakRestart 会把断点前 rc.Emit 过的观测【再发一遍】（遥测按次计），声明前一并考虑。
+// 别按 Meta.Category 反推本策略——那是展示用的分组字符串，不是「是否写入」的契约。
+type SessionAware interface {
+	OnSessionBreak() BreakPolicy
+}
+
+// breakPolicyOf 取模块声明的断点策略；未实现 SessionAware 即最保守的 BreakAbort。
+func breakPolicyOf(m Module) BreakPolicy {
+	if s, ok := m.(SessionAware); ok {
+		return s.OnSessionBreak()
+	}
+	return BreakAbort
 }
 
 // CheckCandidates 在给定世界下解析模块的参数候选并报告其是否自洽，供模块单测做契约检查——
@@ -250,31 +293,49 @@ func cloneResult(r Result) Result {
 }
 
 func runOne(ctx context.Context, gc client.GameClient, m Module, values map[string]any, col Collector) Result {
-	// 先按【当前世界】把依赖它的候选解析出来，校验才是真校验：配置的合法性本就是相对世界而言
-	// 的（彩装 #123 合不合法，取决于你有没有这件），故这步必须在 Validate 之前、且在 gc 已备好
-	// 之后——这也正是它在 runOne 而不在 Params() 里的原因。
-	params, err := resolveParams(ctx, gc, m)
-	if err != nil {
-		return Result{Meta: m.Meta(), Status: StatusError, Err: fmt.Errorf("解析参数候选: %w", err)}
-	}
-	if err := Validate(params, values); err != nil {
-		return Result{Meta: m.Meta(), Status: StatusError, Err: fmt.Errorf("配置无效: %w", err)}
-	}
+	// 把模块的会话断点策略交给传输层：断点是在某次 gc 调用【里面】被发现的，只有那里能当场
+	// 中止（而不是等模块跑完再秋后算账，那时旧世界的结论早已写进新世界）。见 SessionAware。
+	policy := breakPolicyOf(m)
+	ctx = client.WithBreakPolicy(ctx, policy)
+
+	// 过程日志跨重跑保留：断点前那半程也是用户要看的（尤其它可能已经写入过）。
 	rep := &Reporter{}
-	rc := &RunContext{Config: resolve(params, values), rep: rep, collector: col}
-	err = m.Run(ctx, gc, rc)
-	res := Result{Meta: m.Meta(), Log: rep.lines}
-	switch {
-	case err == nil:
-		res.Status = StatusOK
-	case isSkip(err):
-		res.Status = StatusSkip
-		res.Log = append(res.Log, err.Error())
-	default:
-		res.Status = StatusError
-		res.Err = err
+	for attempt := 0; ; attempt++ {
+		// 先按【当前世界】把依赖它的候选解析出来，校验才是真校验：配置的合法性本就是相对世界而言
+		// 的（彩装 #123 合不合法，取决于你有没有这件），故这步必须在 Validate 之前、且在 gc 已备好
+		// 之后——这也正是它在 runOne 而不在 Params() 里的原因。重跑时重解析一遍：世界已经变了。
+		params, err := resolveParams(ctx, gc, m)
+		if err != nil {
+			return Result{Meta: m.Meta(), Status: StatusError, Log: rep.lines,
+				Err: fmt.Errorf("解析参数候选: %w", err)}
+		}
+		if err := Validate(params, values); err != nil {
+			return Result{Meta: m.Meta(), Status: StatusError, Log: rep.lines,
+				Err: fmt.Errorf("配置无效: %w", err)}
+		}
+		rc := &RunContext{Config: resolve(params, values), rep: rep, collector: col}
+		err = m.Run(ctx, gc, rc)
+
+		// 会话断点 + 模块声明可重跑 → 从头再来一次（只一次：再断多半是持续被顶号，
+		// 继续重跑只会没完没了地重复副作用）。
+		if _, broke := gameerr.AsSessionBreak(err); broke && policy == BreakRestart && attempt == 0 {
+			rep.Logf("会话在执行期间失效，已重新登录；本模块声明可重跑，从头重试一次")
+			continue
+		}
+
+		res := Result{Meta: m.Meta(), Log: rep.lines}
+		switch {
+		case err == nil:
+			res.Status = StatusOK
+		case isSkip(err):
+			res.Status = StatusSkip
+			res.Log = append(res.Log, err.Error())
+		default:
+			res.Status = StatusError
+			res.Err = err
+		}
+		return res
 	}
-	return res
 }
 
 func isSkip(err error) bool {
