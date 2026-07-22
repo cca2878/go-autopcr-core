@@ -2,6 +2,8 @@ package asset
 
 import (
 	"context"
+	"crypto/md5"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,8 +15,9 @@ import (
 // TestFetchMasterdata 用本地服务器模拟层级清单 + pool，验证解析与下载。
 func TestFetchMasterdata(t *testing.T) {
 	const ver = 20240101
-	const md5 = "ab12cd34"
 	assetBytes := []byte("fake-unity3d-bytes")
+	// 清单里的 md5 既定位 pool 路径，又是下载后的校验依据，故取内容的真实摘要。
+	sum := fmt.Sprintf("%x", md5.Sum(assetBytes))
 
 	mux := http.NewServeMux()
 	base := "/Manifest/AssetBundles/Android/20240101/"
@@ -24,10 +27,10 @@ func TestFetchMasterdata(t *testing.T) {
 	})
 	// 子清单：列出 masterdata 资源。
 	mux.HandleFunc(base+"manifest/masterdata_assetmanifest", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte("a/masterdata_master.unity3d," + md5 + ",mdb,999\n"))
+		_, _ = w.Write([]byte("a/masterdata_master.unity3d," + sum + ",mdb,999\n"))
 	})
 	// pool 资源。
-	mux.HandleFunc("/pool/AssetBundles/Android/ab/"+md5, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/pool/AssetBundles/Android/"+sum[:2]+"/"+sum, func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write(assetBytes)
 	})
 	srv := httptest.NewServer(mux)
@@ -40,6 +43,27 @@ func TestFetchMasterdata(t *testing.T) {
 	}
 	if string(got) != string(assetBytes) {
 		t.Fatalf("下载内容不符: %q", got)
+	}
+}
+
+// 内容与清单 md5 不符必须报错：LZ4 与 SQLite 都不会拦下坏字节，放行就会被固化进版本缓存。
+func TestFetchMasterdataChecksumMismatch(t *testing.T) {
+	const ver = 20240101
+	const sum = "ab12cd34" // 与实际内容不符
+	mux := http.NewServeMux()
+	base := "/Manifest/AssetBundles/Android/20240101/"
+	mux.HandleFunc(base+"manifest/manifest_assetmanifest", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("a/masterdata_master.unity3d," + sum + ",mdb,999\n"))
+	})
+	mux.HandleFunc("/pool/AssetBundles/Android/ab/"+sum, func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("corrupted"))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	s := NewSource(WithRes(urlx.MustParseBase(srv.URL)))
+	if _, err := s.FetchMasterdata(context.Background(), ver); err == nil {
+		t.Fatal("md5 不符应报错")
 	}
 }
 

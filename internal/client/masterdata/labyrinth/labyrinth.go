@@ -3,8 +3,9 @@
 package labyrinth
 
 import (
+	"cmp"
 	"context"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
@@ -65,7 +66,7 @@ func (a *Impl) EnterGuilds(ctx context.Context) ([]Guild, error) {
 	}); err != nil {
 		return nil, err
 	}
-	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	slices.SortFunc(out, func(a, b Guild) int { return cmp.Compare(a.ID, b.ID) })
 	return out, nil
 }
 
@@ -137,7 +138,7 @@ func (a *Impl) BossUnitIDsByQuest(ctx context.Context) (map[int][]int, error) {
 			seen[uid] = struct{}{}
 			units = append(units, uid)
 		}
-		sort.Ints(units)
+		slices.Sort(units)
 		out[quest] = units
 	}
 	return out, nil

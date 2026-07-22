@@ -2,6 +2,7 @@ package asset
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"io"
 	"net/http"
@@ -53,14 +54,20 @@ func (s *Source) manifestBase(ver int) *url.URL {
 
 // Resolve 拉取并递归解析清单，返回 url→Content 注册表。
 func (s *Source) Resolve(ctx context.Context, ver int) (map[string]*Content, error) {
+	return s.resolve(ctx, ver, "")
+}
+
+// resolve 解析清单树。want 非空时一旦收录该 url 即停止展开余下子清单——清单树有几十个子清单、
+// 逐个拉取是串行 HTTP，而我们通常只为了取其中一个条目。
+func (s *Source) resolve(ctx context.Context, ver int, want string) (map[string]*Content, error) {
 	registry := make(map[string]*Content)
-	if err := s.resolveManifest(ctx, s.manifestBase(ver), "manifest/manifest_assetmanifest", "AssetBundles/Android", registry); err != nil {
+	if err := s.resolveManifest(ctx, s.manifestBase(ver), "manifest/manifest_assetmanifest", "AssetBundles/Android", registry, want); err != nil {
 		return nil, err
 	}
 	return registry, nil
 }
 
-func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, category string, registry map[string]*Content) error {
+func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, category string, registry map[string]*Content, want string) error {
 	text, err := s.getText(ctx, base.ResolveReference(&url.URL{Path: ref}))
 	if err != nil {
 		return fmt.Errorf("拉取清单 %s: %w", ref, err)
@@ -77,9 +84,15 @@ func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, catego
 		// （每层还附带一次 HTTP 拉取），最终撑爆调用栈。registry 天然就是「已访问」集合。
 		_, seen := registry[c.URL]
 		registry[c.URL] = c
+		if want != "" && c.URL == want {
+			return nil
+		}
 		if c.isManifest() && !seen {
-			if err := s.resolveManifest(ctx, base, c.URL, category, registry); err != nil {
+			if err := s.resolveManifest(ctx, base, c.URL, category, registry, want); err != nil {
 				return err
+			}
+			if _, done := registry[want]; want != "" && done {
+				return nil
 			}
 		}
 	}
@@ -92,12 +105,21 @@ func (s *Source) Download(ctx context.Context, c *Content) ([]byte, error) {
 		return nil, fmt.Errorf("无效 md5: %q", c.MD5)
 	}
 	ref := &url.URL{Path: "pool/" + c.Category + "/" + c.MD5[:2] + "/" + c.MD5}
-	return s.getBytes(ctx, s.res.ResolveReference(ref))
+	b, err := s.getBytes(ctx, s.res.ResolveReference(ref))
+	if err != nil {
+		return nil, err
+	}
+	// 校验清单给出的 md5：LZ4 block 格式自身不带校验和，坏字节能一路走到 SQLite 并被
+	// EnsureDB 固化进版本缓存，此后每次启动都命中这份坏库。这是唯一能拦住它的地方。
+	if sum := fmt.Sprintf("%x", md5.Sum(b)); sum != c.MD5 {
+		return nil, fmt.Errorf("资源 %s 校验失败：md5 %s != %s", c.URL, sum, c.MD5)
+	}
+	return b, nil
 }
 
 // FetchMasterdata 解析清单、定位并下载 masterdata_master.unity3d 的原始字节。
 func (s *Source) FetchMasterdata(ctx context.Context, ver int) ([]byte, error) {
-	registry, err := s.Resolve(ctx, ver)
+	registry, err := s.resolve(ctx, ver, masterdataURL)
 	if err != nil {
 		return nil, err
 	}

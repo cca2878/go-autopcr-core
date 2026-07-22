@@ -164,6 +164,8 @@ func decompressBlocks(raw []byte, blocks []block, dataOff int) ([]byte, error) {
 	if total > int64(len(raw))*maxLZ4Expansion+16 {
 		return nil, fmt.Errorf("块表声称的解压总长 %d 与文件长度 %d 不相称", total, len(raw))
 	}
+	// 就地解到 blob 的尾部：容量已按总长备好，逐块「先解到临时缓冲再 append」会让几十 MB 的
+	// 母数据库在解包时被多分配、多拷贝一整遍。
 	blob := make([]byte, 0, total)
 	cur := dataOff
 	for i, blk := range blocks {
@@ -171,40 +173,53 @@ func decompressBlocks(raw []byte, blocks []block, dataOff int) ([]byte, error) {
 		if cur < 0 || end > len(raw) {
 			return nil, fmt.Errorf("数据块 %d 越界（[%d:%d] / %d）", i, cur, end, len(raw))
 		}
-		part, err := decompress(raw[cur:end], int(blk.uncompressedSize), uint32(blk.flags))
-		if err != nil {
+		n := len(blob)
+		blob = blob[:n+int(blk.uncompressedSize)]
+		if err := decompressInto(blob[n:], raw[cur:end], uint32(blk.flags)); err != nil {
 			return nil, fmt.Errorf("解压数据块 %d: %w", i, err)
 		}
-		blob = append(blob, part...)
 		cur = end
 	}
 	return blob, nil
 }
 
-// decompress 按压缩类型解压一个块 / blocksInfo。
+// decompress 按压缩类型解压一个块 / blocksInfo，自行分配输出缓冲。
 func decompress(chunk []byte, uncompressedSize int, compFlag uint32) ([]byte, error) {
+	// 解压后大小取自文件内容、不可信：先按 LZ4 的理论最大膨胀率核一遍，坏数据才不会
+	// 在这里变成一次巨额分配。
+	if uncompressedSize < 0 || uncompressedSize > len(chunk)*maxLZ4Expansion+16 {
+		return nil, fmt.Errorf("声称的解压后大小 %d 与压缩块长度 %d 不相称", uncompressedSize, len(chunk))
+	}
+	dst := make([]byte, uncompressedSize)
+	if err := decompressInto(dst, chunk, compFlag); err != nil {
+		return nil, err
+	}
+	return dst, nil
+}
+
+// decompressInto 把一个块解压进【已备好长度】的 dst，不做分配。
+func decompressInto(dst, chunk []byte, compFlag uint32) error {
 	switch compFlag & flagCompressionMask {
 	case compNone:
-		return chunk, nil
-	case compLZ4, compLZ4HC:
-		// Unity 用 LZ4 block 格式（非 frame），需显式给出解压后大小。该大小取自文件内容、
-		// 不可信：先按 LZ4 的理论最大膨胀率核一遍，坏数据才不会变成一次巨额分配。
-		if uncompressedSize < 0 || uncompressedSize > len(chunk)*maxLZ4Expansion+16 {
-			return nil, fmt.Errorf("声称的解压后大小 %d 与压缩块长度 %d 不相称", uncompressedSize, len(chunk))
+		if len(chunk) != len(dst) {
+			return fmt.Errorf("未压缩块长度 %d != %d", len(chunk), len(dst))
 		}
-		dst := make([]byte, uncompressedSize)
+		copy(dst, chunk)
+		return nil
+	case compLZ4, compLZ4HC:
+		// Unity 用 LZ4 block 格式（非 frame），需显式给出解压后大小。
 		n, err := lz4.UncompressBlock(chunk, dst)
 		if err != nil {
-			return nil, fmt.Errorf("lz4 解压: %w", err)
+			return fmt.Errorf("lz4 解压: %w", err)
 		}
-		if n != uncompressedSize {
-			return nil, fmt.Errorf("lz4 解压后大小 %d != %d", n, uncompressedSize)
+		if n != len(dst) {
+			return fmt.Errorf("lz4 解压后大小 %d != %d", n, len(dst))
 		}
-		return dst, nil
+		return nil
 	case compLZMA:
-		return nil, errors.New("该资源使用 LZMA 压缩块，本实现暂不支持（masterdata 未使用）")
+		return errors.New("该资源使用 LZMA 压缩块，本实现暂不支持（masterdata 未使用）")
 	default:
-		return nil, fmt.Errorf("未知压缩类型 %d", compFlag&flagCompressionMask)
+		return fmt.Errorf("未知压缩类型 %d", compFlag&flagCompressionMask)
 	}
 }
 

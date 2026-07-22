@@ -86,13 +86,14 @@ func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 	return dbPath, nil
 }
 
+// unhashFile 就地反混淆 path 处的库。Close 的错误必须上报而非吞掉：紧随其后的 rename 会把
+// 这份文件变成永久缓存，若收尾时刷盘失败却当成功，坏库会一直被后续启动命中。
 func (m *Manager) unhashFile(path string) error {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = db.Close() }()
 	db.SetMaxOpenConns(1)
 	_, err = Unhash(db, m.rainbow)
-	return err
+	return cmp.Or(err, db.Close())
 }

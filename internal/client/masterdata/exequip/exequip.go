@@ -5,7 +5,8 @@ package exequip
 import (
 	"context"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
@@ -250,12 +251,7 @@ func (s *Snapshot) SubStatusCandidates() []int {
 			seen[st] = true
 		}
 	}
-	out := make([]int, 0, len(seen))
-	for st := range seen {
-		out = append(out, st)
-	}
-	sort.Ints(out)
-	return out
+	return slices.Sorted(maps.Keys(seen))
 }
 
 // StatusSupported 报告某 EX 装备是否支持某副属性（对应 ref status not in sub_status_data 的反）。
@@ -281,11 +277,7 @@ func (s *Snapshot) SubStatusStr(exEquipmentID int, subs []SubStatusEntry) string
 	if len(sum) == 0 {
 		return "空"
 	}
-	statuses := make([]int, 0, len(sum))
-	for st := range sum {
-		statuses = append(statuses, st)
-	}
-	sort.Ints(statuses)
+	statuses := slices.Sorted(maps.Keys(sum))
 	parts := make([]string, 0, len(statuses))
 	for _, st := range statuses {
 		name := ParamNameCh(st)
