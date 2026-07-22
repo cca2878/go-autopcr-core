@@ -188,7 +188,7 @@ func (startReroll) Run(ctx context.Context, gc client.GameClient, rc *automation
 			return err
 		}
 		routes, reason := f.findRoutes(difficulty, enter.Blocks)
-		f.emitMap(rc, difficulty, guildID, enter.Blocks, routes != nil)
+		f.emitMap(rc, difficulty, guildID, attempt, maxCount, enter.Blocks, routes != nil)
 
 		if routes != nil {
 			perfect := ""
@@ -225,7 +225,15 @@ func maxUnlockedDifficulty(top *lab.TopResult) int {
 }
 
 // emitMap 发射一次进入的地图（生成分布采样：每格 area/column/row/type/quest/boss + 是否命中）。
-func (f *finder) emitMap(rc *automation.RunContext, difficulty, guildID int, blocks []lab.Block, matched bool) {
+//
+// 除地图本身还带上**停止规则**（attempt/max_count + 匹配条件）。循环命中即停，
+// 但「首次命中」是个停止时间——{N≥i} 只由前 i-1 次抽取决定——故由 Wald 恒等式，
+// 池化频次对地图生成分布仍然一致，重掷样本不作废。attempt 的价值不在去偏，而在让
+// 分析侧能**检验**这个前提（命中是否真的只出现在末次）、能按会话聚类算标准误
+// （独立单元是会话而非格子），并能识别跑满 max_count 而截断的会话。匹配条件因人而异，
+// 不记录则 matched 在账号间不可比。会话边界由同一批次内 attempt 的重复值界定，
+// 无需在 core 里造随机 run id。
+func (f *finder) emitMap(rc *automation.RunContext, difficulty, guildID, attempt, maxCount int, blocks []lab.Block, matched bool) {
 	arr := make([]map[string]any, len(blocks))
 	for i, b := range blocks {
 		var bossUnits []int
@@ -246,7 +254,24 @@ func (f *finder) emitMap(rc *automation.RunContext, difficulty, guildID int, blo
 		"guild_id":   guildID,
 		"matched":    matched,
 		"blocks":     arr,
+		// 停止规则与匹配条件，供分析侧检验前提、切会话、跨账号比对。
+		"attempt":          attempt,
+		"max_count":        maxCount,
+		"perfect_start":    f.perfectStart,
+		"third_block_type": f.thirdBlockType,
+		"area3_boss":       sortedKeys(f.area3Bosses),
+		"area5_boss":       sortedKeys(f.area5Bosses),
 	})
+}
+
+// sortedKeys 把 unit_id 集合摊成有序切片，让遥测载荷对同一组选择稳定可比。
+func sortedKeys(set map[int]bool) []int {
+	out := make([]int, 0, len(set))
+	for id := range set {
+		out = append(out, id)
+	}
+	slices.Sort(out)
+	return out
 }
 
 // choiceInt 把单选字符串转为 int（失败取 def）。
