@@ -191,6 +191,43 @@ func TestRelogin_DefaultPolicyFailsFast(t *testing.T) {
 	}
 }
 
+// TestRelogin_DefaultRecoversNextRequest 是用户最关心的保证在最小尺度上的复现：默认档下
+// 被顶号，当次请求失败（SessionBreakError），但【下一次请求会自己重登恢复，无需外部主动登录】。
+//
+// 这正是 GUI 的用法流程——同一个持久 Session 反复 Run：某个模块中途顶号→该任务失败，用户
+// 再点运行任何模块，下一次请求前 ensure 自动补上重登。绝不会卡在「必须先手动重新登录」。
+func TestRelogin_DefaultRecoversNextRequest(t *testing.T) {
+	g, logins := newGuard()
+	ctx := context.Background() // 默认档（未声明策略）
+
+	// 第一次请求：执行中被顶号 → 当次失败，会话标记失效，但不就地重登。
+	calls, err := runGuard(ctx, g, &fakeResp{}, []error{apiErr(6002, 1, "请回到标题界面")})
+	if _, ok := gameerr.AsSessionBreak(err); !ok {
+		t.Fatalf("首次应因顶号返回 SessionBreakError，得 %v", err)
+	}
+	if calls != 1 || *logins != 0 {
+		t.Fatalf("首次不应就地重登，得 calls=%d logins=%d", calls, *logins)
+	}
+	if !g.stale {
+		t.Fatal("会话应被标记失效")
+	}
+
+	// 第二次请求：无需任何外部干预，ensure 自动重登并放行——这就是「不必主动 relogin」。
+	calls, err = runGuard(ctx, g, &fakeResp{}, nil)
+	if err != nil {
+		t.Fatalf("下一次请求应自动恢复，得 %v", err)
+	}
+	if *logins != 1 {
+		t.Errorf("下一次请求前应自动重登 1 次，得 %d", *logins)
+	}
+	if calls != 1 {
+		t.Errorf("重登后请求应正常发出，得 %d 次", calls)
+	}
+	if g.stale {
+		t.Error("恢复后不应再残留失效标记")
+	}
+}
+
 // TestRelogin_BadCredentialNoRelogin 断言 107 不触发重登（它的 message 同样含特征串）。
 func TestRelogin_BadCredentialNoRelogin(t *testing.T) {
 	g, logins := newGuard()
