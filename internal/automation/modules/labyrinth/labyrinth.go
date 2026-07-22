@@ -7,7 +7,8 @@ package labyrinth
 import (
 	"context"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strconv"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
@@ -195,7 +196,7 @@ func (startReroll) Run(ctx context.Context, gc client.GameClient, rc *automation
 				perfect = "完美"
 			}
 			rc.Logf("刷到%s路线，总尝试次数：%d", perfect, attempt)
-			for _, area := range sortedKeys(routes) {
+			for _, area := range slices.Sorted(maps.Keys(routes)) {
 				rc.Logf("%s", f.formatRoute(area, routes[area], enter.Blocks))
 			}
 			return nil
@@ -220,16 +221,7 @@ func maxUnlockedDifficulty(top *lab.TopResult) int {
 	if len(top.ClearedDifficulties) == 0 {
 		return 1
 	}
-	mx := 0
-	for _, d := range top.ClearedDifficulties {
-		if d > mx {
-			mx = d
-		}
-	}
-	if mx+1 > 5 {
-		return 5
-	}
-	return mx + 1
+	return min(slices.Max(top.ClearedDifficulties)+1, 5)
 }
 
 // emitMap 发射一次进入的地图（生成分布采样：每格 area/column/row/type/quest/boss + 是否命中）。
@@ -241,7 +233,7 @@ func (f *finder) emitMap(rc *automation.RunContext, difficulty, guildID int, blo
 			for uid := range f.bossUnitIDs(b) {
 				bossUnits = append(bossUnits, uid)
 			}
-			sort.Ints(bossUnits)
+			slices.Sort(bossUnits)
 		}
 		arr[i] = map[string]any{
 			"area": b.Area, "column": b.Column, "row": b.Row,
@@ -264,14 +256,4 @@ func choiceInt(s string, def int) int {
 		return def
 	}
 	return n
-}
-
-// sortedKeys 返回 routes 的区域号升序列表。
-func sortedKeys(routes map[int][]lab.Block) []int {
-	keys := make([]int, 0, len(routes))
-	for k := range routes {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-	return keys
 }

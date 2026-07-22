@@ -2,9 +2,11 @@
 package exequip
 
 import (
+	"cmp"
 	"context"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -100,11 +102,7 @@ func (rainbowEnhance) Candidates(ctx context.Context, gc client.GameClient) (map
 // Skip("无彩装")。
 func rainbowOptions(gc client.GameClient, snap *mdexequip.Snapshot) []automation.Option {
 	equips := gc.Data().ExEquips
-	serials := make([]int, 0, len(equips))
-	for sid := range equips {
-		serials = append(serials, sid)
-	}
-	sort.Ints(serials)
+	serials := slices.Sorted(maps.Keys(equips))
 
 	out := make([]automation.Option, 0, len(serials))
 	for _, sid := range serials {
@@ -145,11 +143,7 @@ func (rainbowEnhance) Run(ctx context.Context, gc client.GameClient, rc *automat
 // viewAttributes 列出所有 5 星彩装的 id 与当前副属性（按 serial_id 升序稳定输出）。
 func viewAttributes(gc client.GameClient, rc *automation.RunContext, snap *mdexequip.Snapshot) error {
 	equips := gc.Data().ExEquips
-	serials := make([]int, 0, len(equips))
-	for sid := range equips {
-		serials = append(serials, sid)
-	}
-	sort.Ints(serials)
+	serials := slices.Sorted(maps.Keys(equips))
 
 	var lines []string
 	for _, sid := range serials {
@@ -199,7 +193,7 @@ func doEnhance(ctx context.Context, gc client.GameClient, rc *automation.RunCont
 		}
 	}
 	if len(invalid) > 0 {
-		sort.Ints(invalid)
+		slices.Sort(invalid)
 		names := make([]string, len(invalid))
 		for i, st := range invalid {
 			names[i] = mdexequip.ParamNameCh(st)
@@ -462,16 +456,12 @@ func entriesFromPending(subs []apiexequip.SubStatus) []mdexequip.SubStatusEntry 
 	return out
 }
 
+// sortedItemKeys 返回按 (类型, id) 升序的库存键——消耗清单要稳定输出，不能泄漏 map 迭代序。
 func sortedItemKeys(m map[mdexequip.ItemKey]int) []mdexequip.ItemKey {
-	keys := make([]mdexequip.ItemKey, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		if keys[i].Type != keys[j].Type {
-			return keys[i].Type < keys[j].Type
+	return slices.SortedFunc(maps.Keys(m), func(a, b mdexequip.ItemKey) int {
+		if c := cmp.Compare(a.Type, b.Type); c != 0 {
+			return c
 		}
-		return keys[i].ID < keys[j].ID
+		return cmp.Compare(a.ID, b.ID)
 	})
-	return keys
 }
