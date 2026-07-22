@@ -2,7 +2,6 @@ package asset
 
 import (
 	"context"
-	"crypto/md5"
 	"fmt"
 	"io"
 	"net/http"
@@ -53,25 +52,33 @@ func (s *Source) manifestBase(ver int) *url.URL {
 }
 
 // Resolve 拉取并递归解析清单，返回 url→Content 注册表。
+//
+// 【必须走完整棵树】：同一个逻辑 url 会在多个子清单里重复出现，且以【最后一条】为准——
+// 实测 a/masterdata_master.unity3d 先出现的那条给的是内容摘要、按它拼出的 pool 路径 404，
+// 最后一条给的才是 pool 键。任何「命中即停」的优化都会取错条目。
 func (s *Source) Resolve(ctx context.Context, ver int) (map[string]*Content, error) {
-	return s.resolve(ctx, ver, "")
-}
-
-// resolve 解析清单树。want 非空时一旦收录该 url 即停止展开余下子清单——清单树有几十个子清单、
-// 逐个拉取是串行 HTTP，而我们通常只为了取其中一个条目。
-func (s *Source) resolve(ctx context.Context, ver int, want string) (map[string]*Content, error) {
 	registry := make(map[string]*Content)
-	if err := s.resolveManifest(ctx, s.manifestBase(ver), "manifest/manifest_assetmanifest", "AssetBundles/Android", registry, want); err != nil {
+	if err := s.resolveManifest(ctx, s.manifestBase(ver), "manifest/manifest_assetmanifest", "AssetBundles/Android", registry, nil); err != nil {
 		return nil, err
 	}
 	return registry, nil
 }
 
-func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, category string, registry map[string]*Content, want string) error {
+// resolveManifest 递归展开一张清单。ancestors 是当前递归路径上的清单集合，仅用于防环：
+// 清单内容由服务端下发，自引用/互引用会让这里无限递归下去（每层还附带一次 HTTP 拉取）。
+// 注意只能按【路径】去重而非全局去重——同一张子清单在树中被引用多次是合法的，跳过重复展开
+// 会改变「后者覆盖前者」的最终取值。
+func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, category string, registry map[string]*Content, ancestors map[string]bool) error {
 	text, err := s.getText(ctx, base.ResolveReference(&url.URL{Path: ref}))
 	if err != nil {
 		return fmt.Errorf("拉取清单 %s: %w", ref, err)
 	}
+	if ancestors == nil {
+		ancestors = map[string]bool{}
+	}
+	ancestors[ref] = true
+	defer delete(ancestors, ref)
+
 	for line := range strings.SplitSeq(text, "\n") {
 		if strings.TrimSpace(line) == "" {
 			continue
@@ -80,19 +87,10 @@ func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, catego
 		if !ok {
 			continue
 		}
-		// 已见过的条目不再展开：清单内容由服务端下发，自引用/互引用会让这里无限递归下去
-		// （每层还附带一次 HTTP 拉取），最终撑爆调用栈。registry 天然就是「已访问」集合。
-		_, seen := registry[c.URL]
 		registry[c.URL] = c
-		if want != "" && c.URL == want {
-			return nil
-		}
-		if c.isManifest() && !seen {
-			if err := s.resolveManifest(ctx, base, c.URL, category, registry, want); err != nil {
+		if c.isManifest() && !ancestors[c.URL] {
+			if err := s.resolveManifest(ctx, base, c.URL, category, registry, ancestors); err != nil {
 				return err
-			}
-			if _, done := registry[want]; want != "" && done {
-				return nil
 			}
 		}
 	}
@@ -104,22 +102,15 @@ func (s *Source) Download(ctx context.Context, c *Content) ([]byte, error) {
 	if len(c.MD5) < 2 {
 		return nil, fmt.Errorf("无效 md5: %q", c.MD5)
 	}
+	// 注意 c.MD5 是 pool 的【寻址键】，不保证等于内容摘要：实测 masterdata 条目的该字段为
+	// 16 位十六进制，而下下来的内容 md5 是另一个 32 位值。故此处不能拿它当校验和。
 	ref := &url.URL{Path: "pool/" + c.Category + "/" + c.MD5[:2] + "/" + c.MD5}
-	b, err := s.getBytes(ctx, s.res.ResolveReference(ref))
-	if err != nil {
-		return nil, err
-	}
-	// 校验清单给出的 md5：LZ4 block 格式自身不带校验和，坏字节能一路走到 SQLite 并被
-	// EnsureDB 固化进版本缓存，此后每次启动都命中这份坏库。这是唯一能拦住它的地方。
-	if sum := fmt.Sprintf("%x", md5.Sum(b)); sum != c.MD5 {
-		return nil, fmt.Errorf("资源 %s 校验失败：md5 %s != %s", c.URL, sum, c.MD5)
-	}
-	return b, nil
+	return s.getBytes(ctx, s.res.ResolveReference(ref))
 }
 
 // FetchMasterdata 解析清单、定位并下载 masterdata_master.unity3d 的原始字节。
 func (s *Source) FetchMasterdata(ctx context.Context, ver int) ([]byte, error) {
-	registry, err := s.resolve(ctx, ver, masterdataURL)
+	registry, err := s.Resolve(ctx, ver)
 	if err != nil {
 		return nil, err
 	}
