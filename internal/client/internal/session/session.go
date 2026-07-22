@@ -76,11 +76,42 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential)
 	}
 
 	// 6) 主页索引：任务通关/支线状态（剧情解锁门禁等所需）经折叠中间件落入状态
-	if _, err := transport.Call[account.HomeIndexResponse](ctx, c, &account.HomeIndexRequest{MessageID: 1, IsFirst: 1, TipsIDList: []int{}}); err != nil {
+	home, err := transport.Call[account.HomeIndexResponse](ctx, c, &account.HomeIndexRequest{MessageID: 1, IsFirst: 1, TipsIDList: []int{}})
+	if err != nil {
+		return err
+	}
+
+	// 7) 刚通关普通 8-1 时补一发 daily_task/top——权威客户端正是在这里解锁日常任务，
+	// 少了它，该状态的账号整局都没有日常任务可领。
+	if needsDailyTaskUnlock(home) {
+		if _, err := transport.Call[account.DailyTaskTopResponse](ctx, c,
+			&account.DailyTaskTopRequest{SettingAlchemyCount: 1}); err != nil {
+			return err
+		}
+	}
+
+	// 8) 角色扮演转蛋首页：权威客户端登录序列的最后一步，无条件发出。
+	if _, err := transport.Call[account.UnitRoleGachaIndexResponse](ctx, c, &account.UnitRoleGachaIndexRequest{}); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// dailyTaskUnlockQuest 是普通 8-1；权威客户端在它「已领取」时发 daily_task/top 解锁日常任务。
+const dailyTaskUnlockQuest = 11008001
+
+// missionStatusAlreadyReceive 是 eMissionStatusType.AlreadyReceive。
+const missionStatusAlreadyReceive = 2
+
+// needsDailyTaskUnlock 复刻权威客户端的判据：任务列表里普通 8-1 的 result_type 为已领取。
+func needsDailyTaskUnlock(home *account.HomeIndexResponse) bool {
+	for _, q := range home.QuestList {
+		if q.QuestID == dailyTaskUnlockQuest && q.ResultType == missionStatusAlreadyReceive {
+			return true
+		}
+	}
+	return false
 }
 
 // maxRiskAttempts 是触发风控后允许的验证码重试轮数（复刻原项目上限）。
