@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"reflect"
-	"strings"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
@@ -54,8 +53,9 @@ func ErrorHandler(retries int) Middleware {
 					ZeroResponse(out)
 					continue
 				}
+				// 兜底：内层已按同一判据升级过（见 Client.transport），此处覆盖未经它的路径。
 				var apiErr *gameerr.APIError
-				if errors.As(err, &apiErr) && strings.Contains(apiErr.Message, "维护") {
+				if errors.As(err, &apiErr) && gameerr.IsFatalBusiness(apiErr.ResultCode, apiErr.Message) {
 					return header, gameerr.Panic("%s", apiErr.Message)
 				}
 				return header, err

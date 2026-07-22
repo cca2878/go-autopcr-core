@@ -13,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/credential"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi"
@@ -79,6 +80,10 @@ type client struct {
 	md    *masterdata.Query
 	guard *sessionGuard // 严重错误码 → 重走登录序列（见 relogin.go）
 
+	// callMu 串行化「一次调用的全过程」：网络重试 + 状态折叠 + 传输。传输层自己那把锁只
+	// 盖住 HTTP 那一段，折叠在它外面，两个并发请求会同时改 PlayerState 的 map/slice。
+	callMu sync.Mutex
+
 	// masterdata 装配所需（登录后用下发 res 构建源与 Manager）。
 	mdEnabled  bool
 	mdCacheDir string
@@ -112,10 +117,11 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 	}
 	g.guard = &sessionGuard{login: g.relogin, expired: g.sessionExpired, logger: o.logger}
 
-	// 中间件链（外→内）：会话重登 → 错误处理 → 状态折叠 → 传输。
+	// 中间件链（外→内）：会话重登 → 串行化 → 错误处理 → 状态折叠 → 传输。
 	// 重登在最外层：网络重试应先耗尽，且重登发出的登录请求要经过折叠中间件才能更新状态。
 	tr.Use(
 		g.guard.middleware(),
+		serializeMiddleware(&g.callMu),
 		transport.ErrorHandler(transport.DefaultRetries),
 		foldingMiddleware(state, registry),
 	)
@@ -178,6 +184,21 @@ func (g *client) Masterdata() masterdata.Reader {
 func (g *client) ServerTime() int64 { return g.tr.ServerTime() }
 
 func (g *client) Close() error { return g.md.Close() }
+
+// serializeMiddleware 让「重试 + 折叠 + 传输」整体互斥（对应原项目把 mutexhandler 注册在
+// 最外层的做法——它那把锁同样盖住 datamgr 的折叠）。
+//
+// 位置很关键：它必须在重登守卫【之内】。守卫的 ensure 会在本层加锁【之前】跑完整套登录
+// 序列，那些请求自身也走这条链；若把锁放到守卫之外，重登就会在同一把非重入锁上自死锁。
+func serializeMiddleware(mu *sync.Mutex) transport.Middleware {
+	return func(next transport.Handler) transport.Handler {
+		return func(ctx context.Context, req protocol.Request, out any) (protocol.ResponseHeader, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			return next(ctx, req, out)
+		}
+	}
+}
 
 // foldingMiddleware 在每次成功响应后，把响应折叠进玩家状态
 // （对应原项目 datamgr 作为管道组件拦截响应的做法）。

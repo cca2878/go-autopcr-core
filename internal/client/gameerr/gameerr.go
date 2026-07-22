@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // PanicError 表示致命错误：应中止整条流程（对应原项目 PanicError）。
@@ -86,6 +87,21 @@ type APIError struct {
 
 func (e *APIError) Error() string {
 	return fmt.Sprintf("api error (result_code=%d, status=%d): %s", e.ResultCode, e.Status, e.Message)
+}
+
+// resultCodeUnrecoverable 是服务端表示「本次请求不可恢复」的业务码（原项目对 203 的处理）。
+const resultCodeUnrecoverable = 203
+
+// maintenanceMarker 是维护中错误消息的特征串（原项目按消息文本判定维护）。
+const maintenanceMarker = "维护"
+
+// IsFatalBusiness 报告一个业务错误是否应升级为 PanicError（＝重试与重登都救不了，须直接终止）。
+//
+// 判据集中在此：这类「哪些业务码/消息算严重」的知识属于游戏错误词汇表，散在传输层与中间件里
+// 就会出现改一处漏两处。会话失效那一类的判据不在这里——它描述的是会话生命周期而非终止性，
+// 归 client 的 classifySession 所有（见 relogin.go）。
+func IsFatalBusiness(resultCode int, message string) bool {
+	return resultCode == resultCodeUnrecoverable || strings.Contains(message, maintenanceMarker)
 }
 
 // SessionBreakError 表示请求在【会话失效】处被打断：服务端丢弃了会话（顶号、数据不一致等），

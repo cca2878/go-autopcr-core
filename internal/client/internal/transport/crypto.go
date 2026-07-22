@@ -114,10 +114,13 @@ func packCrypted(v any, key []byte) ([]byte, error) {
 // unpackCrypted 将响应体（base64 文本）解码并解密，返回去填充后的 msgpack 字节
 // （复刻 apiclient._unpack）。
 func unpackCrypted(b64 []byte) ([]byte, error) {
-	raw, err := base64.StdEncoding.DecodeString(string(b64))
+	// 直接解到自备缓冲，省掉 DecodeString 为 []byte→string 转换而做的整份拷贝（响应体可达数百 KB）。
+	raw := make([]byte, base64.StdEncoding.DecodedLen(len(b64)))
+	n, err := base64.StdEncoding.Decode(raw, b64)
 	if err != nil {
 		return nil, fmt.Errorf("响应 base64 解码失败: %w", err)
 	}
+	raw = raw[:n]
 	plain, _, err := decrypt(raw)
 	if err != nil {
 		return nil, err
