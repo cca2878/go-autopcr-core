@@ -121,6 +121,11 @@ func (p Param) validate(v any) error {
 			return fmt.Errorf("应为 %v 之一", p.Bounds.Choices)
 		}
 	case ParamMultiChoice:
+		// 与其余类型一致地拒绝 null：resolve 把 null 当「未提供」回落默认值，若此处放行，
+		// 用户清空的多选会被静默改回默认选项。要表达空选择请传 []。
+		if v == nil {
+			return fmt.Errorf("应为字符串数组（清空请传 []）")
+		}
 		ss, ok := asStringSlice(v)
 		if !ok {
 			return fmt.Errorf("应为字符串数组")
@@ -174,18 +179,28 @@ func Validate(params []Param, provided map[string]any) error {
 	if len(provided) == 0 {
 		return nil
 	}
-	pm := make(map[string]Param, len(params))
+	// 按【参数声明序】而非 map 迭代序校验：否则同一份非法配置每次跑出来的报错都可能不同，
+	// 破坏「同输入同输出」的确定性契约（也让外壳侧的golden 比对失效）。
+	declared := make(map[string]struct{}, len(params))
 	for _, p := range params {
-		pm[p.Name] = p
-	}
-	for name, v := range provided {
-		p, ok := pm[name]
+		declared[p.Name] = struct{}{}
+		v, ok := provided[p.Name]
 		if !ok {
-			return fmt.Errorf("未知参数 %q", name)
+			continue
 		}
 		if err := p.validate(v); err != nil {
-			return fmt.Errorf("参数 %q: %w", name, err)
+			return fmt.Errorf("参数 %q: %w", p.Name, err)
 		}
+	}
+	unknown := make([]string, 0, len(provided))
+	for name := range provided {
+		if _, ok := declared[name]; !ok {
+			unknown = append(unknown, name)
+		}
+	}
+	if len(unknown) > 0 {
+		slices.Sort(unknown) // 同理：未知参数也按名排序，报错稳定
+		return fmt.Errorf("未知参数 %q", unknown[0])
 	}
 	return nil
 }

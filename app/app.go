@@ -15,6 +15,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/url"
 
@@ -121,18 +122,37 @@ func (s *Session) Login(ctx context.Context, channel, uid, accessKey string, wit
 		_ = gc.Close()
 		return err
 	}
+	// 重复 Login（如换号或凭据轮换）须先释放上一个客户端，否则其母数据库连接会一直泄漏。
+	if s.gc != nil {
+		_ = s.gc.Close()
+	}
 	s.gc = gc
 	return nil
 }
 
-// Player 返回登录后聚合的玩家状态（须先 Login 成功）。
-func (s *Session) Player() *PlayerState { return s.gc.Data() }
+// Player 返回登录后聚合的玩家状态；未登录时为 nil。
+func (s *Session) Player() *PlayerState {
+	if s.gc == nil {
+		return nil
+	}
+	return s.gc.Data()
+}
 
 // Masterdata 返回母数据只读查询面；未启用（或未登录）时为 nil。
-func (s *Session) Masterdata() Reader { return s.gc.Masterdata() }
+func (s *Session) Masterdata() Reader {
+	if s.gc == nil {
+		return nil
+	}
+	return s.gc.Masterdata()
+}
 
-// ServerTime 返回最近同步到的服务器时间（Unix 秒）。
-func (s *Session) ServerTime() int64 { return s.gc.ServerTime() }
+// ServerTime 返回最近同步到的服务器时间（Unix 秒）；未登录时为 0。
+func (s *Session) ServerTime() int64 {
+	if s.gc == nil {
+		return 0
+	}
+	return s.gc.ServerTime()
+}
 
 // Run 依次执行 tasks，返回每个任务的结果与终止因由（须先 Login 成功）。单任务=长度 1、批处理=
 // 多元素，统一走 automation.Run；单个任务失败/跳过不影响其余。
@@ -140,6 +160,9 @@ func (s *Session) ServerTime() int64 { return s.gc.ServerTime() }
 // obs 是可选的进度端口（见 Observer）：非 nil 时按任务边界推送进度事件，nil 即无进度。返回的
 // error 非 nil 表示【被取消】（ctx 取消/超时），此时 []Result 只含已完成任务；nil 表示全部跑完。
 func (s *Session) Run(ctx context.Context, tasks []Task, obs Observer) ([]Result, error) {
+	if s.gc == nil {
+		return nil, errors.New("会话未登录：请先 Login")
+	}
 	return automation.Run(ctx, s.gc, s.registry, tasks, obs, s.collector)
 }
 

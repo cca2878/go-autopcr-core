@@ -239,9 +239,10 @@ type Observer func(Event)
 // 为 nil 即无进度、行为与不传观察者完全一致。
 //
 // 取消（边界语义 / B1）：在开跑下一个任务前检查 ctx，已取消则【停止调度后续任务】，返回【已完成
-// 部分】+ ctx.Err()。正在执行的任务因共享 ctx 被中断而失败时，归为取消而非失败——丢弃该结果、就地
-// 停止。故返回的 error 非 nil 即“被取消，只跑了这些”，而结果里的 StatusError 永远只表示【真实失败】，
-// 不含取消假象。
+// 部分】+ ctx.Err()。正在执行的任务【其错误链上确实是取消】时，归为取消而非失败——丢弃该结果、就地
+// 停止（但仍补推一条 PhaseFinished，以守住 Started→Finished 成对的观察者契约）。故返回的 error 非
+// nil 即“被取消，只跑了这些”，而结果里的 StatusError 永远只表示【真实失败】，不含取消假象；反过来，
+// 与取消擦肩而过的真实失败也仍按失败记录，不会被 ctx 的当下状态吞掉。
 // col 是可选的遥测采集端口（见 Collector）：非 nil 时模块经 rc.Emit 推送的观测转交外壳；
 // nil 即无遥测、行为与不传采集器完全一致。
 func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task, obs Observer, col Collector) ([]Result, error) {
@@ -265,8 +266,12 @@ func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task,
 			res = Result{Meta: meta, Status: StatusError, Err: fmt.Errorf("未知模块 %q", t.Module)}
 		} else {
 			res = runOne(ctx, gc, m, t.Values, col)
-			// 取消判定：任务因 ctx 取消被中断而失败时归为取消而非失败——丢弃结果、就地停止。
-			if res.Status == StatusError && ctx.Err() != nil {
+			// 取消判定：只认【错误链上确实是取消】的失败，不看 ctx 的当下状态——否则恰好与超时
+			// 擦肩而过的真实业务失败会被误记成取消、诊断信息随结果一起丢掉。
+			if res.Status == StatusError && isCanceled(res.Err) {
+				// 结果按既定语义丢弃，但已推过 Started 就必须补一条 Finished：Observer 契约
+				// 承诺 Started(i)→Finished(i) 成对，否则外壳的进度条会永远停在这一项上。
+				emit(obs, Event{Phase: PhaseFinished, Index: i, Total: total, Meta: res.Meta, Result: cloneResult(res)})
 				return results, ctx.Err()
 			}
 		}
@@ -275,6 +280,12 @@ func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task,
 		emit(obs, Event{Phase: PhaseFinished, Index: i, Total: total, Meta: res.Meta, Result: cloneResult(res)})
 	}
 	return results, nil
+}
+
+// isCanceled 报告错误链上是否确实是 ctx 取消/超时（NetworkError 与 url.Error 都实现了 Unwrap，
+// 故传输层包装过的取消同样能识别）。
+func isCanceled(err error) bool {
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }
 
 // emit 向非 nil 的 obs 推送一条事件。

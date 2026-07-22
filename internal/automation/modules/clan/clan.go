@@ -2,8 +2,9 @@
 package clan
 
 import (
+	"cmp"
 	"context"
-	"math/rand"
+	"slices"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
 	"github.com/cca2878/go-autopcr-core/internal/client"
@@ -16,14 +17,14 @@ func Register(r *automation.Registry) {
 	r.Register(clanBattleKnive{})
 }
 
-// clanLike 在公会中随机挑一名成员点赞（每日一次，不消耗资源）。
+// clanLike 在公会中挑一名成员点赞（每日一次，不消耗资源）。
 type clanLike struct{}
 
 func (clanLike) Meta() automation.Meta {
 	return automation.Meta{
 		Name:        "clan_like",
 		Title:       "公会点赞",
-		Description: "在公会中随机选择一位成员点赞（每日一次，不消耗资源）",
+		Description: "在公会中选择一位成员点赞，按日轮换（每日一次，不消耗资源）",
 		Category:    "公会",
 	}
 }
@@ -53,7 +54,11 @@ func (clanLike) Run(ctx context.Context, gc client.GameClient, rc *automation.Ru
 	if len(others) == 0 {
 		return automation.Skip("公会内没有其他成员可点赞")
 	}
-	target := others[rand.Intn(len(others))]
+	// 确定性挑选：按 viewer_id 定序后用服务器日期轮转。ref 用 random.choice 分摊点赞，但本项目
+	// 要求「账号+线上状态+配置固定则输出可复现」，故改用随天轮换——同日必选同一人，跨日自然轮替。
+	slices.SortFunc(others, func(a, b gapiclan.Member) int { return cmp.Compare(a.ViewerID, b.ViewerID) })
+	day := gc.ServerTime() / 86400 // 服务器时间为正的 Unix 秒，取模安全
+	target := others[day%int64(len(others))]
 	if err := gc.Clan().Like(ctx, data.ClanID, target.ViewerID); err != nil {
 		return err
 	}
