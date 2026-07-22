@@ -73,8 +73,11 @@ func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, catego
 		if !ok {
 			continue
 		}
+		// 已见过的条目不再展开：清单内容由服务端下发，自引用/互引用会让这里无限递归下去
+		// （每层还附带一次 HTTP 拉取），最终撑爆调用栈。registry 天然就是「已访问」集合。
+		_, seen := registry[c.URL]
 		registry[c.URL] = c
-		if c.isManifest() {
+		if c.isManifest() && !seen {
 			if err := s.resolveManifest(ctx, base, c.URL, category, registry); err != nil {
 				return err
 			}

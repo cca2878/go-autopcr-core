@@ -51,6 +51,13 @@ type block struct {
 	flags            uint16
 }
 
+// blockEntrySize 是块表中每条记录的字节数（u32 + u32 + u16），用于校验不可信的 blockCount。
+const blockEntrySize = 10
+
+// maxLZ4Expansion 是 LZ4 block 格式的理论最大膨胀率（约 255:1）。解压前用它给不可信的
+// uncompressedSize 设上限，避免坏文件声称的巨大长度直接变成一次巨额分配。
+const maxLZ4Expansion = 255
+
 // ExtractSQLite 从 UnityFS AssetBundle 字节中提取内嵌的 SQLite 数据库字节。
 func ExtractSQLite(raw []byte) ([]byte, error) {
 	h, err := parseHeader(raw)
@@ -117,6 +124,11 @@ func parseBlocksInfo(raw []byte, h *header) (blocks []block, dataOff int, err er
 	br := newReader(bi)
 	br.take(16) // uncompressedDataHash（未用）
 	blockCount := br.u32()
+	// blockCount 来自文件内容，不可信：每条块表项 10 字节，超出剩余长度即为损坏数据。先校验再
+	// 预分配，否则一个几十字节的坏文件就能让我们申请几十 GB（移动端直接被 OOM 杀掉）。
+	if int64(blockCount)*blockEntrySize > int64(len(bi)-br.pos()) {
+		return nil, 0, fmt.Errorf("块表项数 %d 超出 blocksInfo 剩余长度", blockCount)
+	}
 	blocks = make([]block, 0, blockCount)
 	for range blockCount {
 		blocks = append(blocks, block{br.u32(), br.u32(), br.u16()})
@@ -139,9 +151,18 @@ func parseBlocksInfo(raw []byte, h *header) (blocks []block, dataOff int, err er
 }
 
 func decompressBlocks(raw []byte, blocks []block, dataOff int) ([]byte, error) {
-	total := 0
-	for _, b := range blocks {
-		total += int(b.uncompressedSize)
+	// 预分配用的总长同样来自不可信的块表：逐块核对「解压后大小 vs 压缩后大小」，并用 int64
+	// 累加后再收口成 int，避免 32 位平台上溢出成负数（makeslice 会直接 panic）。
+	var total int64
+	for i, b := range blocks {
+		if int64(b.uncompressedSize) > int64(b.compressedSize)*maxLZ4Expansion+16 {
+			return nil, fmt.Errorf("数据块 %d 声称的解压后大小 %d 与压缩后大小 %d 不相称",
+				i, b.uncompressedSize, b.compressedSize)
+		}
+		total += int64(b.uncompressedSize)
+	}
+	if total > int64(len(raw))*maxLZ4Expansion+16 {
+		return nil, fmt.Errorf("块表声称的解压总长 %d 与文件长度 %d 不相称", total, len(raw))
 	}
 	blob := make([]byte, 0, total)
 	cur := dataOff
@@ -166,7 +187,11 @@ func decompress(chunk []byte, uncompressedSize int, compFlag uint32) ([]byte, er
 	case compNone:
 		return chunk, nil
 	case compLZ4, compLZ4HC:
-		// Unity 用 LZ4 block 格式（非 frame），需显式给出解压后大小。
+		// Unity 用 LZ4 block 格式（非 frame），需显式给出解压后大小。该大小取自文件内容、
+		// 不可信：先按 LZ4 的理论最大膨胀率核一遍，坏数据才不会变成一次巨额分配。
+		if uncompressedSize < 0 || uncompressedSize > len(chunk)*maxLZ4Expansion+16 {
+			return nil, fmt.Errorf("声称的解压后大小 %d 与压缩块长度 %d 不相称", uncompressedSize, len(chunk))
+		}
 		dst := make([]byte, uncompressedSize)
 		n, err := lz4.UncompressBlock(chunk, dst)
 		if err != nil {

@@ -24,14 +24,19 @@ var timeFormats = []string{
 	"20060102150405",
 }
 
-// ParseTime 解析母数据里的时间：先按 Unix 秒（纯数字），否则按已知格式（本地时区，与 ref 一致）。
+// serverZone 是母数据时间字符串的时区：母数据记的是国服挂钟时间（UTC+8）。ref 靠部署环境把
+// 本机时区钉成 Asia/Shanghai 才等价，而本仓是库、不能假设宿主时区，故显式固定，否则 UTC 主机上
+// 所有活动窗口都会偏 8 小时，且同一账号在不同时区主机上的模块输出不一致（违反确定性）。
+var serverZone = time.FixedZone("CST", 8*60*60)
+
+// ParseTime 解析母数据里的时间：先按 Unix 秒（纯数字），否则按已知格式（国服时区 UTC+8）。
 // 各域共享此实现（时间格式在母数据里跨表一致），避免散落多份解析。
 func ParseTime(s string) (time.Time, error) {
 	if sec, err := strconv.ParseInt(s, 10, 64); err == nil {
 		return time.Unix(sec, 0), nil
 	}
 	for _, f := range timeFormats {
-		if t, err := time.ParseInLocation(f, s, time.Local); err == nil {
+		if t, err := time.ParseInLocation(f, s, serverZone); err == nil {
 			return t, nil
 		}
 	}
