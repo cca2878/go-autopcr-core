@@ -26,6 +26,21 @@ type ResponseBase struct {
 	ServerError *ErrorInfo `msgpack:"server_error" json:"server_error"`
 }
 
+// UserGold 是金币信息（付费/免费两部分）。服务端在几十种响应里都会回传 user_gold 作为余额快照，
+// 故放在协议基包而非某个域包，供各域按需内嵌。
+type UserGold struct {
+	GoldIDPay  int64 `msgpack:"gold_id_pay" json:"gold_id_pay"`
+	GoldIDFree int64 `msgpack:"gold_id_free" json:"gold_id_free"`
+}
+
+// Total 返回付费+免费金币合计（对应 ref get_inventory 的 mana 分支）。
+func (g *UserGold) Total() int64 {
+	if g == nil {
+		return 0
+	}
+	return g.GoldIDPay + g.GoldIDFree
+}
+
 // GetServerError 实现 ErrorCarrier 接口。
 func (r *ResponseBase) GetServerError() *ErrorInfo { return r.ServerError }
 

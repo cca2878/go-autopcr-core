@@ -6,6 +6,8 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/discovery"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/account"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/alces"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/clan"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/race"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/sdk"
 )
 
@@ -40,10 +42,24 @@ func DefaultRegistry() *Registry {
 	r.Register((*account.LoadIndexResponse)(nil), foldLoadIndex)
 	r.Register((*account.HomeIndexResponse)(nil), foldHomeIndex)
 	r.Register((*sdk.SourceIniGetMaintenanceStatusResponse)(nil), foldMaintenance)
+	r.Register((*clan.ClanLikeResponse)(nil), foldClanLike)
+	r.Register((*race.CharaFortuneDrawResponse)(nil), foldCharaFortuneDraw)
 	r.Register((*alces.ExecResponse)(nil), foldAlcesExec)
 	r.Register((*alces.FixResultResponse)(nil), foldAlcesFixResult)
 	r.Register((*alces.LockSlotResponse)(nil), foldAlcesLockSlot)
 	return r
+}
+
+// foldClanLike 记下「今日已点赞」（对应 ref ClanLikeResponse 的 clan_like_count = 1）。
+// 不折叠则同一会话里第二次跑点赞模块会绕过守卫、撞上业务错误码。
+func foldClanLike(s *PlayerState, _ any) {
+	s.ClanLikeCount = 1
+}
+
+// foldCharaFortuneDraw 抽完即清空今日赛马待抽信息（对应 ref daily.py 的 client.data.cf = None）。
+// 同理：不清则同一会话里重跑赛马模块会绕过「今日已赛马」守卫、重复发抽取请求。
+func foldCharaFortuneDraw(s *PlayerState, _ any) {
+	s.CharaFortune = nil
 }
 
 // subStatusFromAlces 把 alces 协议副属性转为 gamestate 形态。
@@ -55,12 +71,16 @@ func subStatusFromAlces(ss []alces.SubStatus) []ExEquipSubStatus {
 	return out
 }
 
-// foldAlcesExec 把 exec 回传的炼成 PT 余量折进库存（pending 副属性尚未定案，不改装备）。
+// foldAlcesExec 把 exec 回传的炼成 PT 余量与金币余额折进状态（pending 副属性尚未定案，不改装备）。
+// 金币必须折回：模块每发 exec 都要带 current_gold 快照，漏折则第二发起就是过期值。
 func foldAlcesExec(s *PlayerState, resp any) {
 	r := resp.(*alces.ExecResponse)
 	if r.CurrentAlcesPoint != nil && s.Inventory != nil {
 		p := r.CurrentAlcesPoint
 		s.Inventory[InventoryKey{Type: p.Type, ID: p.ID}] = p.Stock
+	}
+	if r.UserGold != nil {
+		s.Gold = r.UserGold.Total()
 	}
 }
 
@@ -140,6 +160,7 @@ func foldLoadIndex(s *PlayerState, resp any) {
 		s.ClanID = lr.UserClan.ClanID
 	}
 	s.ClanLikeCount = lr.ClanLikeCount
+	s.DailyResetTime = lr.DailyResetTime
 	s.ReadStoryIDs = lr.ReadStoryIDs
 	love := make(map[int]int, len(lr.UserCharaInfo))
 	charaLove := make(map[int]int, len(lr.UserCharaInfo))

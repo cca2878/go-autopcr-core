@@ -31,11 +31,8 @@ type UserJewel struct {
 	FreeJewel int `msgpack:"free_jewel" json:"free_jewel"`
 }
 
-// UserGold 是金币信息（付费/免费两部分）。
-type UserGold struct {
-	GoldIDPay  int64 `msgpack:"gold_id_pay" json:"gold_id_pay"`
-	GoldIDFree int64 `msgpack:"gold_id_free" json:"gold_id_free"`
-}
+// UserGold 是金币信息（付费/免费两部分）。定义在协议基包，各域共享。
+type UserGold = protocol.UserGold
 
 // UserClan 是玩家所属公会信息（此处仅取所属公会 id）。未加入公会时该字段为空。
 type UserClan struct {

@@ -84,11 +84,13 @@ type ExecRequest struct {
 
 func (*ExecRequest) URL() *url.URL { return urlExec }
 
-// ExecResponse 携带本次掷出的待决定副属性(pending_alces_data)与炼成 PT 余量(current_alces_point)。
+// ExecResponse 携带本次掷出的待决定副属性(pending_alces_data)、炼成 PT 余量(current_alces_point)
+// 与扣费后的金币余额(user_gold)——后者须折回状态，否则下一发 exec 会带着过期的 current_gold 快照。
 type ExecResponse struct {
 	protocol.ResponseBase
-	PendingAlcesData  *AlcesData     `msgpack:"pending_alces_data" json:"pending_alces_data"`
-	CurrentAlcesPoint *InventoryInfo `msgpack:"current_alces_point" json:"current_alces_point"`
+	PendingAlcesData  *AlcesData         `msgpack:"pending_alces_data" json:"pending_alces_data"`
+	CurrentAlcesPoint *InventoryInfo     `msgpack:"current_alces_point" json:"current_alces_point"`
+	UserGold          *protocol.UserGold `msgpack:"user_gold" json:"user_gold"`
 }
 
 // FixResultRequest 采纳上次 exec 的结果（定案）。

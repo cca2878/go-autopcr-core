@@ -31,10 +31,18 @@ type UserMissionInfo struct {
 	MissionStatus int `msgpack:"mission_status" json:"mission_status"`
 }
 
-// MissionIndexResponse 携带任务列表（其余字段由解码器忽略）。
+// UserSeasonPackInfo 是一条月卡（季票）附带任务：received=0 即该档奖励尚未领取。
+// 它与 missions 平行下发，同样按 type=1/2/4 归类领取，漏读会导致付费奖励永远收不到。
+type UserSeasonPackInfo struct {
+	MissionID int `msgpack:"mission_id" json:"mission_id"`
+	Received  int `msgpack:"received" json:"received"`
+}
+
+// MissionIndexResponse 携带任务列表与月卡附带任务（其余字段由解码器忽略）。
 type MissionIndexResponse struct {
 	protocol.ResponseBase
-	Missions []UserMissionInfo `msgpack:"missions" json:"missions"`
+	Missions   []UserMissionInfo    `msgpack:"missions" json:"missions"`
+	SeasonPack []UserSeasonPackInfo `msgpack:"season_pack" json:"season_pack"`
 }
 
 // MissionAcceptRequest 领取某一类别（type=1/2/4）下全部可领取任务的奖励。

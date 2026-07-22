@@ -6,7 +6,10 @@
 // 本包是纯数据层：不依赖 transport / 网络，可被上层用 mock 方式独立测试。
 package gamestate
 
-import "net/url"
+import (
+	"math"
+	"net/url"
+)
 
 // Jewel 是钻石信息。
 type Jewel struct {
@@ -34,6 +37,14 @@ type InventoryKey struct {
 	Type int // eInventoryType
 	ID   int
 }
+
+// 特殊货币的库存键（对应 ref db.zmana / db.mana / db.jewel）。这三者不进 Inventory 表，
+// 而由 load/index 折进 PlayerState.Gold / Jewel 专用字段，故 GetInventory 需特判。
+var (
+	keyZMana = InventoryKey{Type: 12, ID: 94000} // (eInventoryType.Gold, 94000)
+	keyMana  = InventoryKey{Type: 12, ID: 94002} // (eInventoryType.Gold, 94002)
+	keyJewel = InventoryKey{Type: 8, ID: 91002}  // (eInventoryType.Jewel, 91002)
+)
 
 // ExEquipSubStatus 是一件 EX 装备的一条副属性（登录/炼成响应折叠而来）。
 // Status＝属性类型(eParamType)，Step＝档位(1..5，5＝满级)，IsLock＝是否锁定该槽。
@@ -68,6 +79,10 @@ type PlayerState struct {
 	// 公会相关（登录时由 load/index 折叠而来）。
 	ClanID        int64 // 所属公会 id；未加入公会为 0
 	ClanLikeCount int   // 今日已用点赞次数；>0 表示今日已点赞
+
+	// DailyResetTime 是本会话的失效时刻（Unix 秒，登录时由 load/index 折叠）：服务端在每日
+	// 重置点丢弃会话，越过它再发请求必被判失效。0＝尚未登录/服务端未下发。
+	DailyResetTime int64
 
 	// ReadStoryIDs 是已阅读的剧情 id 列表（登录时由 load/index 折叠而来）。
 	ReadStoryIDs []int
@@ -155,10 +170,27 @@ func (s *PlayerState) IsQuestUnlocked(questID int) bool {
 	return ok
 }
 
-// GetInventory 返回某库存物品 (类型,id) 的持有量（不在库存中＝0）。对应 ref get_inventory 的普通
-// 物品分支；mana/jewel 等特殊货币另有专用字段，如需再在此特判。
+// GetInventory 返回某库存物品 (类型,id) 的持有量（不在库存中＝0）。复刻 ref get_inventory：
+// mana/zmana 与 jewel 不在库存表里，需从 Gold / Jewel 专用字段取（如彩装炼成的 mana 消耗）。
 func (s *PlayerState) GetInventory(typ, id int) int {
+	switch (InventoryKey{Type: typ, ID: id}) {
+	case keyZMana, keyMana:
+		return clampToInt(s.Gold)
+	case keyJewel:
+		return s.Jewel.Total + s.Jewel.Free
+	}
 	return s.Inventory[InventoryKey{Type: typ, ID: id}]
+}
+
+// clampToInt 把 int64 收敛进 int，避免 32 位平台（gomobile arm32）上的截断为负。
+func clampToInt(v int64) int {
+	if v > int64(math.MaxInt) {
+		return math.MaxInt
+	}
+	if v < int64(math.MinInt) {
+		return math.MinInt
+	}
+	return int(v)
 }
 
 // New 返回一个空的 PlayerState。
