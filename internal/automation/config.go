@@ -121,11 +121,6 @@ func (p Param) validate(v any) error {
 			return fmt.Errorf("应为 %v 之一", p.Bounds.Choices)
 		}
 	case ParamMultiChoice:
-		// 与其余类型一致地拒绝 null：resolve 把 null 当「未提供」回落默认值，若此处放行，
-		// 用户清空的多选会被静默改回默认选项。要表达空选择请传 []。
-		if v == nil {
-			return fmt.Errorf("应为字符串数组（清空请传 []）")
-		}
 		ss, ok := asStringSlice(v)
 		if !ok {
 			return fmt.Errorf("应为字符串数组")
@@ -175,6 +170,10 @@ func resolve(params []Param, provided map[string]any) Config {
 }
 
 // Validate 校验 provided 的每个值：参数须已声明、类型匹配、且满足 Bounds。provided 为空即通过。
+//
+// null 的语义：一律【等同未提供】——校验放行、resolve 回落默认值。这是有意与「空选择」区分：
+// Go 的 []string(nil) 经 JSON 就是 null，外壳无从表达「我确实没设这个参数」以外的意思；要表达
+// 空选择请传 []（非 nil 的空切片，resolve 会原样保留）。
 func Validate(params []Param, provided map[string]any) error {
 	if len(provided) == 0 {
 		return nil
@@ -206,7 +205,7 @@ func Validate(params []Param, provided map[string]any) error {
 }
 
 // asStringSlice 把配置值规整为 []string：兼容 []string 与 JSON 解出的 []any（元素须为 string）。
-// nil 视为空选择（合法）。任一元素非字符串则失败。
+// nil 视为「未提供」（合法，由 resolve 回落默认值；见 Validate 的说明）。任一元素非字符串则失败。
 func asStringSlice(v any) ([]string, bool) {
 	switch s := v.(type) {
 	case nil:

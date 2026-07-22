@@ -95,13 +95,20 @@ const resultCodeUnrecoverable = 203
 // maintenanceMarker 是维护中错误消息的特征串（原项目按消息文本判定维护）。
 const maintenanceMarker = "维护"
 
+// IsFatalResultCode 报告某业务响应码是否不可恢复。传输层用它【在轮换服务器之前】短路。
+func IsFatalResultCode(resultCode int) bool { return resultCode == resultCodeUnrecoverable }
+
 // IsFatalBusiness 报告一个业务错误是否应升级为 PanicError（＝重试与重登都救不了，须直接终止）。
 //
 // 判据集中在此：这类「哪些业务码/消息算严重」的知识属于游戏错误词汇表，散在传输层与中间件里
 // 就会出现改一处漏两处。会话失效那一类的判据不在这里——它描述的是会话生命周期而非终止性，
 // 归 client 的 classifySession 所有（见 relogin.go）。
+//
+// 维护判定【只在中间件那一层】用：传输层按响应码短路，维护消息照常上抛为 APIError，由
+// errorhandler 中间件调用本函数升级——与 ref 的分层一致。把它也并进传输层并无实质差别
+// （维护时全服皆维护，少走一次服务器轮换毫无影响），但会让中间件这次检查变成死代码。
 func IsFatalBusiness(resultCode int, message string) bool {
-	return resultCode == resultCodeUnrecoverable || strings.Contains(message, maintenanceMarker)
+	return IsFatalResultCode(resultCode) || strings.Contains(message, maintenanceMarker)
 }
 
 // SessionBreakError 表示请求在【会话失效】处被打断：服务端丢弃了会话（顶号、数据不一致等），

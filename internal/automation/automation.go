@@ -6,6 +6,7 @@
 package automation
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -272,7 +273,9 @@ func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task,
 				// 结果按既定语义丢弃，但已推过 Started 就必须补一条 Finished：Observer 契约
 				// 承诺 Started(i)→Finished(i) 成对，否则外壳的进度条会永远停在这一项上。
 				emit(obs, Event{Phase: PhaseFinished, Index: i, Total: total, Meta: res.Meta, Result: cloneResult(res)})
-				return results, ctx.Err()
+				// 返回值必须非 nil：nil 按契约表示「全部跑完」。若取消来自模块内部自建的
+				// ctx（外层 ctx 仍存活），ctx.Err() 是 nil，此时用模块自己的错误兜底。
+				return results, cmp.Or(ctx.Err(), res.Err)
 			}
 		}
 

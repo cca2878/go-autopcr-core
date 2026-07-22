@@ -252,8 +252,9 @@ func (c *Client) transport(ctx context.Context, req protocol.Request, out any) (
 	if ec, ok := out.(protocol.ErrorCarrier); ok {
 		if se := ec.GetServerError(); se != nil {
 			c.logger.Error("game api error", "url", req.URL(), "result_code", header.ResultCode, "message", se.Message)
-			// 「哪些业务错误算致命」由 gameerr 统一判定（见 IsFatalBusiness）。
-			if gameerr.IsFatalBusiness(header.ResultCode, se.Message) {
+			// 只按响应码短路；维护消息照常上抛，由 errorhandler 中间件升级
+			// （分层理由见 gameerr.IsFatalBusiness）。
+			if gameerr.IsFatalResultCode(header.ResultCode) {
 				return header, gameerr.Panic("%s", se.Message)
 			}
 			if len(c.servers) > 0 {
