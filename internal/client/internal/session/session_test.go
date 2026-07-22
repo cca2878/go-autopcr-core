@@ -10,7 +10,6 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/credential/captcha"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
-	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/account"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol/sdk"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
@@ -231,8 +230,7 @@ func TestPassRiskThreadsReloginPayload(t *testing.T) {
 }
 
 // scriptedSequence 安装一个短路中间件：记录整条登录序列的请求 URL，并按类型填最小可用响应。
-// quest8_1Received 决定 home/index 是否报告普通 8-1 已领取（＝是否该补 daily_task/top）。
-func scriptedSequence(t *testing.T, c *transport.Client, quest81Received bool, urls *[]string) {
+func scriptedSequence(t *testing.T, c *transport.Client, urls *[]string) {
 	t.Helper()
 	c.Use(func(next transport.Handler) transport.Handler {
 		return func(ctx context.Context, req protocol.Request, out any) (protocol.ResponseHeader, error) {
@@ -242,46 +240,26 @@ func scriptedSequence(t *testing.T, c *transport.Client, quest81Received bool, u
 				o.Server = []string{"test.example"}
 			case *sdk.CheckGameStartResponse:
 				o.NowTutorial = true
-			case *account.HomeIndexResponse:
-				rt := 0
-				if quest81Received {
-					rt = 2 // eMissionStatusType.AlreadyReceive
-				}
-				o.QuestList = []account.UserQuestInfo{{QuestID: 11008001, ResultType: rt}}
 			}
 			return protocol.ResponseHeader{}, nil
 		}
 	})
 }
 
-// 登录序列须与权威客户端一致；daily_task/top 仅在普通 8-1 已领取时补发。
+// 登录序列锁定在这六步。权威客户端在其后还有 daily_task/top 与 unit_role/gacha_index，
+// 本库有意不发（见 Login 的说明）——若哪天补回，这里会红，提醒同步更新。
 func TestLoginSequence(t *testing.T) {
-	for _, tc := range []struct {
-		name            string
-		quest81Received bool
-		wantDailyTask   bool
-	}{
-		{"刚通关8-1则解锁日常任务", true, true},
-		{"未通关8-1则不发", false, false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			c := transport.New(&fakeCred{})
-			var urls []string
-			scriptedSequence(t, c, tc.quest81Received, &urls)
-			if err := Login(context.Background(), c, &fakeCred{}); err != nil {
-				t.Fatal(err)
-			}
-			want := []string{
-				"source_ini/index", "source_ini/get_maintenance_status", "tool/sdk_login",
-				"check/game_start", "load/index", "home/index",
-			}
-			if tc.wantDailyTask {
-				want = append(want, "daily_task/top")
-			}
-			want = append(want, "unit_role/gacha_index")
-			if !reflect.DeepEqual(urls, want) {
-				t.Fatalf("登录序列不符\n got: %v\nwant: %v", urls, want)
-			}
-		})
+	c := transport.New(&fakeCred{})
+	var urls []string
+	scriptedSequence(t, c, &urls)
+	if err := Login(context.Background(), c, &fakeCred{}); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"source_ini/index", "source_ini/get_maintenance_status", "tool/sdk_login",
+		"check/game_start", "load/index", "home/index",
+	}
+	if !reflect.DeepEqual(urls, want) {
+		t.Fatalf("登录序列不符\n got: %v\nwant: %v", urls, want)
 	}
 }

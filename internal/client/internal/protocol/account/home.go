@@ -6,11 +6,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
-var (
-	urlHomeIndex     = protocol.MustRelURL("home/index")
-	urlDailyTaskTop  = protocol.MustRelURL("daily_task/top")
-	urlUnitRoleGacha = protocol.MustRelURL("unit_role/gacha_index")
-)
+var urlHomeIndex = protocol.MustRelURL("home/index")
 
 // HomeIndexRequest 拉取主页索引（含任务通关状态、支线通关列表等）。
 type HomeIndexRequest struct {
@@ -22,33 +18,6 @@ type HomeIndexRequest struct {
 }
 
 func (*HomeIndexRequest) URL() *url.URL { return urlHomeIndex }
-
-// DailyTaskTopRequest 拉取日常任务首页。权威客户端在「刚通关普通 8-1」时用它解锁日常任务，
-// 故登录序列按同样条件发出（字段取值复刻权威客户端）。
-type DailyTaskTopRequest struct {
-	protocol.RequestBase
-	SettingAlchemyCount      int `msgpack:"setting_alchemy_count" json:"setting_alchemy_count"`
-	IsCheckByTermNormalGacha int `msgpack:"is_check_by_term_normal_gacha" json:"is_check_by_term_normal_gacha"`
-}
-
-func (*DailyTaskTopRequest) URL() *url.URL { return urlDailyTaskTop }
-
-// DailyTaskTopResponse 无需读取的字段由解码器忽略。
-type DailyTaskTopResponse struct {
-	protocol.ResponseBase
-}
-
-// UnitRoleGachaIndexRequest 拉取角色扮演转蛋首页；权威客户端登录序列的最后一步。
-type UnitRoleGachaIndexRequest struct {
-	protocol.RequestBase
-}
-
-func (*UnitRoleGachaIndexRequest) URL() *url.URL { return urlUnitRoleGacha }
-
-// UnitRoleGachaIndexResponse 无需读取的字段由解码器忽略。
-type UnitRoleGachaIndexResponse struct {
-	protocol.ResponseBase
-}
 
 // UserQuestInfo 是一条任务的玩家进度（此处取解锁判定所需字段）。
 // clear_flg>0 表示该任务已通关（用于剧情解锁门禁）。

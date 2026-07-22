@@ -20,7 +20,11 @@ import (
 // Login 执行完整登录序列：
 //
 //	source_ini/index → get_maintenance_status → tool/sdk_login →
-//	check/game_start → load/index → home/index → [daily_task/top] → unit_role/gacha_index
+//	check/game_start → load/index → home/index
+//
+// 权威客户端在此之后还会发 daily_task/top（普通 8-1 已领取时）与 unit_role/gacha_index。
+// 本库【有意不发】：实测两者只回 task_list 与 exec_count/gacha_level，没有任何本库模块消费的
+// 状态，发它们纯属每次登录多两发。若将来移植依赖这些状态的模块，需要连同这两步一起补回。
 //
 // 风控（is_risk）未通过验证码时返回 gameerr.RiskError（未注入求解器即硬失败）；
 // 未过教程返回 PanicError。
@@ -76,44 +80,11 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential)
 	}
 
 	// 6) 主页索引：任务通关/支线状态（剧情解锁门禁等所需）经折叠中间件落入状态
-	home, err := transport.Call[account.HomeIndexResponse](ctx, c, &account.HomeIndexRequest{MessageID: 1, IsFirst: 1, TipsIDList: []int{}})
-	if err != nil {
-		return err
-	}
-
-	// 7) daily_task/top：权威客户端在普通 8-1 已领取时发这一发（ref 注释称它「解锁日常任务」）。
-	// 实测回的是 task_list，本库无人消费；发它只为与权威客户端的序列一致。注意该条件对任何
-	// 成熟账号恒真（result_type=2），所以这是每次登录都会多出的一发，不是罕见分支。
-	if needsDailyTaskUnlock(home) {
-		if _, err := transport.Call[account.DailyTaskTopResponse](ctx, c,
-			&account.DailyTaskTopRequest{SettingAlchemyCount: 1}); err != nil {
-			return err
-		}
-	}
-
-	// 8) unit_role/gacha_index：权威客户端登录序列的最后一步，无条件发出。实测回
-	// exec_count/gacha_level（ref 拿它喂自己的转蛋模块），本库同样无人消费，纯为序列一致。
-	if _, err := transport.Call[account.UnitRoleGachaIndexResponse](ctx, c, &account.UnitRoleGachaIndexRequest{}); err != nil {
+	if _, err := transport.Call[account.HomeIndexResponse](ctx, c, &account.HomeIndexRequest{MessageID: 1, IsFirst: 1, TipsIDList: []int{}}); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-// dailyTaskUnlockQuest 是普通 8-1；权威客户端在它「已领取」时发 daily_task/top。
-const dailyTaskUnlockQuest = 11008001
-
-// missionStatusAlreadyReceive 是 eMissionStatusType.AlreadyReceive。
-const missionStatusAlreadyReceive = 2
-
-// needsDailyTaskUnlock 复刻权威客户端的判据：任务列表里普通 8-1 的 result_type 为已领取。
-func needsDailyTaskUnlock(home *account.HomeIndexResponse) bool {
-	for _, q := range home.QuestList {
-		if q.QuestID == dailyTaskUnlockQuest && q.ResultType == missionStatusAlreadyReceive {
-			return true
-		}
-	}
-	return false
 }
 
 // maxRiskAttempts 是触发风控后允许的验证码重试轮数（复刻原项目上限）。
