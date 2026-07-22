@@ -32,10 +32,6 @@ type Client struct {
 	http   *http.Client
 	logger *slog.Logger
 
-	// 传输构建选项（仅在未用 WithHTTPClient 覆盖时生效）。
-	proxy       *url.URL
-	insecureTLS bool
-
 	mu         sync.Mutex
 	headers    map[string]string
 	servers    []*url.URL
@@ -50,7 +46,8 @@ type Client struct {
 // Option 用于定制 Client。
 type Option func(*Client)
 
-// WithHTTPClient 覆盖默认 http.Client（会使 WithProxy / WithInsecureTLS 失效）。
+// WithHTTPClient 覆盖默认 http.Client。生产装配一律经此传入共享 Transport（见 NewRoundTripper），
+// 代理/证书等调试开关在构建那个 Transport 时决定，故此处不再重复提供。
 func WithHTTPClient(h *http.Client) Option {
 	return func(c *Client) { c.http = h }
 }
@@ -58,16 +55,6 @@ func WithHTTPClient(h *http.Client) Option {
 // WithLogger 设置日志器。
 func WithLogger(l *slog.Logger) Option {
 	return func(c *Client) { c.logger = l }
-}
-
-// WithProxy 让请求经由指定代理（调试用，如 http://127.0.0.1:8888）。
-func WithProxy(u *url.URL) Option {
-	return func(c *Client) { c.proxy = u }
-}
-
-// WithInsecureTLS 跳过 HTTPS 证书校验（调试用；会信任任意证书，勿用于生产）。
-func WithInsecureTLS() Option {
-	return func(c *Client) { c.insecureTLS = true }
 }
 
 // New 构造一个传输客户端。初始服务器取凭据的 APIRoot；登录序列会用真实列表覆盖它。
@@ -82,7 +69,7 @@ func New(cred credential.Credential, opts ...Option) *Client {
 		opt(c)
 	}
 	if c.http == nil {
-		c.http = &http.Client{Timeout: DefaultTimeout, Transport: c.buildTransport()}
+		c.http = &http.Client{Timeout: DefaultTimeout, Transport: NewRoundTripper(nil, false)}
 	}
 	c.handler = c.transport
 	return c
@@ -116,11 +103,6 @@ func NewRoundTripper(proxy *url.URL, insecure bool) *http.Transport {
 	return tr
 }
 
-// buildTransport 用 Client 自身的调试选项构建传输层（仅在未 WithHTTPClient 覆盖时用）。
-func (c *Client) buildTransport() *http.Transport {
-	return NewRoundTripper(c.proxy, c.insecureTLS)
-}
-
 // Use 用给定中间件包裹传输处理器（靠前的中间件在外层）。
 func (c *Client) Use(mws ...Middleware) {
 	c.handler = Chain(mws...)(c.transport)
@@ -129,18 +111,18 @@ func (c *Client) Use(mws ...Middleware) {
 // Handler 返回组装后的请求处理器。
 func (c *Client) Handler() Handler { return c.handler }
 
-// ViewerID 返回当前 viewer_id。
-func (c *Client) ViewerID() int64 {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.viewerID
-}
-
-// ServerTime 返回最近一次同步到的服务器时间（Unix 秒）。
+// ServerTime 返回当前的服务器时间（Unix 秒）＝最近一次同步值 + 其后本地流逝的时间
+// （对应 ref apiclient.time 的 time.time() - _local_time + _server_time）。
+//
+// 必须加上流逝量：登录后可能先下几分钟母数据再跑模块，长驻会话更可能空闲数小时；直接返回
+// 同步时刻的旧值会让时间门禁模块（赛马/公主祭/剧情窗口…）在边界附近判错开放状态。
 func (c *Client) ServerTime() int64 {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.serverTime
+	if c.localTime.IsZero() {
+		return c.serverTime
+	}
+	return c.serverTime + int64(time.Since(c.localTime).Seconds())
 }
 
 // SetServers 覆盖服务器列表（base URL）并复位当前索引。

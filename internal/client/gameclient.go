@@ -110,7 +110,7 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 		mdCacheDir: o.mdCacheDir,
 		logger:     o.logger,
 	}
-	g.guard = &sessionGuard{login: g.relogin, logger: o.logger}
+	g.guard = &sessionGuard{login: g.relogin, expired: g.sessionExpired, logger: o.logger}
 
 	// 中间件链（外→内）：会话重登 → 错误处理 → 状态折叠 → 传输。
 	// 重登在最外层：网络重试应先耗尽，且重登发出的登录请求要经过折叠中间件才能更新状态。
@@ -137,6 +137,14 @@ func (g *client) Login(ctx context.Context) error {
 // 外壳的事，核心不碰）。不重建母数据——会话失效与母数据版本无关，且查询句柄可能正被
 // 模块持有，中途换掉它比留着更危险；真的版本变更会走维护/版本升级路径。
 func (g *client) relogin(ctx context.Context) error { return session.Login(ctx, g.tr, g.cred) }
+
+// sessionExpired 报告会话是否已越过每日重置点（load/index 下发的 daily_reset_time）。
+// 服务端到点即丢弃会话，故守卫在发包前据此主动重登，而不是等下一个请求撞上会话错误。
+// 尚未登录（或服务端未下发该字段）时恒为 false。
+func (g *client) sessionExpired() bool {
+	exp := g.state.DailyResetTime
+	return exp > 0 && g.tr.ServerTime() >= exp
+}
 
 // ensureMasterdata 用登录折叠得到的 manifest_ver + res 确保干净库就绪并打开查询句柄。
 //

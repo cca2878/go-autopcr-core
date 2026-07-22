@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"reflect"
 	"strings"
 	"sync"
 
@@ -119,8 +118,9 @@ func inRelogin(ctx context.Context) bool { return ctx.Value(reloginKey{}) != nil
 // 是因为它的连接池会跨账号复用同一 wrapper，而本库一个 client 绑定一份凭据，重登时
 // load/index + home/index 会把权威字段原样覆盖回来，清空反而会丢掉本轮模块已折叠的数据。
 type sessionGuard struct {
-	login  func(context.Context) error // 重登动作（注入以便单测）
-	logger *slog.Logger
+	login   func(context.Context) error // 重登动作（注入以便单测）
+	expired func() bool                 // 报告会话是否已过每日重置点（注入以便单测）
+	logger  *slog.Logger
 
 	mu    sync.Mutex
 	stale bool
@@ -164,6 +164,12 @@ func (g *sessionGuard) middleware() transport.Middleware {
 				return next(ctx, req, out)
 			}
 			for attempt := 0; ; attempt++ {
+				// 主动过期：服务端在每日重置点丢弃会话。等它报错再修，那次调用已经被
+				// 判为断点、模块按策略中止了；抢在发包前重登，调用方全程无感（复刻 ref
+				// clientpool 的 PreSessionHandler + sessionmgr.is_session_expired）。
+				if g.expired != nil && g.expired() {
+					g.invalidate()
+				}
 				if err := g.ensure(ctx); err != nil {
 					return protocol.ResponseHeader{}, err
 				}
@@ -190,20 +196,10 @@ func (g *sessionGuard) middleware() transport.Middleware {
 				}
 				// 上一轮已把 server_error 解进 out，而解码器不会清除本次响应里缺席的
 				// 字段：残留的 server_error 会让重发后的【成功】响应被再次误判为业务错误。
-				zeroResponse(out)
+				transport.ZeroResponse(out)
 				g.logger.Warn("会话错误，重登后重发请求",
 					"url", req.URL(), "result_code", api.ResultCode, "attempt", attempt+1)
 			}
 		}
-	}
-}
-
-// zeroResponse 清零响应载体（见调用处：重发前必须抹掉上一轮的 server_error 残留）。
-func zeroResponse(out any) {
-	if out == nil {
-		return
-	}
-	if v := reflect.ValueOf(out); v.Kind() == reflect.Pointer && !v.IsNil() {
-		v.Elem().SetZero()
 	}
 }

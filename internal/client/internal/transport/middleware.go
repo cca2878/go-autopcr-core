@@ -3,11 +3,23 @@ package transport
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
+
+// ZeroResponse 清零响应载体。任何「重发同一个 out」的重试路径都必须先调用它：解码器只覆盖本次
+// 响应里出现的字段，上一轮残留的 server_error 会让重发后的【成功】响应被再次误判为业务错误。
+func ZeroResponse(out any) {
+	if out == nil {
+		return
+	}
+	if v := reflect.ValueOf(out); v.Kind() == reflect.Pointer && !v.IsNil() {
+		v.Elem().SetZero()
+	}
+}
 
 // DefaultRetries 是网络错误的默认重试次数（复刻原 errorhandler）。
 const DefaultRetries = 5
@@ -30,10 +42,16 @@ func ErrorHandler(retries int) Middleware {
 				}
 				var netErr *gameerr.NetworkError
 				if errors.As(err, &netErr) {
+					// 调用方已放弃：ctx 取消/超时也会被包成网络错误，重试只是对着死 ctx 空转。
+					if ctx.Err() != nil {
+						return header, err
+					}
 					if left <= 0 {
 						return header, err
 					}
 					left--
+					// 解码失败同样归类为网络错误，此时 out 可能已被写入半截字段。
+					ZeroResponse(out)
 					continue
 				}
 				var apiErr *gameerr.APIError
