@@ -20,7 +20,7 @@ import (
 // Login 执行完整登录序列：
 //
 //	source_ini/index → get_maintenance_status → tool/sdk_login →
-//	check/game_start → load/index
+//	check/game_start → load/index → home/index → [daily_task/top] → unit_role/gacha_index
 //
 // 风控（is_risk）未通过验证码时返回 gameerr.RiskError（未注入求解器即硬失败）；
 // 未过教程返回 PanicError。
@@ -81,8 +81,9 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential)
 		return err
 	}
 
-	// 7) 刚通关普通 8-1 时补一发 daily_task/top——权威客户端正是在这里解锁日常任务，
-	// 少了它，该状态的账号整局都没有日常任务可领。
+	// 7) daily_task/top：权威客户端在普通 8-1 已领取时发这一发（ref 注释称它「解锁日常任务」）。
+	// 实测回的是 task_list，本库无人消费；发它只为与权威客户端的序列一致。注意该条件对任何
+	// 成熟账号恒真（result_type=2），所以这是每次登录都会多出的一发，不是罕见分支。
 	if needsDailyTaskUnlock(home) {
 		if _, err := transport.Call[account.DailyTaskTopResponse](ctx, c,
 			&account.DailyTaskTopRequest{SettingAlchemyCount: 1}); err != nil {
@@ -90,7 +91,8 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential)
 		}
 	}
 
-	// 8) 角色扮演转蛋首页：权威客户端登录序列的最后一步，无条件发出。
+	// 8) unit_role/gacha_index：权威客户端登录序列的最后一步，无条件发出。实测回
+	// exec_count/gacha_level（ref 拿它喂自己的转蛋模块），本库同样无人消费，纯为序列一致。
 	if _, err := transport.Call[account.UnitRoleGachaIndexResponse](ctx, c, &account.UnitRoleGachaIndexRequest{}); err != nil {
 		return err
 	}
@@ -98,7 +100,7 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential)
 	return nil
 }
 
-// dailyTaskUnlockQuest 是普通 8-1；权威客户端在它「已领取」时发 daily_task/top 解锁日常任务。
+// dailyTaskUnlockQuest 是普通 8-1；权威客户端在它「已领取」时发 daily_task/top。
 const dailyTaskUnlockQuest = 11008001
 
 // missionStatusAlreadyReceive 是 eMissionStatusType.AlreadyReceive。
