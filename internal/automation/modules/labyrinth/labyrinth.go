@@ -80,6 +80,7 @@ func unitSetOf(names []string, bosses []bossInfo) map[int]bool {
 // Register 登记本域全部模块。
 func Register(r *automation.Registry) {
 	r.Register(startReroll{})
+	r.Register(startRerollV2{}) // 重新设计版，与 v1 并存以便实测对比
 }
 
 // startReroll 是「黎明界刷开局」模块（对应 ref labyrinth_start_reroll）。
