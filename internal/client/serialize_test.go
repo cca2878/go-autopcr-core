@@ -33,13 +33,11 @@ func TestSerializeMiddleware_ConcurrentCallsAreExclusive(t *testing.T) {
 
 	var wg sync.WaitGroup
 	for range 50 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			if _, err := h(context.Background(), &fakeReq{}, &fakeResp{}); err != nil {
 				t.Error(err)
 			}
-		}()
+		})
 	}
 	wg.Wait()
 	if maxInFlight != 1 {
