@@ -216,5 +216,5 @@ func foldMaintenance(s *PlayerState, resp any) {
 	s.ResVer = m.ResVer
 	s.ManifestVer = m.ManifestVer
 	// res CDN 根的解析规则归 discovery（服务端发现域）所有，此处只做折叠。
-	s.ResURL = discovery.ResolveResURL(m.ResHTTPType, m.Resource)
+	s.ResURLs = discovery.ResolveResURLs(m.ResHTTPType, m.Resource)
 }

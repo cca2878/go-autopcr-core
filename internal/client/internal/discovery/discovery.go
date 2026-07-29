@@ -21,7 +21,9 @@ type Result struct {
 	ResVer              string     // 资源版本
 	ManifestVer         string     // 清单版本（母数据 ensure 用；对应 manifest_ver）
 	RequiredManifestVer string     // 需要的清单版本（会话 MANIFEST-VER 头用）
-	ResURL              *url.URL   // 资源 CDN 根（取 resource[0]，按 res_http_type 定 scheme）；下发空/非法为 nil
+	// ResURLs 是下发的【全部】资源 CDN 根（按 res_http_type 定 scheme），顺序即下发顺序。
+	// 实测下发三台（l1/l3/l4），互为备份：首台故障时可换下一台。下发空/全部非法时为空切片。
+	ResURLs []*url.URL
 }
 
 // Discover 执行 source_ini/index → get_maintenance_status，返回发现信息。
@@ -48,7 +50,7 @@ func Discover(ctx context.Context, c *transport.Client) (*Result, error) {
 		ResVer:              mnt.ResVer,
 		ManifestVer:         mnt.ManifestVer,
 		RequiredManifestVer: mnt.RequiredManifestVer,
-		ResURL:              ResolveResURL(mnt.ResHTTPType, mnt.Resource),
+		ResURLs:             ResolveResURLs(mnt.ResHTTPType, mnt.Resource),
 	}, nil
 }
 
@@ -70,22 +72,30 @@ func normalizeServers(servers []string) []*url.URL {
 	return out
 }
 
-// ResolveResURL 把维护响应下发的 resource 列表解析为资源 CDN 根 URL（取首个主机）。
+// ResolveResURLs 把维护响应下发的 resource 列表解析为资源 CDN 根 URL 列表，【保留全部主机】。
 //
 // 下发项形如 "l1-xxx-gzlj.bilibiligame.net/client_ob_771/"（无 scheme、带尾斜杠），
-// scheme 由 res_http_type 决定（实测 0=https）。列表为空或无法解析时返回 nil，由上层
-// 回退到内置默认 CDN。
-func ResolveResURL(httpType int, resource []string) *url.URL {
-	if len(resource) == 0 {
-		return nil
-	}
+// scheme 由 res_http_type 决定（实测 0=https）。无法解析的条目跳过（与 normalizeServers
+// 同样的容错）；全部为空/非法时返回空切片，由上层回退到内置默认 CDN。
+//
+// 保留全部而非只取首个：服务端下发多台正是为了互为备份（实测 l1/l3/l4 三台），只留一台
+// 等于把它们的冗余丢掉——首台一挂就只能回退到内置默认 CDN，而那个地址是写死的、更旧。
+func ResolveResURLs(httpType int, resource []string) []*url.URL {
 	scheme := "https"
 	if httpType != 0 {
 		scheme = "http"
 	}
-	u, err := urlx.ParseBase(scheme + "://" + strings.TrimRight(resource[0], "/"))
-	if err != nil {
-		return nil
+	out := make([]*url.URL, 0, len(resource))
+	for _, host := range resource {
+		host = strings.TrimRight(strings.ReplaceAll(host, "\t", ""), "/")
+		if host == "" {
+			continue
+		}
+		u, err := urlx.ParseBase(scheme + "://" + host)
+		if err != nil {
+			continue
+		}
+		out = append(out, u)
 	}
-	return u
+	return out
 }

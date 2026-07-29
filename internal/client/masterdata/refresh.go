@@ -62,23 +62,25 @@ func NewRefresher(cacheDir string, rainbow Rainbow, opts ...RefresherOption) *Re
 	return r
 }
 
-// Ensure 用已知 manifest_ver + res 确保干净库就绪并打开只读查询句柄。
+// Ensure 用已知 manifest_ver + res 列表确保干净库就绪并打开只读查询句柄。
 //
-// res 为 nil（下发缺失）时回退内置默认 CDN。资源下载复用 Refresher 的共享 Transport。
-func (r *Refresher) Ensure(ctx context.Context, manifestVer string, res *url.URL) (*Query, error) {
+// res 是下发的资源 CDN 列表（互为备份，按序尝试）；为空（下发缺失）时回退内置默认 CDN。
+// 资源下载复用 Refresher 的共享 Transport。
+func (r *Refresher) Ensure(ctx context.Context, manifestVer string, res []*url.URL) (*Query, error) {
 	ver, err := strconv.Atoi(manifestVer)
 	if err != nil {
 		return nil, fmt.Errorf("%w：%q（%v）", ErrBadManifestVer, manifestVer, err)
 	}
-	if res == nil {
-		res = urlx.MustParseBase(asset.DefaultRes)
-		r.logger.Warn("res 为空，回退内置默认 CDN", "res", res)
+	if len(res) == 0 {
+		res = []*url.URL{urlx.MustParseBase(asset.DefaultRes)}
+		r.logger.Warn("res 为空，回退内置默认 CDN", "res", res[0])
 	}
 	src := asset.NewSource(
-		asset.WithRes(res),
+		asset.WithResList(res),
+		asset.WithLogger(r.logger),
 		asset.WithHTTPClient(&http.Client{Timeout: assetDownloadTimeout, Transport: r.rt}),
 	)
-	mgr := NewManager(r.cacheDir, r.rainbow, src)
+	mgr := NewManager(r.cacheDir, r.rainbow, src, WithManagerLogger(r.logger))
 	path, err := mgr.EnsureDB(ctx, ver)
 	if err != nil {
 		return nil, err
@@ -100,5 +102,5 @@ func (r *Refresher) Refresh(ctx context.Context) (*Query, error) {
 	if err != nil {
 		return nil, err
 	}
-	return r.Ensure(ctx, disc.ManifestVer, disc.ResURL)
+	return r.Ensure(ctx, disc.ManifestVer, disc.ResURLs)
 }

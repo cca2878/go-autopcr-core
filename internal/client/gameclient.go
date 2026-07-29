@@ -164,7 +164,7 @@ func (g *client) ensureMasterdata(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	q, err := r.Ensure(ctx, g.state.ManifestVer, g.state.ResURL)
+	q, err := r.Ensure(ctx, g.state.ManifestVer, g.state.ResURLs)
 	if err != nil {
 		return err
 	}

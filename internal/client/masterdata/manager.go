@@ -5,8 +5,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/unityfs"
 )
@@ -24,11 +28,28 @@ type Manager struct {
 	cacheDir string
 	rainbow  Rainbow
 	fetcher  Fetcher
+	logger   *slog.Logger
+}
+
+// ManagerOption 定制 Manager。
+type ManagerOption func(*Manager)
+
+// WithManagerLogger 设置日志器（默认 slog.Default()）。
+func WithManagerLogger(l *slog.Logger) ManagerOption {
+	return func(m *Manager) {
+		if l != nil {
+			m.logger = l
+		}
+	}
 }
 
 // NewManager 构造 Manager。cacheDir 下按 db/{ver}.db 缓存干净库。
-func NewManager(cacheDir string, rainbow Rainbow, fetcher Fetcher) *Manager {
-	return &Manager{cacheDir: cacheDir, rainbow: rainbow, fetcher: fetcher}
+func NewManager(cacheDir string, rainbow Rainbow, fetcher Fetcher, opts ...ManagerOption) *Manager {
+	m := &Manager{cacheDir: cacheDir, rainbow: rainbow, fetcher: fetcher, logger: slog.Default()}
+	for _, o := range opts {
+		o(m)
+	}
+	return m
 }
 
 // DBPath 返回版本 ver 干净库的缓存路径（不保证已存在）。
@@ -43,6 +64,7 @@ func (m *Manager) DBPath(ver int) string {
 func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 	dbPath := m.DBPath(ver)
 	if _, err := os.Stat(dbPath); err == nil {
+		m.pruneCache(ver)
 		return dbPath, nil
 	}
 
@@ -83,7 +105,71 @@ func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 		_ = os.Remove(tmp)
 		return "", buildErr(ver, StageStore, err)
 	}
+	m.pruneCache(ver)
 	return dbPath, nil
+}
+
+// staleTempAge 是孤儿临时文件的判废年龄。取值须【远大于】一次正常构建的耗时：构建中的
+// 临时文件也在同一个目录里，按年龄区分是唯一不需要跨进程协调的判据（同一 cacheDir 可能
+// 被另一个进程的外壳同时使用，我们看不见它的构建进行到哪一步）。
+const staleTempAge = 24 * time.Hour
+
+// pruneCache 清掉缓存目录里已无用的东西：比 keep 旧的版本库，以及久未改动的孤儿临时文件。
+//
+// 为什么可以删：本库任何时候都只用最新的 manifest_ver，旧版本库不会再被打开——每个 42MB
+// 上下，不清理就是无上限累积（移动端尤其吃不消）。
+//
+// 为什么只删【更旧】的：版本号回退时（服务端回滚）当前版本会小于目录里已有的，这时那些
+// 更新的库仍可能被另一个进程持有或马上再用，不该由我们代为判废。
+//
+// 为什么删失败可以不管：另一个进程正持有该文件时，Windows 会拒绝删除（POSIX 上删掉也不影响
+// 它已打开的句柄）。这只意味着这次没清掉，下次 EnsureDB 会再试——清理是尽力而为，绝不能
+// 让它影响 EnsureDB 的成败。
+func (m *Manager) pruneCache(keep int) {
+	dir := filepath.Dir(m.DBPath(keep))
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+
+	var removed, freed int64
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		victim := false
+		switch {
+		case strings.HasSuffix(name, ".tmp"):
+			// 孤儿临时文件：正常路径会自行删除，留下来的是上次进程崩在半途的残骸。
+			info, ierr := e.Info()
+			victim = ierr == nil && time.Since(info.ModTime()) > staleTempAge
+		case strings.HasSuffix(name, ".db"):
+			ver, cerr := strconv.Atoi(strings.TrimSuffix(name, ".db"))
+			victim = cerr == nil && ver < keep
+		}
+		if !victim {
+			continue
+		}
+
+		size := int64(0)
+		if info, ierr := e.Info(); ierr == nil {
+			size = info.Size()
+		}
+		if err := os.Remove(filepath.Join(dir, name)); err != nil {
+			continue
+		}
+		removed++
+		freed += size
+		// SQLite 的附属文件（只读模式下通常不存在，但库若为 WAL 模式则可能留下）。
+		for _, suffix := range []string{"-wal", "-shm"} {
+			_ = os.Remove(filepath.Join(dir, name+suffix))
+		}
+	}
+	if removed > 0 {
+		m.logger.Info("已清理旧的母数据缓存",
+			"files", removed, "freed_mb", freed/(1<<20), "keep_ver", keep)
+	}
 }
 
 // unhashFile 就地反混淆 path 处的库。Close 的错误必须上报而非吞掉：紧随其后的 rename 会把

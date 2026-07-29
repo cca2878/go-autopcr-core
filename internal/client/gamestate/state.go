@@ -127,9 +127,10 @@ type PlayerState struct {
 	ResVer      string
 	ManifestVer string
 
-	// ResURL 是维护状态响应下发的资源 CDN 根（取首个主机、按 res_http_type 定 scheme）。
-	// 供 masterdata 在线获取使用；下发为空/非法时为 nil，由上层回退到内置默认 CDN。
-	ResURL *url.URL
+	// ResURLs 是维护状态响应下发的【全部】资源 CDN 根（按 res_http_type 定 scheme），顺序即
+	// 下发顺序。供 masterdata 在线获取使用：首台故障时依次换用下一台（见 asset.Source）。
+	// 下发为空/全部非法时为空，由上层回退到内置默认 CDN。
+	ResURLs []*url.URL
 }
 
 // ReadStorySet 返回已读剧情 id 的集合（含哨兵 0＝无前置），便于成员判定。
