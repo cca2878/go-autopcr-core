@@ -19,7 +19,7 @@ func newReader(b []byte) *reader { return &reader{b: b} }
 
 func (r *reader) fail(format string, a ...any) {
 	if r.err == nil {
-		r.err = fmt.Errorf(format, a...)
+		r.err = fmt.Errorf("%w：%s", ErrMalformed, fmt.Sprintf(format, a...))
 	}
 }
 

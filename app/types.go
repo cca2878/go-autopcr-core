@@ -77,9 +77,7 @@ type (
 	CaptchaResult = captcha.Result        // 一次求解的结果（Solver 的返回）
 )
 
-// ErrNoSolver 是「未注入验证码求解器」哨兵（转发 captcha.ErrNoSolver）：触发风控(is_risk)而
-// 无求解器时，登录以它硬失败。外壳可 errors.Is 命中它，据此提示用户或注入求解器。
-var ErrNoSolver = captcha.ErrNoSolver
+// 错误的公开面（哨兵、可 errors.As 的类型、处置类别）见 errors.go。
 
 // MasterdataHandle 是须显式 Close 的母数据只读句柄（RefreshMasterdata 的返回类型——
 // 免登录刷新拿到的库由调用方持有并关闭）。

@@ -11,8 +11,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cca2878/go-autopcr-core/internal/errs"
 	_ "modernc.org/sqlite"
 )
+
+// ErrOpenDB 表示已构建好的母数据库打不开——文件被删、权限不对、或落盘时就已损坏。
+// 归 KindEnvironment：这台机器上的事，重新下载一次母数据通常能修好。
+var ErrOpenDB = errs.DomainMasterdata.New(errs.KindEnvironment, "打开母数据库失败")
 
 // timeFormats 复刻 ref db.parse_time 支持的时间字符串格式（Go 参考布局，非零填充亦可解析）。
 var timeFormats = []string{
@@ -56,7 +61,7 @@ func Open(path string) (*DB, error) {
 	}
 	if err := sdb.Ping(); err != nil {
 		_ = sdb.Close()
-		return nil, fmt.Errorf("打开母数据库 %s: %w", path, err)
+		return nil, fmt.Errorf("%w %s: %w", ErrOpenDB, path, err)
 	}
 	return &DB{sql: sdb}, nil
 }

@@ -93,7 +93,7 @@ func (startRerollV2) Params() []automation.Param {
 func (startRerollV2) Candidates(ctx context.Context, gc client.GameClient) (map[string][]automation.Option, error) {
 	md := gc.Masterdata()
 	if md == nil {
-		return nil, fmt.Errorf("黎明界刷开局需要母数据，但未启用")
+		return nil, automation.RequireMasterdata("解析黎明界公会候选")
 	}
 	guilds, err := md.Labyrinth().EnterGuilds(ctx)
 	if err != nil {
@@ -112,7 +112,7 @@ func (startRerollV2) Run(ctx context.Context, gc client.GameClient, rc *automati
 	}
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("黎明界刷开局需要母数据，但未启用")
+		return automation.RequireMasterdata("刷黎明界开局")
 	}
 	bossByQuest, err := md.Labyrinth().BossUnitIDsByQuest(ctx)
 	if err != nil {

@@ -8,13 +8,17 @@ package captcha
 
 import (
 	"context"
-	"errors"
+
+	"github.com/cca2878/go-autopcr-core/internal/errs"
 )
 
 // ErrNoSolver 表示凭据未配置验证码求解器。触发风控(is_risk)时若无求解器，登录据此
 // 硬失败：这是有意的——核心不携带求解器实现，求解能力一律由外壳注入。外壳可用
 // errors.Is 命中它，据此提示用户 / 注入求解器 / 采集数据。
-var ErrNoSolver = errors.New("captcha: 未配置验证码求解器")
+//
+// 归 KindMisuse 而非 KindRejected：风控本身是对端行为，但「没人能解它」是外壳漏了装配，
+// 补上求解器即可，与账号真被风控拦下是两回事。
+var ErrNoSolver = errs.DomainCredential.New(errs.KindMisuse, "captcha: 未配置验证码求解器")
 
 // Result 是一次 geetest 求解的结果。
 type Result struct {

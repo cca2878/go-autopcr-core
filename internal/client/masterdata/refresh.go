@@ -68,7 +68,7 @@ func NewRefresher(cacheDir string, rainbow Rainbow, opts ...RefresherOption) *Re
 func (r *Refresher) Ensure(ctx context.Context, manifestVer string, res *url.URL) (*Query, error) {
 	ver, err := strconv.Atoi(manifestVer)
 	if err != nil {
-		return nil, fmt.Errorf("manifest_ver %q 非法: %w", manifestVer, err)
+		return nil, fmt.Errorf("%w：%q（%v）", ErrBadManifestVer, manifestVer, err)
 	}
 	if res == nil {
 		res = urlx.MustParseBase(asset.DefaultRes)

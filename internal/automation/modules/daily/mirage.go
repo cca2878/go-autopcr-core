@@ -2,7 +2,6 @@ package daily
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
 	"github.com/cca2878/go-autopcr-core/internal/client"
@@ -32,7 +31,7 @@ func (mirageFloorReceive) Params() []automation.Param { return nil }
 func (mirageFloorReceive) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("追忆战礼物收取需要母数据，但未启用")
+		return automation.RequireMasterdata("收取追忆战礼物")
 	}
 	// 先查后动：未解锁追忆战时 mirage/top 会触发业务错误，据登录折叠的任务状态先行拦截。
 	if !gc.Data().IsQuestCleared(mirageUnlockQuestID) {

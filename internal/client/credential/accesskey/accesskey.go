@@ -12,12 +12,27 @@ import (
 	"maps"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/credential/captcha"
+	"github.com/cca2878/go-autopcr-core/internal/errs"
 )
 
 // 渠道标识。
 const (
 	ChannelBSDK = "bsdk" // 官服（免登录，直传 AccessKey）
 	ChannelQSDK = "qsdk" // 渠道服
+)
+
+// 凭据构造与使用的三种失败。都是【调用方传错了东西】而非运行期意外，故同归 errs.KindMisuse：
+// 外壳判定后直接把用户引导到对应的输入项即可，不必去猜错误文本。
+var (
+	// ErrUnknownChannel 表示渠道标识不是 ChannelBSDK / ChannelQSDK 之一。
+	ErrUnknownChannel = errs.DomainCredential.New(errs.KindMisuse, "未知渠道")
+
+	// ErrEmptyCredential 表示 uid 或 access_key 为空。
+	ErrEmptyCredential = errs.DomainCredential.New(errs.KindMisuse, "uid 与 access_key 均不能为空")
+
+	// ErrAnonymousLogin 表示拿只供免凭证握手用的匿名凭据去走登录序列。这是装配错误：
+	// 匿名凭据没有 uid，本就不可能登录成功。
+	ErrAnonymousLogin = errs.DomainCredential.New(errs.KindMisuse, "匿名凭据不可用于登录")
 )
 
 // Android 平台标识（PLATFORM 头 / DEVICE 头）。
@@ -95,10 +110,10 @@ func WithCaptchaSolver(s captcha.Solver) Option {
 func New(channel, uid, accessKey string, opts ...Option) (*Credential, error) {
 	cfg, ok := channels[channel]
 	if !ok {
-		return nil, fmt.Errorf("未知渠道 %q（支持 %q / %q）", channel, ChannelBSDK, ChannelQSDK)
+		return nil, fmt.Errorf("%w %q（支持 %q / %q）", ErrUnknownChannel, channel, ChannelBSDK, ChannelQSDK)
 	}
 	if uid == "" || accessKey == "" {
-		return nil, fmt.Errorf("uid 与 access_key 均不能为空")
+		return nil, ErrEmptyCredential
 	}
 	c := &Credential{
 		uid:       uid,
@@ -119,7 +134,7 @@ func New(channel, uid, accessKey string, opts ...Option) (*Credential, error) {
 func Anonymous(channel string) (*Credential, error) {
 	cfg, ok := channels[channel]
 	if !ok {
-		return nil, fmt.Errorf("未知渠道 %q（支持 %q / %q）", channel, ChannelBSDK, ChannelQSDK)
+		return nil, fmt.Errorf("%w %q（支持 %q / %q）", ErrUnknownChannel, channel, ChannelBSDK, ChannelQSDK)
 	}
 	return &Credential{cfg: cfg}, nil
 }
@@ -127,7 +142,7 @@ func Anonymous(channel string) (*Credential, error) {
 // Login 直接返回构造时传入的 uid / access_key；匿名凭据（无 uid）不可登录。
 func (c *Credential) Login(ctx context.Context) (string, string, error) {
 	if c.uid == "" {
-		return "", "", fmt.Errorf("匿名凭据不可用于登录")
+		return "", "", ErrAnonymousLogin
 	}
 	return c.uid, c.accessKey, nil
 }

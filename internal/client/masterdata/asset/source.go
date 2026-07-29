@@ -100,7 +100,7 @@ func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, catego
 // Download 下载一个资源条目的原始字节（pool/{category}/{md5[:2]}/{md5}）。
 func (s *Source) Download(ctx context.Context, c *Content) ([]byte, error) {
 	if len(c.MD5) < 2 {
-		return nil, fmt.Errorf("无效 md5: %q", c.MD5)
+		return nil, fmt.Errorf("%w：条目 %s 的 md5 键为 %q", ErrBadManifest, c.URL, c.MD5)
 	}
 	// 注意 c.MD5 是 pool 的【寻址键】，不保证等于内容摘要：实测 masterdata 条目的该字段为
 	// 16 位十六进制，而下下来的内容 md5 是另一个 32 位值。故此处不能拿它当校验和。
@@ -116,7 +116,7 @@ func (s *Source) FetchMasterdata(ctx context.Context, ver int) ([]byte, error) {
 	}
 	c, ok := registry[masterdataURL]
 	if !ok {
-		return nil, fmt.Errorf("清单中未找到 %s", masterdataURL)
+		return nil, fmt.Errorf("%w：%s", ErrNotInManifest, masterdataURL)
 	}
 	return s.Download(ctx, c)
 }
@@ -137,7 +137,7 @@ func (s *Source) getBytes(ctx context.Context, u *url.URL) ([]byte, error) {
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GET %s: 状态 %d", u, resp.StatusCode)
+		return nil, &HTTPError{URL: u.String(), Status: resp.StatusCode}
 	}
 	return io.ReadAll(resp.Body)
 }

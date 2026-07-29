@@ -9,6 +9,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
 )
 
 // 固定 CBC 初始向量，复刻原 apiclient.py。
@@ -65,7 +67,8 @@ func aesCBCDecrypt(ciphertext, key []byte) ([]byte, error) {
 		return nil, err
 	}
 	if len(ciphertext)%aes.BlockSize != 0 {
-		return nil, fmt.Errorf("密文长度 %d 非 %d 的整数倍", len(ciphertext), aes.BlockSize)
+		return nil, gameerr.Protocol("AES 解密",
+			fmt.Errorf("密文长度 %d 非 %d 的整数倍", len(ciphertext), aes.BlockSize))
 	}
 	out := make([]byte, len(ciphertext))
 	cipher.NewCBCDecrypter(block, cbcIV).CryptBlocks(out, ciphertext)
@@ -85,7 +88,8 @@ func encrypt(data, key []byte) ([]byte, error) {
 // （复刻 apiclient._decrypt）。
 func decrypt(data []byte) (plain, key []byte, err error) {
 	if len(data) < keyLen {
-		return nil, nil, fmt.Errorf("密文过短：%d < %d", len(data), keyLen)
+		return nil, nil, gameerr.Protocol("拆分尾部密钥",
+			fmt.Errorf("密文过短：%d < %d", len(data), keyLen))
 	}
 	key = data[len(data)-keyLen:]
 	ciphertext := data[:len(data)-keyLen]
@@ -118,7 +122,7 @@ func unpackCrypted(b64 []byte) ([]byte, error) {
 	raw := make([]byte, base64.StdEncoding.DecodedLen(len(b64)))
 	n, err := base64.StdEncoding.Decode(raw, b64)
 	if err != nil {
-		return nil, fmt.Errorf("响应 base64 解码失败: %w", err)
+		return nil, gameerr.Protocol("base64 解码", err)
 	}
 	raw = raw[:n]
 	plain, _, err := decrypt(raw)

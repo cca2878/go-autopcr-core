@@ -31,7 +31,7 @@ func (exEquipInfo) Params() []automation.Param { return nil }
 func (exEquipInfo) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("查ex装备需要母数据解析稀有度，但未启用")
+		return automation.RequireMasterdata("解析 ex 装备稀有度")
 	}
 	ids := gc.Data().ExEquipIDs
 	if len(ids) == 0 {

@@ -72,7 +72,7 @@ func bindCandidates(params []Param, cands map[string][]Option) ([]Param, error) 
 	}
 	for name := range cands {
 		if !declared[name] {
-			return nil, fmt.Errorf("候选给了未声明的参数 %q", name)
+			return nil, &ParamError{Param: name, Err: fmt.Errorf("%w：Candidates 给了未声明的参数", ErrBadCandidates)}
 		}
 	}
 
@@ -88,7 +88,8 @@ func bindCandidates(params []Param, cands map[string][]Option) ([]Param, error) 
 			continue
 		}
 		if isChoice(out[i].Type) && len(out[i].Bounds.Choices) == 0 {
-			return nil, fmt.Errorf("参数 %q 声明为 %s，却既无静态候选、Candidates 也未给出", out[i].Name, out[i].Type)
+			return nil, &ParamError{Param: out[i].Name, Err: fmt.Errorf(
+				"%w：声明为 %s，却既无静态候选、Candidates 也未给出", ErrBadCandidates, out[i].Type)}
 		}
 	}
 	return out, nil
@@ -99,36 +100,36 @@ func (p Param) validate(v any) error {
 	switch p.Type {
 	case ParamBool:
 		if _, ok := v.(bool); !ok {
-			return fmt.Errorf("应为 bool")
+			return fmt.Errorf("%w：应为 bool", ErrParamType)
 		}
 	case ParamInt:
 		n, ok := asInt(v)
 		if !ok {
-			return fmt.Errorf("应为整数")
+			return fmt.Errorf("%w：应为整数", ErrParamType)
 		}
 		if p.Bounds.Min != nil && n < *p.Bounds.Min {
-			return fmt.Errorf("不得小于 %d", *p.Bounds.Min)
+			return fmt.Errorf("%w：不得小于 %d", ErrParamRange, *p.Bounds.Min)
 		}
 		if p.Bounds.Max != nil && n > *p.Bounds.Max {
-			return fmt.Errorf("不得大于 %d", *p.Bounds.Max)
+			return fmt.Errorf("%w：不得大于 %d", ErrParamRange, *p.Bounds.Max)
 		}
 	case ParamString, ParamChoice:
 		s, ok := v.(string)
 		if !ok {
-			return fmt.Errorf("应为字符串")
+			return fmt.Errorf("%w：应为字符串", ErrParamType)
 		}
 		if len(p.Bounds.Choices) > 0 && !slices.Contains(p.Bounds.Choices, s) {
-			return fmt.Errorf("应为 %v 之一", p.Bounds.Choices)
+			return fmt.Errorf("%w：应为 %v 之一", ErrParamChoice, p.Bounds.Choices)
 		}
 	case ParamMultiChoice:
 		ss, ok := asStringSlice(v)
 		if !ok {
-			return fmt.Errorf("应为字符串数组")
+			return fmt.Errorf("%w：应为字符串数组", ErrParamType)
 		}
 		if len(p.Bounds.Choices) > 0 {
 			for _, s := range ss {
 				if !slices.Contains(p.Bounds.Choices, s) {
-					return fmt.Errorf("%q 不在允许取值 %v 内", s, p.Bounds.Choices)
+					return fmt.Errorf("%w：%q 不在允许取值 %v 内", ErrParamChoice, s, p.Bounds.Choices)
 				}
 			}
 		}
@@ -188,7 +189,7 @@ func Validate(params []Param, provided map[string]any) error {
 			continue
 		}
 		if err := p.validate(v); err != nil {
-			return fmt.Errorf("参数 %q: %w", p.Name, err)
+			return &ParamError{Param: p.Name, Err: err}
 		}
 	}
 	unknown := make([]string, 0, len(provided))
@@ -199,7 +200,7 @@ func Validate(params []Param, provided map[string]any) error {
 	}
 	if len(unknown) > 0 {
 		slices.Sort(unknown) // 同理：未知参数也按名排序，报错稳定
-		return fmt.Errorf("未知参数 %q", unknown[0])
+		return &ParamError{Param: unknown[0], Err: ErrUnknownParam}
 	}
 	return nil
 }

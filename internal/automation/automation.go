@@ -264,7 +264,7 @@ func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task,
 
 		var res Result
 		if !known {
-			res = Result{Meta: meta, Status: StatusError, Err: fmt.Errorf("未知模块 %q", t.Module)}
+			res = Result{Meta: meta, Status: StatusError, Err: fmt.Errorf("%w %q", ErrUnknownModule, t.Module)}
 		} else {
 			res = runOne(ctx, gc, m, t.Values, col)
 			// 取消判定：只认【错误链上确实是取消】的失败，不看 ctx 的当下状态——否则恰好与超时

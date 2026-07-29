@@ -15,7 +15,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/url"
 
@@ -161,7 +160,7 @@ func (s *Session) ServerTime() int64 {
 // error 非 nil 表示【被取消】（ctx 取消/超时），此时 []Result 只含已完成任务；nil 表示全部跑完。
 func (s *Session) Run(ctx context.Context, tasks []Task, obs Observer) ([]Result, error) {
 	if s.gc == nil {
-		return nil, errors.New("会话未登录：请先 Login")
+		return nil, ErrNotLoggedIn
 	}
 	return automation.Run(ctx, s.gc, s.registry, tasks, obs, s.collector)
 }

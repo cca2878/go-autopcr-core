@@ -2,7 +2,6 @@ package story
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
@@ -27,7 +26,7 @@ func (birthdayStoryReport) Params() []automation.Param { return nil }
 func (birthdayStoryReport) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("生日剧情报告需要母数据，但未启用")
+		return automation.RequireMasterdata("生成生日剧情报告")
 	}
 	stories, err := md.Story().BirthdayStories(ctx)
 	if err != nil {

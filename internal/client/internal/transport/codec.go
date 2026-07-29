@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 	"github.com/ugorji/go/codec"
 )
@@ -75,18 +76,18 @@ func decodeMsgpackEnvelope(body []byte, header *protocol.ResponseHeader, out any
 		Data        codec.Raw `msgpack:"data"`
 	}
 	if err := codec.NewDecoderBytes(mp, responseHandle).Decode(&env); err != nil {
-		return fmt.Errorf("解析 msgpack 信封失败: %w", err)
+		return gameerr.Protocol("msgpack 信封", err)
 	}
 	if len(env.DataHeaders) > 0 {
 		var m map[string]any
 		if err := codec.NewDecoderBytes(env.DataHeaders, responseHandle).Decode(&m); err != nil {
-			return fmt.Errorf("解析 data_headers 失败: %w", err)
+			return gameerr.Protocol("msgpack data_headers", err)
 		}
 		*header = headerFromMap(m)
 	}
 	if len(env.Data) > 0 && out != nil {
 		if err := codec.NewDecoderBytes(env.Data, responseHandle).Decode(out); err != nil {
-			return fmt.Errorf("解析 data 失败: %w", err)
+			return gameerr.Protocol("msgpack data", err)
 		}
 	}
 	return nil
@@ -98,18 +99,18 @@ func decodeJSONEnvelope(body []byte, header *protocol.ResponseHeader, out any) e
 		Data        json.RawMessage `json:"data"`
 	}
 	if err := json.Unmarshal(body, &env); err != nil {
-		return fmt.Errorf("解析 JSON 信封失败: %w", err)
+		return gameerr.Protocol("JSON 信封", err)
 	}
 	if len(env.DataHeaders) > 0 {
 		var m map[string]any
 		if err := json.Unmarshal(env.DataHeaders, &m); err != nil {
-			return fmt.Errorf("解析 data_headers 失败: %w", err)
+			return gameerr.Protocol("JSON data_headers", err)
 		}
 		*header = headerFromMap(m)
 	}
 	if len(env.Data) > 0 && out != nil {
 		if err := json.Unmarshal(env.Data, out); err != nil {
-			return fmt.Errorf("解析 data 失败: %w", err)
+			return gameerr.Protocol("JSON data", err)
 		}
 	}
 	return nil

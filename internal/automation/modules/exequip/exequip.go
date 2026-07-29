@@ -70,7 +70,7 @@ func (rainbowEnhance) Params() []automation.Param {
 func (rainbowEnhance) Candidates(ctx context.Context, gc client.GameClient) (map[string][]automation.Option, error) {
 	md := gc.Masterdata()
 	if md == nil {
-		return nil, fmt.Errorf("彩装究极炼成需要母数据，但未启用")
+		return nil, automation.RequireMasterdata("解析彩装炼成候选")
 	}
 	snap, err := md.Exequip().LoadSnapshot(ctx)
 	if err != nil {
@@ -121,7 +121,7 @@ func rainbowOptions(gc client.GameClient, snap *mdexequip.Snapshot) []automation
 func (rainbowEnhance) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("彩装究极炼成需要母数据，但未启用")
+		return automation.RequireMasterdata("执行彩装究极炼成")
 	}
 	snap, err := md.Exequip().LoadSnapshot(ctx)
 	if err != nil {

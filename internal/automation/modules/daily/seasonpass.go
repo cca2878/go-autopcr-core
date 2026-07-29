@@ -2,7 +2,6 @@ package daily
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
@@ -27,7 +26,7 @@ func (seasonpassAccept) Params() []automation.Param { return nil }
 func (seasonpassAccept) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("女神祭需要母数据判定开放期，但未启用")
+		return automation.RequireMasterdata("判定女神祭开放期")
 	}
 	seasons, err := md.Seasonpass().ActiveSeasonIDs(ctx, time.Unix(gc.ServerTime(), 0))
 	if err != nil {

@@ -14,7 +14,6 @@ package unityfs
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 
 	"github.com/pierrec/lz4/v4"
@@ -81,7 +80,7 @@ func parseHeader(raw []byte) (*header, error) {
 		if r.err != nil {
 			return nil, r.err
 		}
-		return nil, fmt.Errorf("不是 UnityFS 容器：signature=%q", sig)
+		return nil, fmt.Errorf("%w：不是 UnityFS 容器（signature=%q）", ErrMalformed, sig)
 	}
 	h := &header{}
 	h.version = r.u32()
@@ -110,7 +109,7 @@ func parseBlocksInfo(raw []byte, h *header) (blocks []block, dataOff int, err er
 		biOff = h.headerEnd
 	}
 	if biOff < 0 || biOff+int(h.compBlocksInfoSize) > len(raw) {
-		return nil, 0, errors.New("blocksInfo 偏移越界")
+		return nil, 0, fmt.Errorf("%w：blocksInfo 偏移越界", ErrMalformed)
 	}
 
 	bi, err := decompress(raw[biOff:biOff+int(h.compBlocksInfoSize)], int(h.uncompBlocksInfoSize), h.flags)
@@ -118,7 +117,7 @@ func parseBlocksInfo(raw []byte, h *header) (blocks []block, dataOff int, err er
 		return nil, 0, fmt.Errorf("解压 blocksInfo: %w", err)
 	}
 	if len(bi) != int(h.uncompBlocksInfoSize) {
-		return nil, 0, fmt.Errorf("blocksInfo 解压后大小 %d != %d", len(bi), h.uncompBlocksInfoSize)
+		return nil, 0, fmt.Errorf("%w：blocksInfo 解压后大小 %d != %d", ErrMalformed, len(bi), h.uncompBlocksInfoSize)
 	}
 
 	br := newReader(bi)
@@ -127,7 +126,7 @@ func parseBlocksInfo(raw []byte, h *header) (blocks []block, dataOff int, err er
 	// blockCount 来自文件内容，不可信：每条块表项 10 字节，超出剩余长度即为损坏数据。先校验再
 	// 预分配，否则一个几十字节的坏文件就能让我们申请几十 GB（移动端直接被 OOM 杀掉）。
 	if int64(blockCount)*blockEntrySize > int64(len(bi)-br.pos()) {
-		return nil, 0, fmt.Errorf("块表项数 %d 超出 blocksInfo 剩余长度", blockCount)
+		return nil, 0, fmt.Errorf("%w：块表项数 %d 超出 blocksInfo 剩余长度", ErrMalformed, blockCount)
 	}
 	blocks = make([]block, 0, blockCount)
 	for range blockCount {
@@ -156,13 +155,13 @@ func decompressBlocks(raw []byte, blocks []block, dataOff int) ([]byte, error) {
 	var total int64
 	for i, b := range blocks {
 		if int64(b.uncompressedSize) > int64(b.compressedSize)*maxLZ4Expansion+16 {
-			return nil, fmt.Errorf("数据块 %d 声称的解压后大小 %d 与压缩后大小 %d 不相称",
-				i, b.uncompressedSize, b.compressedSize)
+			return nil, fmt.Errorf("%w：数据块 %d 声称的解压后大小 %d 与压缩后大小 %d 不相称",
+				ErrMalformed, i, b.uncompressedSize, b.compressedSize)
 		}
 		total += int64(b.uncompressedSize)
 	}
 	if total > int64(len(raw))*maxLZ4Expansion+16 {
-		return nil, fmt.Errorf("块表声称的解压总长 %d 与文件长度 %d 不相称", total, len(raw))
+		return nil, fmt.Errorf("%w：块表声称的解压总长 %d 与文件长度 %d 不相称", ErrMalformed, total, len(raw))
 	}
 	// 就地解到 blob 的尾部：容量已按总长备好，逐块「先解到临时缓冲再 append」会让几十 MB 的
 	// 母数据库在解包时被多分配、多拷贝一整遍。
@@ -171,7 +170,7 @@ func decompressBlocks(raw []byte, blocks []block, dataOff int) ([]byte, error) {
 	for i, blk := range blocks {
 		end := cur + int(blk.compressedSize)
 		if cur < 0 || end > len(raw) {
-			return nil, fmt.Errorf("数据块 %d 越界（[%d:%d] / %d）", i, cur, end, len(raw))
+			return nil, fmt.Errorf("%w：数据块 %d 越界（[%d:%d] / %d）", ErrMalformed, i, cur, end, len(raw))
 		}
 		n := len(blob)
 		blob = blob[:n+int(blk.uncompressedSize)]
@@ -188,7 +187,7 @@ func decompress(chunk []byte, uncompressedSize int, compFlag uint32) ([]byte, er
 	// 解压后大小取自文件内容、不可信：先按 LZ4 的理论最大膨胀率核一遍，坏数据才不会
 	// 在这里变成一次巨额分配。
 	if uncompressedSize < 0 || uncompressedSize > len(chunk)*maxLZ4Expansion+16 {
-		return nil, fmt.Errorf("声称的解压后大小 %d 与压缩块长度 %d 不相称", uncompressedSize, len(chunk))
+		return nil, fmt.Errorf("%w：声称的解压后大小 %d 与压缩块长度 %d 不相称", ErrMalformed, uncompressedSize, len(chunk))
 	}
 	dst := make([]byte, uncompressedSize)
 	if err := decompressInto(dst, chunk, compFlag); err != nil {
@@ -202,7 +201,7 @@ func decompressInto(dst, chunk []byte, compFlag uint32) error {
 	switch compFlag & flagCompressionMask {
 	case compNone:
 		if len(chunk) != len(dst) {
-			return fmt.Errorf("未压缩块长度 %d != %d", len(chunk), len(dst))
+			return fmt.Errorf("%w：未压缩块长度 %d != %d", ErrMalformed, len(chunk), len(dst))
 		}
 		copy(dst, chunk)
 		return nil
@@ -210,16 +209,16 @@ func decompressInto(dst, chunk []byte, compFlag uint32) error {
 		// Unity 用 LZ4 block 格式（非 frame），需显式给出解压后大小。
 		n, err := lz4.UncompressBlock(chunk, dst)
 		if err != nil {
-			return fmt.Errorf("lz4 解压: %w", err)
+			return fmt.Errorf("%w：lz4 解压: %w", ErrMalformed, err)
 		}
 		if n != len(dst) {
-			return fmt.Errorf("lz4 解压后大小 %d != %d", n, len(dst))
+			return fmt.Errorf("%w：lz4 解压后大小 %d != %d", ErrMalformed, n, len(dst))
 		}
 		return nil
 	case compLZMA:
-		return errors.New("该资源使用 LZMA 压缩块，本实现暂不支持（masterdata 未使用）")
+		return fmt.Errorf("%w：LZMA 压缩块（masterdata 未使用）", ErrUnsupported)
 	default:
-		return fmt.Errorf("未知压缩类型 %d", compFlag&flagCompressionMask)
+		return fmt.Errorf("%w：未知压缩类型 %d", ErrUnsupported, compFlag&flagCompressionMask)
 	}
 }
 
@@ -231,12 +230,12 @@ func decompressInto(dst, chunk []byte, compFlag uint32) error {
 func extractSQLiteFromBlob(blob []byte) ([]byte, error) {
 	idx := bytes.Index(blob, sqliteMagic)
 	if idx < 4 {
-		return nil, errors.New("未在 blob 中找到 SQLite 魔数")
+		return nil, fmt.Errorf("%w：未在 blob 中找到 SQLite 魔数", ErrMalformed)
 	}
 	length := int(binary.LittleEndian.Uint32(blob[idx-4:]))
 	end := idx + length
 	if length < len(sqliteMagic) || end > len(blob) {
-		return nil, fmt.Errorf("长度前缀 %d 超出 blob 范围（%d），疑似帧格式不符", length, len(blob))
+		return nil, fmt.Errorf("%w：长度前缀 %d 超出 blob 范围（%d），疑似帧格式不符", ErrMalformed, length, len(blob))
 	}
 	// 拷贝出来，避免返回值继续引用整个大 blob。
 	out := make([]byte, length)

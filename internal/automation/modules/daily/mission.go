@@ -2,7 +2,6 @@ package daily
 
 import (
 	"context"
-	"fmt"
 	"slices"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
@@ -31,7 +30,7 @@ func (missionReceive) Params() []automation.Param { return nil }
 func (missionReceive) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("领取任务奖励需要母数据，但未启用")
+		return automation.RequireMasterdata("给待领任务分类")
 	}
 	cls, err := md.Mission().Classifier(ctx)
 	if err != nil {

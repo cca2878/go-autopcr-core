@@ -2,7 +2,6 @@ package sweep
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
@@ -33,7 +32,7 @@ func (towerCloisterReport) Params() []automation.Param { return nil }
 func (towerCloisterReport) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("露娜塔报告需要母数据判定开放期，但未启用")
+		return automation.RequireMasterdata("判定露娜塔开放期")
 	}
 	// 先查后动：未解锁露娜塔时 tower/top 会触发业务错误，据登录折叠的任务状态先行拦截。
 	if !gc.Data().IsQuestCleared(towerUnlockQuestID) {

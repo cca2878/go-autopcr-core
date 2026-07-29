@@ -2,7 +2,6 @@ package story
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/cca2878/go-autopcr-core/internal/automation"
@@ -28,7 +27,7 @@ func (mainStoryReport) Params() []automation.Param { return nil }
 func (mainStoryReport) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("主线剧情报告需要母数据，但未启用")
+		return automation.RequireMasterdata("生成主线剧情报告")
 	}
 	stories, err := md.Story().MainStories(ctx)
 	if err != nil {

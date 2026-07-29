@@ -223,7 +223,8 @@ func (c *Client) transport(ctx context.Context, req protocol.Request, out any) (
 
 	var header protocol.ResponseHeader
 	if err := decodeEnvelope(raw, crypted, &header, out); err != nil {
-		// 与原项目一致：解码失败视为网络异常。
+		// 与原项目一致：解码失败视为网络异常，从而落入 ErrorHandler 的重试。包在里面的是
+		// gameerr.ProtocolError，要分辨「链路不通」还是「响应形状对不上」再 As 一次即可。
 		return protocol.ResponseHeader{}, gameerr.Network(err)
 	}
 

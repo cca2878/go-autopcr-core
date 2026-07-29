@@ -30,7 +30,7 @@ func (missingUnit) Params() []automation.Param { return nil }
 func (missingUnit) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("查缺角色需要母数据，但未启用")
+		return automation.RequireMasterdata("查缺角色")
 	}
 	obtainable, err := md.Unit().Obtainables(ctx)
 	if err != nil {

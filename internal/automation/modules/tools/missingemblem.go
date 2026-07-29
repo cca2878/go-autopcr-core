@@ -30,7 +30,7 @@ func (missingEmblem) Params() []automation.Param { return nil }
 func (missingEmblem) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("查缺称号需要母数据，但未启用")
+		return automation.RequireMasterdata("查缺称号")
 	}
 	all, err := md.Emblem().AllEmblems(ctx)
 	if err != nil {

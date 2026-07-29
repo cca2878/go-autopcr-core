@@ -29,7 +29,7 @@ func (dungeonReport) Params() []automation.Param { return nil }
 func (dungeonReport) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("地下城报告需要母数据解析区域名，但未启用")
+		return automation.RequireMasterdata("解析地下城区域名")
 	}
 	info, err := gc.Dungeon().Info(ctx)
 	if err != nil {

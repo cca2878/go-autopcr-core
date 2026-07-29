@@ -33,7 +33,7 @@ func (loveUpReport) Params() []automation.Param { return nil }
 func (loveUpReport) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	md := gc.Masterdata()
 	if md == nil {
-		return fmt.Errorf("喂蛋糕报告需要母数据，但未启用")
+		return automation.RequireMasterdata("生成喂蛋糕报告")
 	}
 	data := gc.Data()
 

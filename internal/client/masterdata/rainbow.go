@@ -23,7 +23,7 @@ type Rainbow map[string]map[string]string
 func ParseRainbow(data []byte) (Rainbow, error) {
 	var r Rainbow
 	if err := json.Unmarshal(data, &r); err != nil {
-		return nil, fmt.Errorf("解析 rainbow.json: %w", err)
+		return nil, fmt.Errorf("%w: %w", ErrBadRainbow, err)
 	}
 	return r, nil
 }

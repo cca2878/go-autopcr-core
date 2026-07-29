@@ -48,40 +48,40 @@ func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 
 	raw, err := m.fetcher.FetchMasterdata(ctx, ver)
 	if err != nil {
-		return "", fmt.Errorf("下载 masterdata(v%d): %w", ver, err)
+		return "", buildErr(ver, StageDownload, err)
 	}
 	sqliteBytes, err := unityfs.ExtractSQLite(raw)
 	if err != nil {
-		return "", fmt.Errorf("提取 SQLite: %w", err)
+		return "", buildErr(ver, StageExtract, err)
 	}
 
 	dir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
+		return "", buildErr(ver, StageStore, err)
 	}
 	// 临时文件名须【每次唯一】：多账号外壳共用一个 cacheDir 时，两次 EnsureDB 会同时构建同一
 	// 版本；共用固定的 "<ver>.db.tmp" 会让二者互相截断——最坏情况是把尚未反混淆的库 rename
 	// 成最终缓存，此后每次启动都命中这份坏缓存（查询全部报 no such table）。
 	f, err := os.CreateTemp(dir, fmt.Sprintf("%d.db.*.tmp", ver))
 	if err != nil {
-		return "", err
+		return "", buildErr(ver, StageStore, err)
 	}
 	tmp := f.Name()
 	_, werr := f.Write(sqliteBytes)
 	cerr := f.Close()
 	if err := cmp.Or(werr, cerr); err != nil {
 		_ = os.Remove(tmp)
-		return "", err
+		return "", buildErr(ver, StageStore, err)
 	}
 	if err := m.unhashFile(tmp); err != nil {
 		_ = os.Remove(tmp)
-		return "", fmt.Errorf("反混淆: %w", err)
+		return "", buildErr(ver, StageUnhash, err)
 	}
 	// rename 是原子的：并发的两方各自把自己那份【已反混淆】的库落到同一目标，谁后到谁生效，
 	// 两种结果都是完整可用的库。
 	if err := os.Rename(tmp, dbPath); err != nil {
 		_ = os.Remove(tmp)
-		return "", err
+		return "", buildErr(ver, StageStore, err)
 	}
 	return dbPath, nil
 }
