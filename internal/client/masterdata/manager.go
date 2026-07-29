@@ -64,18 +64,28 @@ func (m *Manager) DBPath(ver int) string {
 func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 	dbPath := m.DBPath(ver)
 	if _, err := os.Stat(dbPath); err == nil {
+		m.logger.Debug("母数据库已就绪", "ver", ver, "path", dbPath)
 		m.pruneCache(ver)
 		return dbPath, nil
 	}
+
+	// 这条是 Info 而非 Debug：下面三步要下载几十 MB、解包、再改写整个库的 schema，首次登录
+	// 时是全流程里最久的一段。不说一声，用户看到的就是长时间无响应。
+	m.logger.Info("母数据库尚未缓存，开始构建", "ver", ver)
+	started := time.Now()
 
 	raw, err := m.fetcher.FetchMasterdata(ctx, ver)
 	if err != nil {
 		return "", buildErr(ver, StageDownload, err)
 	}
+	m.logger.Debug("母数据资源包下载完成", "ver", ver, "bytes", len(raw), "elapsed", time.Since(started))
+
+	extractAt := time.Now()
 	sqliteBytes, err := unityfs.ExtractSQLite(raw)
 	if err != nil {
 		return "", buildErr(ver, StageExtract, err)
 	}
+	m.logger.Debug("SQLite 提取完成", "ver", ver, "bytes", len(sqliteBytes), "elapsed", time.Since(extractAt))
 
 	dir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -95,16 +105,20 @@ func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 		_ = os.Remove(tmp)
 		return "", buildErr(ver, StageStore, err)
 	}
+	unhashAt := time.Now()
 	if err := m.unhashFile(tmp); err != nil {
 		_ = os.Remove(tmp)
 		return "", buildErr(ver, StageUnhash, err)
 	}
+	m.logger.Debug("反混淆完成", "ver", ver, "elapsed", time.Since(unhashAt))
 	// rename 是原子的：并发的两方各自把自己那份【已反混淆】的库落到同一目标，谁后到谁生效，
 	// 两种结果都是完整可用的库。
 	if err := os.Rename(tmp, dbPath); err != nil {
 		_ = os.Remove(tmp)
 		return "", buildErr(ver, StageStore, err)
 	}
+	m.logger.Info("母数据库构建完成", "ver", ver, "size_mb", len(sqliteBytes)/(1<<20),
+		"elapsed", time.Since(started))
 	m.pruneCache(ver)
 	return dbPath, nil
 }

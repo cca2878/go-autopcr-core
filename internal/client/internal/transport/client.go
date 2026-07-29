@@ -252,12 +252,19 @@ func (c *Client) transport(ctx context.Context, req protocol.Request, out any) (
 	// 业务错误
 	if ec, ok := out.(protocol.ErrorCarrier); ok {
 		if se := ec.GetServerError(); se != nil {
-			c.logger.Error("game api error", "url", req.URL(), "result_code", header.ResultCode, "message", se.Message)
 			// 只按响应码短路；维护消息照常上抛，由 errorhandler 中间件升级
 			// （分层理由见 gameerr.IsFatalBusiness）。
 			if gameerr.IsFatalResultCode(header.ResultCode) {
+				// 这一档【确定不可恢复】，本层就是终点，记 Error 名副其实。
+				c.logger.Error("游戏服返回不可恢复的业务错误",
+					"url", req.URL(), "result_code", header.ResultCode, "message", se.Message)
 				return header, gameerr.Panic("%s", se.Message)
 			}
+			// 其余一律 Warn：本层【不知道后果】。会话失效那一类紧接着就被 sessionGuard 自愈了，
+			// 记成 Error 会让一次成功的自愈在日志里留下一条吓人的错误；模块的业务错误则会变成
+			// 该任务的 Result.Err，由调用方决定它算不算失败。谁知道后果，谁记 Error。
+			c.logger.Warn("游戏服返回业务错误",
+				"url", req.URL(), "result_code", header.ResultCode, "message", se.Message)
 			if len(c.servers) > 0 {
 				c.active = (c.active + 1) % len(c.servers)
 			}

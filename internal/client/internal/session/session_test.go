@@ -252,7 +252,7 @@ func TestLoginSequence(t *testing.T) {
 	c := transport.New(&fakeCred{})
 	var urls []string
 	scriptedSequence(t, c, &urls)
-	if err := Login(context.Background(), c, &fakeCred{}); err != nil {
+	if err := Login(context.Background(), c, &fakeCred{}, nil); err != nil {
 		t.Fatal(err)
 	}
 	want := []string{

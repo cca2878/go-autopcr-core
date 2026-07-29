@@ -7,7 +7,9 @@ package session
 
 import (
 	"context"
+	"log/slog"
 	"math/rand"
+	"time"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/credential"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
@@ -28,12 +30,24 @@ import (
 //
 // 风控（is_risk）未通过验证码时返回 gameerr.RiskError（未注入求解器即硬失败）；
 // 未过教程返回 PanicError。
-func Login(ctx context.Context, c *transport.Client, cred credential.Credential) error {
+//
+// logger 记录逐步进度（Debug 级；风控这类罕见分支为 Warn）。传 nil 即 slog.Default()。
+// 步骤日志走 Debug 而非 Info：正常登录每次都跑这六步，Info 级会变成噪音；但一旦卡在中间，
+// 「走到哪一步了」是第一个要问的问题，而传输层的请求日志同样在 Debug 级，两者能对上。
+func Login(ctx context.Context, c *transport.Client, cred credential.Credential, logger *slog.Logger) error {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	started := time.Now()
+
 	// 1-2) 免凭证发现握手：服务器列表 + 维护/版本状态（响应经折叠中间件落入玩家状态）。
 	disc, err := discovery.Discover(ctx, c)
 	if err != nil {
 		return err
 	}
+	logger.Debug("登录 1-2/6：发现握手完成",
+		"servers", len(disc.Servers), "manifest_ver", disc.ManifestVer,
+		"required_manifest_ver", disc.RequiredManifestVer, "res_hosts", len(disc.ResURLs))
 	if disc.RequiredManifestVer != "" {
 		c.SetHeader("MANIFEST-VER", disc.RequiredManifestVer)
 	}
@@ -54,11 +68,16 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential)
 		return err
 	}
 	if loginResp.IsRisk {
+		// 风控极罕见（维护 Python 至今没见游戏服触发），出现一次就值得在默认级别留痕：
+		// 它是我们最缺数据的分支，事后要靠日志回溯。
+		logger.Warn("登录 3/6：账号触发风控(is_risk)，尝试验证码解除")
 		// 把首个风控响应的未知载荷带入 passRisk——无求解器（mobile）场景下它就是最终透出的载荷。
 		if err := passRisk(ctx, c, cred, uid, accessKey, loginResp.Extra); err != nil {
 			return err
 		}
+		logger.Warn("登录 3/6：风控已解除")
 	}
+	logger.Debug("登录 3/6：SDK 登录完成", "uid", uid)
 
 	// 4) 校验游戏启动
 	startReq := &sdk.CheckGameStartRequest{
@@ -73,16 +92,19 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential)
 	if !start.NowTutorial {
 		return gameerr.Panic("账号未过完教程")
 	}
+	logger.Debug("登录 4/6：游戏启动校验通过")
 
 	// 5) 首页索引：玩家档案（昵称/等级/体力/钻石/金币）经折叠中间件落入状态
 	if _, err := transport.Call[account.LoadIndexResponse](ctx, c, &account.LoadIndexRequest{Carrier: "OPPO"}); err != nil {
 		return err
 	}
+	logger.Debug("登录 5/6：玩家档案已载入")
 
 	// 6) 主页索引：任务通关/支线状态（剧情解锁门禁等所需）经折叠中间件落入状态
 	if _, err := transport.Call[account.HomeIndexResponse](ctx, c, &account.HomeIndexRequest{MessageID: 1, IsFirst: 1, TipsIDList: []int{}}); err != nil {
 		return err
 	}
+	logger.Debug("登录 6/6：主页状态已载入", "elapsed", time.Since(started))
 
 	return nil
 }

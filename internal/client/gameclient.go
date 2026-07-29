@@ -129,7 +129,7 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 }
 
 func (g *client) Login(ctx context.Context) error {
-	if err := session.Login(markRelogin(ctx), g.tr, g.cred); err != nil {
+	if err := session.Login(markRelogin(ctx), g.tr, g.cred, g.logger); err != nil {
 		return err
 	}
 	g.guard.markFresh()
@@ -142,7 +142,9 @@ func (g *client) Login(ctx context.Context) error {
 // relogin 是会话失效时的自愈动作：用【同一凭据】重跑登录序列（重新获取 access_key 是
 // 外壳的事，核心不碰）。不重建母数据——会话失效与母数据版本无关，且查询句柄可能正被
 // 模块持有，中途换掉它比留着更危险；真的版本变更会走维护/版本升级路径。
-func (g *client) relogin(ctx context.Context) error { return session.Login(ctx, g.tr, g.cred) }
+func (g *client) relogin(ctx context.Context) error {
+	return session.Login(ctx, g.tr, g.cred, g.logger)
+}
 
 // sessionExpired 报告会话是否已越过每日重置点（load/index 下发的 daily_reset_time）。
 // 服务端到点即丢弃会话，故守卫在发包前据此主动重登，而不是等下一个请求撞上会话错误。

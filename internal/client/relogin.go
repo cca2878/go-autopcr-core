@@ -149,8 +149,12 @@ func (g *sessionGuard) ensure(ctx context.Context) error {
 	}
 	g.logger.Warn("会话已失效，重新登录")
 	if err := g.login(markRelogin(ctx)); err != nil {
+		// 自愈失败才是真失败：会话修不回来，后续每个请求都会废。这一层知道后果，故记 Error
+		// （传输层那边只记 Warn，见 Client.transport 的业务错误分支）。
+		g.logger.Error("重新登录失败，会话无法恢复", "err", err)
 		return err
 	}
+	g.logger.Info("重新登录成功，会话已恢复")
 	g.stale = false
 	return nil
 }
