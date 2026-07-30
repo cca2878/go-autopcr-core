@@ -14,6 +14,13 @@ var (
 	// ErrBadRainbow 表示内嵌的 rainbow 反混淆表解析不了。它随二进制一起发布、不来自外部，
 	// 故只可能是我们自己打包坏了：用户改什么都没用。
 	ErrBadRainbow = errs.DomainMasterdata.New(errs.KindInternal, "内嵌 rainbow 表解析失败")
+
+	// ErrRainbowMismatch 表示内嵌 rainbow 与这个版本的母数据完全对不上——一张表都没还原。
+	// 典型成因是游戏换了包体、混淆口径随之改变，而本二进制里的 rainbow 还是旧的。
+	//
+	// 归 KindUnsupported 而非 KindCorrupt：数据本身没坏，是【我们这一版还认不出它】。二者
+	// 的处置截然不同——损坏该清缓存重下（重下多少次都一样），认不出该升级客户端等新版。
+	ErrRainbowMismatch = errs.DomainMasterdata.New(errs.KindUnsupported, "rainbow 与该版本母数据不匹配")
 )
 
 // BuildStage 标识干净母数据库构建链上的一步。

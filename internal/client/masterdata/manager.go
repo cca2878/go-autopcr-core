@@ -64,9 +64,21 @@ func (m *Manager) DBPath(ver int) string {
 func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 	dbPath := m.DBPath(ver)
 	if _, err := os.Stat(dbPath); err == nil {
-		m.logger.Debug("母数据库已就绪", "ver", ver, "path", dbPath)
-		m.pruneCache(ver)
-		return dbPath, nil
+		// 版本号相同不代表这份缓存还能用：它可能是【另一张 rainbow】建出来的。换包后我们发新版
+		// 修好 rainbow，而 manifest_ver 未必跟着动，此时若只看文件在不在，用户会一直吃那份用旧
+		// 表建出来的库——发多少版都救不回来，除非他自己去删缓存。
+		want := m.rainbow.Fingerprint()
+		switch got, ferr := cacheFingerprint(dbPath); {
+		case ferr != nil:
+			m.logger.Warn("缓存的母数据库读不出 rainbow 指纹，按需重建", "ver", ver, "err", ferr)
+		case got == want:
+			m.logger.Debug("母数据库已就绪", "ver", ver, "path", dbPath)
+			m.pruneCache(ver)
+			return dbPath, nil
+		default:
+			m.logger.Info("缓存的母数据库出自另一张 rainbow，重建",
+				"ver", ver, "cached_fp", got, "want_fp", want)
+		}
 	}
 
 	// 这条是 Info 而非 Debug：下面三步要下载几十 MB、解包、再改写整个库的 schema，首次登录
@@ -106,7 +118,7 @@ func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 		return "", buildErr(ver, StageStore, err)
 	}
 	unhashAt := time.Now()
-	if err := m.unhashFile(tmp); err != nil {
+	if err := m.unhashFile(tmp, ver); err != nil {
 		_ = os.Remove(tmp)
 		return "", buildErr(ver, StageUnhash, err)
 	}
@@ -186,14 +198,84 @@ func (m *Manager) pruneCache(keep int) {
 	}
 }
 
-// unhashFile 就地反混淆 path 处的库。Close 的错误必须上报而非吞掉：紧随其后的 rename 会把
-// 这份文件变成永久缓存，若收尾时刷盘失败却当成功，坏库会一直被后续启动命中。
-func (m *Manager) unhashFile(path string) error {
+// unhashFile 就地反混淆 path 处的库，校验战果，并盖上 rainbow 指纹。
+//
+// Close 的错误必须上报而非吞掉：紧随其后的 rename 会把这份文件变成永久缓存，若收尾时刷盘
+// 失败却当成功，坏库会一直被后续启动命中。
+func (m *Manager) unhashFile(path string, ver int) error {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return err
 	}
 	db.SetMaxOpenConns(1)
-	_, err = Unhash(db, m.rainbow)
-	return cmp.Or(err, db.Close())
+	res, err := Unhash(db, m.rainbow)
+	if err != nil {
+		return cmp.Or(err, db.Close())
+	}
+	if err := m.checkUnhash(ver, res); err != nil {
+		// 这条路径上 Close 的错误可以丢：调用方收到错误就会删掉这个临时文件，它不会变成缓存，
+		// 上面那句「Close 错误必须上报」的理由在这里不成立。
+		_ = db.Close()
+		return err
+	}
+	return cmp.Or(m.stampFingerprint(db), db.Close())
+}
+
+// checkUnhash 判读反混淆战果。
+//
+// 一张都没还原 → 硬失败。过去这里是【静默通过】的最大的一个洞：还原表数被丢弃，没反混淆的库
+// 照常落盘、日志还打一条「构建完成」，登录也成功，直到跑模块才逐个炸出 no such table——而那时
+// 错误已经和根因隔了十万八千里，用户只看得到一句 SQL 报错。
+//
+// 还剩表没还原（但不是全部）→ Warn，照常继续。不设阈值、有几张报几张：这条只在【构建新版本
+// 母数据】时才走到（命中缓存根本不到这里），一天顶多响几次，当得起每次都提醒一遍；而 rainbow
+// 没盖全本就是实打实的瑕疵，值得看见。数字自己会说话——`stale=3` 是常态基线，`stale=800` 一眼
+// 就知道换包了。
+//
+// 缺的表未必有模块要查，故不阻断；真查到了，模块自己会报 no such table，那才是说得清是谁、
+// 缺什么的地方。
+func (m *Manager) checkUnhash(ver int, res UnhashResult) error {
+	if res.Renamed == 0 && len(m.rainbow) > 0 {
+		return fmt.Errorf("%w：v%d 的 %d 张表无一还原（内嵌 rainbow 覆盖 %d 张表）",
+			ErrRainbowMismatch, ver, res.Stale, len(m.rainbow))
+	}
+	if res.Stale > 0 {
+		m.logger.Warn("母数据有表未能反混淆，rainbow 未覆盖到它们",
+			"ver", ver, "renamed", res.Renamed, "stale", res.Stale, "sample", res.StaleSample)
+		return nil
+	}
+	m.logger.Debug("母数据反混淆战果", "ver", ver, "renamed", res.Renamed)
+	return nil
+}
+
+// stampFingerprint 把 rainbow 指纹写进库的 user_version（SQLite 文件头里的 32 位应用自定义
+// 字段），让这份缓存自带「我是谁建的」。
+//
+// 为什么不写进文件名：DBPath 的 {ver}.db 是 pruneCache 唯一的判据——它靠 Atoi 解析文件名来
+// 认出旧版本库，名字里多一段指纹会让解析失败、于是永远不删，几十 MB 一份地漏下去。写在库内部
+// 则文件名不变，清理逻辑一个字都不用动。
+//
+// user_version 而非 application_id：后者的语义是「这是什么类型的文件」，该是个跨版本的常量；
+// 前者本就是留给应用自己编版本号的。pragma 不支持参数绑定，故用 Sprintf（与 Unhash 里
+// schema_version 的写法一致）。
+func (m *Manager) stampFingerprint(db *sql.DB) error {
+	_, err := db.Exec(fmt.Sprintf("PRAGMA user_version = %d", m.rainbow.Fingerprint()))
+	return err
+}
+
+// cacheFingerprint 读出 path 处缓存库上盖的 rainbow 指纹。只读打开，读的是文件头、不碰表。
+//
+// 本次改动之前建的缓存没盖过章，读出来是 SQLite 的默认值 0。那和「指纹不符」同样处置——重建。
+// 来路不明的缓存就该重建，代价是升级到本版后各用户会多下一次母数据。
+func cacheFingerprint(path string) (int32, error) {
+	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro")
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = db.Close() }()
+	var v int32
+	if err := db.QueryRow("PRAGMA user_version").Scan(&v); err != nil {
+		return 0, err
+	}
+	return v, nil
 }

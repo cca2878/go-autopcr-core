@@ -6,8 +6,11 @@
 package masterdata
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -26,6 +29,40 @@ func ParseRainbow(data []byte) (Rainbow, error) {
 		return nil, fmt.Errorf("%w: %w", ErrBadRainbow, err)
 	}
 	return r, nil
+}
+
+// Fingerprint 是这张 rainbow 的内容指纹，用来标记「某个干净库是用哪张表反混淆出来的」。
+//
+// 为什么要它：干净库按 db/{ver}.db 缓存，而缓存键里没有 rainbow 的份。换了 rainbow 却撞上
+// 同一个 ver 时，EnsureDB 会命中那份用旧表建出来的库并直接返回——修好 rainbow 发了新版也
+// 救不回来，除非用户手动删缓存。指纹补上的正是这一维。
+//
+// 取 SHA256 前 4 字节而非全量，是为了塞进 SQLite 的 user_version（int32，见 Manager 的
+// stampFingerprint）。这里防的是「版本对不上」而不是攻击，候选集只有寥寥几张历史 rainbow，
+// 4 字节足够；即便真撞上，代价也不过是少重建一次。
+//
+// 遍历 map 前先排序：Go 的 map 迭代顺序是随机的，不排序则同一张表每次算出的指纹都不同，
+// 缓存会永远判为不匹配、每次登录重下几十 MB。
+func (r Rainbow) Fingerprint() int32 {
+	h := sha256.New()
+	tables := make([]string, 0, len(r))
+	for t := range r {
+		tables = append(tables, t)
+	}
+	slices.Sort(tables)
+	for _, t := range tables {
+		cols := make([]string, 0, len(r[t]))
+		for c := range r[t] {
+			cols = append(cols, c)
+		}
+		slices.Sort(cols)
+		h.Write([]byte(t))
+		for _, c := range cols {
+			h.Write([]byte(c))
+			h.Write([]byte(r[t][c]))
+		}
+	}
+	return int32(binary.BigEndian.Uint32(h.Sum(nil)[:4])) //nolint:gosec // 有意截断取指纹
 }
 
 // replacer 把整张 rainbow 拍扁为一个哈希名→真实名 的全局替换器。

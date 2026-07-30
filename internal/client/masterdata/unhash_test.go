@@ -52,12 +52,12 @@ func TestUnhash(t *testing.T) {
 		},
 	}
 
-	n, err := Unhash(db, rainbow)
+	res, err := Unhash(db, rainbow)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n != 1 {
-		t.Fatalf("还原表数=%d want 1", n)
+	if res.Renamed != 1 {
+		t.Fatalf("还原表数=%d want 1", res.Renamed)
 	}
 
 	// 真实表存在且列名/数据正确（含保留原名的 plaincol）。
@@ -81,11 +81,11 @@ func TestUnhashSkipsAbsentTable(t *testing.T) {
 	rainbow := Rainbow{
 		"not_in_db": {tableNameKey: "whatever", "a": "b"},
 	}
-	n, err := Unhash(db, rainbow)
+	res, err := Unhash(db, rainbow)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if n != 0 {
-		t.Fatalf("不存在的表不应被还原，n=%d", n)
+	if res.Renamed != 0 {
+		t.Fatalf("不存在的表不应被还原，Renamed=%d", res.Renamed)
 	}
 }

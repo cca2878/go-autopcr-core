@@ -1,11 +1,13 @@
 package masterdata
 
 import (
+	"database/sql"
 	"os"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 // touch 在缓存的 db 目录里造一个文件，并可指定修改时间。
@@ -38,6 +40,26 @@ func newPruneFixture(t *testing.T) (*Manager, string) {
 func exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+// seedCachedDB 造一份【真的、盖着当前 rainbow 指纹】的缓存库，冒充一次成功构建的产物。
+// 不能用 touch 糊一个假文件顶替：EnsureDB 现在要读库头的指纹，假文件会被判为来路不明而重建。
+func seedCachedDB(t *testing.T, m *Manager, ver int) string {
+	t.Helper()
+	path := m.DBPath(ver)
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.SetMaxOpenConns(1)
+	mustExec(t, db, "CREATE TABLE t (a INTEGER)")
+	if err := m.stampFingerprint(db); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 // 旧版本库不会再被打开（本库任何时候只用最新 manifest_ver），每个 42MB 上下，不清就是
@@ -121,7 +143,7 @@ func TestPruneOnMissingDirIsNoop(t *testing.T) {
 func TestEnsureDBPrunesOnCacheHit(t *testing.T) {
 	m, dbDir := newPruneFixture(t)
 	const cur = 202607290900
-	touch(t, dbDir, strconv.Itoa(cur)+".db", 0)
+	seedCachedDB(t, m, cur)
 	old := touch(t, dbDir, "202606011200.db", 0)
 
 	path, err := m.EnsureDB(t.Context(), cur)
