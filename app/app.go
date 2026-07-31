@@ -51,6 +51,7 @@ type Session struct {
 	insecureTLS bool
 	solver      Solver
 	collector   automation.Collector // 遥测采集端口；nil＝不采集（模块 Emit 为 no-op）
+	mdEnabled   bool                 // 见 WithMasterdata
 
 	gc client.GameClient // 登录前为 nil
 }
@@ -75,6 +76,14 @@ func WithCaptchaSolver(s Solver) Option { return func(sess *Session) { sess.solv
 // no-op——采集与否不影响模块业务判定与 Run 结果。
 func WithCollector(c Collector) Option { return func(sess *Session) { sess.collector = c } }
 
+// WithMasterdata 声明本会话需要母数据：Login 成功后按下发 res + manifest_ver 确保干净库就绪
+// 并打开只读查询面（落于 dirs.Cache）。不声明则 Login 不接母数据、Masterdata() 恒为 nil。
+//
+// 是否需要母数据在建 Session 时通常已经知道（如 CLI 按选中模块的 NeedsMasterdata 判定），
+// 故做成构造期选项而非 Login 的参数——与 WithProxy/WithInsecureTLS 等其余会话级配置同一模式，
+// 调用方不必在每次 Login 时都重复传一遍这个跟凭据无关的开关。
+func WithMasterdata() Option { return func(s *Session) { s.mdEnabled = true } }
+
 // NewSession 创建会话。dirs 提供核心所需的文件系统位置（见 Dirs）。
 func NewSession(dirs Dirs, opts ...Option) *Session {
 	s := &Session{
@@ -91,11 +100,11 @@ func NewSession(dirs Dirs, opts ...Option) *Session {
 // Registry 暴露模块注册表，供前端列出/挑选模块与预设。
 func (s *Session) Registry() *Registry { return s.registry }
 
-// Login 用「四要素直传」凭据登录：channel 取 ChannelBSDK / ChannelQSDK。withMasterdata 为真时，
-// 登录后按下发 res + manifest_ver 确保干净母数据库并打开只读查询面（落于 dirs.Cache）。
+// Login 用「四要素直传」凭据登录：channel 取 ChannelBSDK / ChannelQSDK。是否接母数据由构造
+// Session 时的 WithMasterdata 决定，而非本方法的参数。
 //
 // 账密→(uid, access_key) 的冷启动不在此——由外壳先行完成，再把 (uid, access_key) 交进来。
-func (s *Session) Login(ctx context.Context, channel, uid, accessKey string, withMasterdata bool) error {
+func (s *Session) Login(ctx context.Context, channel, uid, accessKey string) error {
 	var akOpts []accesskey.Option
 	if s.solver != nil {
 		akOpts = append(akOpts, accesskey.WithCaptchaSolver(s.solver))
@@ -112,7 +121,7 @@ func (s *Session) Login(ctx context.Context, channel, uid, accessKey string, wit
 	if s.insecureTLS {
 		opts = append(opts, client.WithInsecureTLS())
 	}
-	if withMasterdata {
+	if s.mdEnabled {
 		opts = append(opts, client.WithMasterdata(s.dirs.Cache))
 	}
 
