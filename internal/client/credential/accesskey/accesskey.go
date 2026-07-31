@@ -40,15 +40,15 @@ const platformAndroid = "2"
 
 // androidHeaders 复刻原 constants.py 的 DEFAULT_HEADERS（Android）。
 //
-// APP-VER 只是【出厂默认值】、会过期：游戏更新后服务端拒绝旧版本号，
-// transport.Client 会从拒绝响应的 store_url 里读出真实版本号自动纠正（见其 transport 方法），
-// 故这里的值不必手动跟着每次更新维护——写的是最近一次实测确认可用的版本（2026-07-31）。
+// APP-VER 只是【出厂默认值】、会过期：游戏更新后服务端拒绝旧版本号，transport.Client 会从
+// 拒绝响应的 store_url 里读出真实版本号自动纠正（见其 transport 方法），故这里的值不必手动
+// 跟着每次更新维护。
 //
-// User-Agent / X-Unity-Version 没有这套自愈（服务端目前未观察到校验它们），故只能手动跟版本
-// 更新时的实机取证——引擎版本 2026-07-31 从真机 APK 的 libunity.so 里实测确认已升级到 Unity 6：
-// 字符串 "6000.0/respin/6000.0.58f2-44b8bf3a32"（Unity 自己的构建标签格式）+ "libcurl/8.10.1"
-// + "UnityPlayer/%s (UnityWebRequest/1.0, %s)" 模板，三者拼出下面这行；旧值 "2021.3.45f2c1" /
-// "libcurl/8.5.0-DEV" 已确认过期。UnityWebRequest 版本号（1.0）本身没变。
+// User-Agent / X-Unity-Version 没有这套自愈（服务端目前未观察到校验它们），只能手动跟版本更新
+// 时取证。取证方法：真机 APK 的 libunity.so 里能搜到形如 "{短版本}/respin/{完整版本}-{commit}"
+// 的构建标签字符串（Unity 自身写入的构建标识），以及 "libcurl/{版本}"；User-Agent 遵循
+// libunity.so 里的模板 "UnityPlayer/%s (UnityWebRequest/1.0, %s)" 拼出。当前值对应 Unity 6
+// （6000.0.58f2）与 libcurl 8.10.1；UnityWebRequest 版本号固定为 1.0。
 //
 // 注：不含 Accept-Encoding —— Go 的 http.Transport 未手动指定时会自动添加
 // "Accept-Encoding: gzip"（规范大小写，与官方客户端一致）并透明解压响应。

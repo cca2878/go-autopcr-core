@@ -162,7 +162,7 @@ func Call[R any](ctx context.Context, c *Client, req protocol.Request) (*R, erro
 
 // storeURLVersionPattern 从维护状态响应下发的 store_url（应用商店安装包链接）中提取真实版本号。
 // 复刻原项目 apiclient.py 的同名正则；Go 的 regexp（RE2）不支持环视，故用捕获组取代 lookbehind。
-// 实测形如 https://pkg.biligame.com/games/gzlj_11.7.2_20260715_154600_b8233_896629.apk。
+// 形如 https://pkg.biligame.com/games/gzlj_11.7.2_20260715_154600_b8233_896629.apk。
 var storeURLVersionPattern = regexp.MustCompile(`gzlj_(\d+\.\d+\.\d+)`)
 
 // parseStoreURLVersion 从 store_url 中解析出真实版本号；解不出（字段为空或形状不符）返回 false。
