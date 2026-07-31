@@ -238,6 +238,9 @@ func scriptedSequence(t *testing.T, c *transport.Client, urls *[]string) {
 			switch o := out.(type) {
 			case *sdk.SourceIniIndexResponse:
 				o.Server = []string{"test.example"}
+			case *sdk.SourceIniGetMaintenanceStatusResponse:
+				o.RequiredManifestVer = "202607301327"
+				o.ResVer = "10002233"
 			case *sdk.CheckGameStartResponse:
 				o.NowTutorial = true
 			}
@@ -261,5 +264,22 @@ func TestLoginSequence(t *testing.T) {
 	}
 	if !reflect.DeepEqual(urls, want) {
 		t.Fatalf("登录序列不符\n got: %v\nwant: %v", urls, want)
+	}
+}
+
+// 发现握手拿到的 manifest_ver / res_ver 必须原样折进后续请求的头，而不是留着出厂默认值——
+// 二者都是「服务端认可什么，这次握手就已经告诉你了」的权威值，没有理由继续沿用旧的。
+func TestLoginAdoptsDiscoveredHeaders(t *testing.T) {
+	c := transport.New(&fakeCred{})
+	var urls []string
+	scriptedSequence(t, c, &urls)
+	if err := Login(context.Background(), c, &fakeCred{}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Header("MANIFEST-VER"); got != "202607301327" {
+		t.Errorf("MANIFEST-VER = %q, want %q", got, "202607301327")
+	}
+	if got := c.Header("RES-VER"); got != "10002233" {
+		t.Errorf("RES-VER = %q, want %q", got, "10002233")
 	}
 }

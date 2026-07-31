@@ -104,14 +104,18 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 	trOpts := []transport.Option{transport.WithHTTPClient(gameHTTP), transport.WithLogger(o.logger)}
 	// APP-VER 版本自愈落盘（见 appversion 包）：复用 masterdata 缓存目录，未启用 masterdata
 	// 时 o.mdCacheDir 为空、appversion 整包空操作，退化为每个 Client 生命周期内自愈一次。
+	// RES-VER 没有自愈回调（它不靠拒绝重试，见 session.Login），落盘发生在 Login 成功之后。
 	if o.mdCacheDir != "" {
 		trOpts = append(trOpts, transport.WithOnVersionUpdate(func(v string) {
-			appversion.Write(o.mdCacheDir, v)
+			appversion.Write(o.mdCacheDir, "APP-VER", v)
 		}))
 	}
 	tr := transport.New(cred, trOpts...)
-	if v, ok := appversion.Read(o.mdCacheDir); ok {
+	if v, ok := appversion.Read(o.mdCacheDir, "APP-VER"); ok {
 		tr.SetHeader("APP-VER", v)
+	}
+	if v, ok := appversion.Read(o.mdCacheDir, "RES-VER"); ok {
+		tr.SetHeader("RES-VER", v)
 	}
 
 	state := gamestate.New()
@@ -145,6 +149,7 @@ func (g *client) Login(ctx context.Context) error {
 		return err
 	}
 	g.guard.markFresh()
+	appversion.Write(g.mdCacheDir, "RES-VER", g.tr.Header("RES-VER"))
 	if g.mdEnabled {
 		return g.ensureMasterdata(ctx)
 	}

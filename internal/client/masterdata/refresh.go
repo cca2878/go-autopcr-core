@@ -100,14 +100,20 @@ func (r *Refresher) Refresh(ctx context.Context) (*Query, error) {
 	tc := transport.New(cred,
 		transport.WithHTTPClient(&http.Client{Timeout: transport.DefaultTimeout, Transport: r.rt}),
 		transport.WithLogger(r.logger),
-		transport.WithOnVersionUpdate(func(v string) { appversion.Write(r.cacheDir, v) }),
+		transport.WithOnVersionUpdate(func(v string) { appversion.Write(r.cacheDir, "APP-VER", v) }),
 	)
-	if v, ok := appversion.Read(r.cacheDir); ok {
+	if v, ok := appversion.Read(r.cacheDir, "APP-VER"); ok {
 		tc.SetHeader("APP-VER", v)
+	}
+	if v, ok := appversion.Read(r.cacheDir, "RES-VER"); ok {
+		tc.SetHeader("RES-VER", v)
 	}
 	disc, err := discovery.Discover(ctx, tc)
 	if err != nil {
 		return nil, err
 	}
+	// RES-VER 没有自愈回调（不靠拒绝重试，见 session.Login 的同一处理）：握手一成功就有权威值，
+	// 直接落盘即可。
+	appversion.Write(r.cacheDir, "RES-VER", disc.ResVer)
 	return r.Ensure(ctx, disc.ManifestVer, disc.ResURLs)
 }

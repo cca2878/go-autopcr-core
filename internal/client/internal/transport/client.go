@@ -151,6 +151,14 @@ func (c *Client) SetHeader(key, value string) {
 	c.headers[key] = value
 }
 
+// Header 读回一个请求头的当前值（如运行期被自愈纠正过的 APP-VER、握手折算出的 RES-VER）；
+// 不存在则返回空串。
+func (c *Client) Header(key string) string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.headers[key]
+}
+
 // Call 是泛型门面：分配 *R、走处理器链、返回解码后的响应。
 func Call[R any](ctx context.Context, c *Client, req protocol.Request) (*R, error) {
 	out := new(R)

@@ -51,6 +51,11 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential,
 	if disc.RequiredManifestVer != "" {
 		c.SetHeader("MANIFEST-VER", disc.RequiredManifestVer)
 	}
+	// RES-VER 出厂默认值同样会过期（同类问题见 accesskey.androidHeaders 的 APP-VER），但握手
+	// 成功的响应本身就带着服务端认可的值，不必等一次拒绝才知道该改成什么，直接采用。
+	if disc.ResVer != "" {
+		c.SetHeader("RES-VER", disc.ResVer)
+	}
 
 	// 3) SDK 登录（AccessKey 四要素）
 	uid, accessKey, err := cred.Login(ctx)
