@@ -9,10 +9,13 @@ BIN_DIR := bin
 # CGO 校验用的临时测试二进制（见 check-cgo）。
 CGO_PROBE := $(BIN_DIR)/cgocheck.test
 
+# 内嵌 rainbow 的落地路径（见 rainbow target）。
+RAINBOW_DST := internal/client/rainbow.json.gz
+
 # 全局强制禁用 CGO。
 export CGO_ENABLED := 0
 
-.PHONY: all build test vet tidy lint check-cgo clean
+.PHONY: all build test vet tidy lint check-cgo clean rainbow
 
 all: build
 
@@ -54,3 +57,9 @@ lint:
 
 clean:
 	rm -rf $(BIN_DIR)
+
+# 重新生成内嵌的 rainbow.json.gz：minify + gzip 源文件，落到 RAINBOW_DST。
+# 用法：make rainbow SRC=/path/to/rainbow.json
+rainbow:
+	@if [ -z "$(SRC)" ]; then echo "用法: make rainbow SRC=/path/to/rainbow.json"; exit 1; fi
+	go run internal/client/rainbow_gen.go $(SRC) $(RAINBOW_DST)
