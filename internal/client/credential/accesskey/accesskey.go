@@ -44,11 +44,17 @@ const platformAndroid = "2"
 // transport.Client 会从拒绝响应的 store_url 里读出真实版本号自动纠正（见其 transport 方法），
 // 故这里的值不必手动跟着每次更新维护——写的是最近一次实测确认可用的版本（2026-07-31）。
 //
+// User-Agent / X-Unity-Version 没有这套自愈（服务端目前未观察到校验它们），故只能手动跟版本
+// 更新时的实机取证——引擎版本 2026-07-31 从真机 APK 的 libunity.so 里实测确认已升级到 Unity 6：
+// 字符串 "6000.0/respin/6000.0.58f2-44b8bf3a32"（Unity 自己的构建标签格式）+ "libcurl/8.10.1"
+// + "UnityPlayer/%s (UnityWebRequest/1.0, %s)" 模板，三者拼出下面这行；旧值 "2021.3.45f2c1" /
+// "libcurl/8.5.0-DEV" 已确认过期。UnityWebRequest 版本号（1.0）本身没变。
+//
 // 注：不含 Accept-Encoding —— Go 的 http.Transport 未手动指定时会自动添加
 // "Accept-Encoding: gzip"（规范大小写，与官方客户端一致）并透明解压响应。
 var androidHeaders = map[string]string{
-	"User-Agent":           "UnityPlayer/2021.3.45f2c1 (UnityWebRequest/1.0, libcurl/8.5.0-DEV)",
-	"X-Unity-Version":      "2021.3.45f2c1",
+	"User-Agent":           "UnityPlayer/6000.0.58f2 (UnityWebRequest/1.0, libcurl/8.10.1)",
+	"X-Unity-Version":      "6000.0.58f2",
 	"APP-VER":              "11.7.2",
 	"BATTLE-LOGIC-VERSION": "4",
 	"BUNDLE-VER":           "",
