@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/credential/accesskey"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/appversion"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/discovery"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/urlx"
@@ -94,10 +95,16 @@ func (r *Refresher) Refresh(ctx context.Context) (*Query, error) {
 	if err != nil {
 		return nil, err
 	}
+	// APP-VER 版本自愈落盘（见 appversion 包）：cacheDir 为空时二者皆整包空操作，
+	// 退化为每个 Client 生命周期内自愈一次（与 client.New 同一套逻辑，见其注释）。
 	tc := transport.New(cred,
 		transport.WithHTTPClient(&http.Client{Timeout: transport.DefaultTimeout, Transport: r.rt}),
 		transport.WithLogger(r.logger),
+		transport.WithOnVersionUpdate(func(v string) { appversion.Write(r.cacheDir, v) }),
 	)
+	if v, ok := appversion.Read(r.cacheDir); ok {
+		tc.SetHeader("APP-VER", v)
+	}
 	disc, err := discovery.Discover(ctx, tc)
 	if err != nil {
 		return nil, err

@@ -10,7 +10,8 @@ type ResponseHeader struct {
 	ViewerID   string `msgpack:"viewer_id" json:"viewer_id"`
 	ServerTime int64  `msgpack:"servertime" json:"servertime"`
 	ResultCode int    `msgpack:"result_code" json:"result_code"`
-	// StoreURL 出现在维护状态响应头中，用于版本检测（M1 仅捕获，不处理）。
+	// StoreURL 出现在服务端因客户端版本过期而拒绝的响应头中，是当前安装包链接；
+	// transport.Client 从中解析真实版本号并自动升级 APP-VER 头、原地重试一次。
 	StoreURL string `msgpack:"store_url" json:"store_url"`
 }
 

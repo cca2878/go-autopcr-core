@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -40,7 +41,8 @@ type Client struct {
 	serverTime int64
 	localTime  time.Time
 
-	handler Handler
+	handler         Handler
+	onVersionUpdate func(newAppVer string)
 }
 
 // Option 用于定制 Client。
@@ -55,6 +57,13 @@ func WithHTTPClient(h *http.Client) Option {
 // WithLogger 设置日志器。
 func WithLogger(l *slog.Logger) Option {
 	return func(c *Client) { c.logger = l }
+}
+
+// WithOnVersionUpdate 注册 APP-VER 自愈成功时的回调（见 transport 方法）。newAppVer 是纠正后的
+// 版本号。本包不做任何持久化——是否落盘、落到哪里由调用方决定（见 appversion 包），这里只负责
+// 在【状态确实变化的那一刻】通知它，不多不少。未注册则自愈仍然发生，只是没有旁路通知。
+func WithOnVersionUpdate(fn func(newAppVer string)) Option {
+	return func(c *Client) { c.onVersionUpdate = fn }
 }
 
 // New 构造一个传输客户端。初始服务器取凭据的 APIRoot；登录序列会用真实列表覆盖它。
@@ -151,8 +160,55 @@ func Call[R any](ctx context.Context, c *Client, req protocol.Request) (*R, erro
 	return out, nil
 }
 
-// transport 是最内层处理器：加密/编码/HTTP/解码/维护会话头。
+// storeURLVersionPattern 从维护状态响应下发的 store_url（应用商店安装包链接）中提取真实版本号。
+// 复刻原项目 apiclient.py 的同名正则；Go 的 regexp（RE2）不支持环视，故用捕获组取代 lookbehind。
+// 实测形如 https://pkg.biligame.com/games/gzlj_11.7.2_20260715_154600_b8233_896629.apk。
+var storeURLVersionPattern = regexp.MustCompile(`gzlj_(\d+\.\d+\.\d+)`)
+
+// parseStoreURLVersion 从 store_url 中解析出真实版本号；解不出（字段为空或形状不符）返回 false。
+func parseStoreURLVersion(storeURL string) (string, bool) {
+	m := storeURLVersionPattern.FindStringSubmatch(storeURL)
+	if m == nil {
+		return "", false
+	}
+	return m[1], true
+}
+
+// transport 是最内层处理器：单次尝试之外附带 APP-VER 过期自愈。
+//
+// 客户端版本号（APP-VER 头）落后于服务端认可的版本时，服务端会拒绝请求并在 store_url 里下发
+// 当前安装包链接，从中能读出真实版本号（对应原项目 apiclient.py 的 store_url 探测）。本包自己
+// 不做持久化（是否落盘、落到哪里是调用方的事，见 WithOnVersionUpdate），但会在纠正发生的那一刻
+// 通知已注册的回调，使调用方能把它记下来，避免下一个新进程还要再吃一次这次的多余往返。
+//
+// 必须在这里而非外层中间件处理：版本不符时 result_code=204、status=3，与「会话失效」共用同一个
+// status（见 relogin.go 的 statusSessionInvalid），若放任它冒泡到 session guard，会被误判成需要
+// 重登——而重登发出的请求带着同样过期的头，会在这里再栽一次跟头。只重试一次：纠正后仍失败，
+// 就不是版本的事，照常按原样上抛给外层处理。
 func (c *Client) transport(ctx context.Context, req protocol.Request, out any) (protocol.ResponseHeader, error) {
+	header, err := c.doTransport(ctx, req, out)
+
+	newVer, ok := parseStoreURLVersion(header.StoreURL)
+	if !ok {
+		return header, err
+	}
+	c.mu.Lock()
+	cur := c.headers["APP-VER"]
+	c.mu.Unlock()
+	if newVer == cur {
+		return header, err
+	}
+	c.logger.Info("APP-VER 已过期，自动升级并重试请求", "url", req.URL(), "old", cur, "new", newVer)
+	c.SetHeader("APP-VER", newVer)
+	if c.onVersionUpdate != nil {
+		c.onVersionUpdate(newVer)
+	}
+	ZeroResponse(out)
+	return c.doTransport(ctx, req, out)
+}
+
+// doTransport 是单次尝试：加密/编码/HTTP/解码/维护会话头。
+func (c *Client) doTransport(ctx context.Context, req protocol.Request, out any) (protocol.ResponseHeader, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -246,8 +302,6 @@ func (c *Client) transport(ctx context.Context, req protocol.Request, out any) (
 			c.viewerID = v
 		}
 	}
-
-	// TODO(后续): 维护状态响应 store_url 的版本自动升级；此处仅捕获 header.StoreURL。
 
 	// 业务错误
 	if ec, ok := out.(protocol.ErrorCarrier); ok {

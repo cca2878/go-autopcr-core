@@ -18,6 +18,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/credential"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi"
 	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/appversion"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/session"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
@@ -100,7 +101,18 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 
 	rt := transport.NewRoundTripper(o.proxy, o.insecureTLS)
 	gameHTTP := &http.Client{Timeout: transport.DefaultTimeout, Transport: rt}
-	tr := transport.New(cred, transport.WithHTTPClient(gameHTTP), transport.WithLogger(o.logger))
+	trOpts := []transport.Option{transport.WithHTTPClient(gameHTTP), transport.WithLogger(o.logger)}
+	// APP-VER 版本自愈落盘（见 appversion 包）：复用 masterdata 缓存目录，未启用 masterdata
+	// 时 o.mdCacheDir 为空、appversion 整包空操作，退化为每个 Client 生命周期内自愈一次。
+	if o.mdCacheDir != "" {
+		trOpts = append(trOpts, transport.WithOnVersionUpdate(func(v string) {
+			appversion.Write(o.mdCacheDir, v)
+		}))
+	}
+	tr := transport.New(cred, trOpts...)
+	if v, ok := appversion.Read(o.mdCacheDir); ok {
+		tr.SetHeader("APP-VER", v)
+	}
 
 	state := gamestate.New()
 	registry := gamestate.DefaultRegistry()

@@ -39,14 +39,17 @@ var (
 const platformAndroid = "2"
 
 // androidHeaders 复刻原 constants.py 的 DEFAULT_HEADERS（Android）。
-// APP-VER 等版本相关字段 M1 先固定；动态版本刷新（version.txt / store_url）留待后续。
+//
+// APP-VER 只是【出厂默认值】、会过期：游戏更新后服务端拒绝旧版本号，
+// transport.Client 会从拒绝响应的 store_url 里读出真实版本号自动纠正（见其 transport 方法），
+// 故这里的值不必手动跟着每次更新维护——写的是最近一次实测确认可用的版本（2026-07-31）。
 //
 // 注：不含 Accept-Encoding —— Go 的 http.Transport 未手动指定时会自动添加
 // "Accept-Encoding: gzip"（规范大小写，与官方客户端一致）并透明解压响应。
 var androidHeaders = map[string]string{
 	"User-Agent":           "UnityPlayer/2021.3.45f2c1 (UnityWebRequest/1.0, libcurl/8.5.0-DEV)",
 	"X-Unity-Version":      "2021.3.45f2c1",
-	"APP-VER":              "11.4.0",
+	"APP-VER":              "11.7.2",
 	"BATTLE-LOGIC-VERSION": "4",
 	"BUNDLE-VER":           "",
 	"DEVICE":               "2",
