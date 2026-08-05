@@ -9,6 +9,8 @@ package gamestate
 import (
 	"math"
 	"net/url"
+
+	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
 // Currency 是可分「免费 / 付费」两部分的货币持有量。钻石与金币同形，故共用一个类型。
@@ -204,6 +206,31 @@ func (s *PlayerState) GetInventory(typ, id int) int {
 		return clampToInt(s.Jewel.Total())
 	}
 	return s.Inventory[InventoryKey{Type: typ, ID: id}]
+}
+
+// ApplyInventory 把一条库存变动写进状态，与 GetInventory 成对（一写一读，特判规则相同）。
+//
+// 按 Stock 覆盖而非累加 Count：Stock 是本次结算完成后的最终余额，同一 id 的多条奖励里它
+// 相同，累加会翻倍（取证见 protocol.InventoryInfo）。
+func (s *PlayerState) ApplyInventory(it protocol.InventoryInfo) {
+	key := InventoryKey{Type: it.Type, ID: it.ID}
+	switch key {
+	case keyZMana, keyMana:
+		// 金币/钻石不进库存表，落在专用字段上（与 GetInventory 的特判对称）。
+		//
+		// 写入【免费部分】依据 ref（update_inventory 把 stock 赋给 gold_id_free /
+		// free_jewel）。⚠️ 未能证伪：手头两个测试账号的 gold_id_pay 与 jewel 均为 0，
+		// stock 等于免费额还是等于总额在这种账号上无从区分。若将来拿到有付费余额的样本，
+		// 这两行是第一个要复核的地方——若 stock 其实是总额，这里会让免费额虚高。
+		s.Gold.Free = int64(it.Stock)
+	case keyJewel:
+		s.Jewel.Free = int64(it.Stock)
+	default:
+		if s.Inventory == nil {
+			s.Inventory = make(map[InventoryKey]int)
+		}
+		s.Inventory[key] = it.Stock
+	}
 }
 
 // clampToInt 把 int64 收敛进 int，避免 32 位平台（gomobile arm32）上的截断为负。

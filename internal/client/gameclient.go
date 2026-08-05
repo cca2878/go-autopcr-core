@@ -18,6 +18,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/credential"
 	"github.com/cca2878/go-autopcr-core/internal/client/gameapi"
 	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
+	"github.com/cca2878/go-autopcr-core/internal/client/gamestate/fold"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/appversion"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/session"
@@ -119,7 +120,7 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 	}
 
 	state := gamestate.New()
-	registry := gamestate.DefaultRegistry()
+	registry := fold.DefaultRegistry()
 
 	g := &client{
 		GameAPI:    gameapi.New(tr),
