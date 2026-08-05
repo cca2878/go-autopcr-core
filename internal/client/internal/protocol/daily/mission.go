@@ -58,6 +58,15 @@ func (*MissionAcceptRequest) URL() *url.URL { return urlMissionAccept }
 
 // MissionAcceptResponse 携带本次领取到的奖励列表（其余字段由解码器忽略）。
 type MissionAcceptResponse struct {
+	StaminaInfo *protocol.UserStaminaInfo `msgpack:"stamina_info" json:"stamina_info"`
+	TeamLevel   int                       `msgpack:"team_level" json:"team_level"`
 	protocol.ResponseBase
-	Rewards []InventoryInfo `msgpack:"rewards" json:"rewards"`
+	Rewards []protocol.InventoryInfo `msgpack:"rewards" json:"rewards"`
 }
+
+// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬 ref 的
+// MissionAcceptResponse（handlers.py:464，rewards 逐条走 update_inventory）。
+func (r *MissionAcceptResponse) InventoryChanges() []protocol.InventoryInfo { return r.Rewards }
+
+// StaminaSnapshot 实现 protocol.StaminaCarrier（对应 ref handlers.py:469）。
+func (r *MissionAcceptResponse) StaminaSnapshot() *protocol.UserStaminaInfo { return r.StaminaInfo }

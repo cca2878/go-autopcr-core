@@ -35,11 +35,13 @@ func (summary) Params() []automation.Param {
 func (summary) Run(_ context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	d := gc.Data()
 	if rc.Bool("compact") {
-		rc.Logf("%s Lv%d ｜ 体力%d 金币%d 钻石%d", d.UserName, d.TeamLevel, d.Stamina, d.Gold, d.Jewel.Total)
+		rc.Logf("%s Lv%d ｜ 体力%d 金币%d 钻石%d", d.UserName, d.TeamLevel, d.Stamina, d.Gold.Free, d.Jewel.Free)
 		return nil
 	}
 	rc.Logf("昵称 %s（等级 %d）", d.UserName, d.TeamLevel)
-	rc.Logf("体力 %d ｜ 金币 %d ｜ 钻石 %d（免费 %d）", d.Stamina, d.Gold, d.Jewel.Total, d.Jewel.Free)
+	// 金币/钻石一律展示【免费部分】：付费部分靠充值而来，自动化不该动它，报出去只会误导。
+	// 需要账面合计的地方（如上行快照）走 Currency.Total()，两个口径不混用。
+	rc.Logf("体力 %d ｜ 金币 %d ｜ 钻石 %d", d.Stamina, d.Gold.Free, d.Jewel.Free)
 	return nil
 }
 
@@ -62,6 +64,6 @@ func (home) Run(ctx context.Context, gc client.GameClient, rc *automation.RunCon
 		return err
 	}
 	d := gc.Data()
-	rc.Logf("首页已刷新：体力 %d ｜ 金币 %d", d.Stamina, d.Gold)
+	rc.Logf("首页已刷新：体力 %d ｜ 金币 %d", d.Stamina, d.Gold.Free)
 	return nil
 }

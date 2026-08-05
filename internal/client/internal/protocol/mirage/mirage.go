@@ -12,11 +12,6 @@ var (
 	urlReceiveReward = protocol.MustRelURL("mirage/receive_reward")
 )
 
-// InventoryInfo 是一件奖励（此处仅计数）。
-type InventoryInfo struct {
-	ID int `msgpack:"id" json:"id"`
-}
-
 // TopRequest 拉取追忆战首页（礼物池累积状态等）。
 type TopRequest struct {
 	protocol.RequestBase
@@ -40,6 +35,19 @@ func (*ReceiveRewardRequest) URL() *url.URL { return urlReceiveReward }
 
 // ReceiveRewardResponse 携带领取到的奖励（其余字段由解码器忽略）。
 type ReceiveRewardResponse struct {
+	UserGold  *protocol.UserGold  `msgpack:"user_gold" json:"user_gold"`
+	UserJewel *protocol.UserJewel `msgpack:"user_jewel" json:"user_jewel"`
 	protocol.ResponseBase
-	RewardInfo []InventoryInfo `msgpack:"reward_info" json:"reward_info"`
+	RewardInfo []protocol.InventoryInfo `msgpack:"reward_info" json:"reward_info"`
 }
+
+// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬 ref 的
+// MirageReceiveRewardResponse（handlers.py:1529，reward_info 逐条走 update_inventory）。
+func (r *ReceiveRewardResponse) InventoryChanges() []protocol.InventoryInfo { return r.RewardInfo }
+
+// GoldSnapshot / JewelSnapshot 实现 protocol.GoldCarrier / JewelCarrier
+// （对应 ref handlers.py:1534-1537）。
+func (r *ReceiveRewardResponse) GoldSnapshot() *protocol.UserGold { return r.UserGold }
+
+// JewelSnapshot 见 GoldSnapshot。
+func (r *ReceiveRewardResponse) JewelSnapshot() *protocol.UserJewel { return r.UserJewel }

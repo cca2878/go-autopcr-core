@@ -114,9 +114,9 @@ func inRelogin(ctx context.Context) bool { return ctx.Value(reloginKey{}) != nil
 
 // sessionGuard 维护「会话是否已被服务端判定失效」这一位状态，并在下次请求前重走登录序列。
 //
-// 惰性重登（置位 + 请求前 ensure）复刻原项目；但【不重置玩家状态】——原项目换新 datamgr
-// 是因为它的连接池会跨账号复用同一 wrapper，而本库一个 client 绑定一份凭据，重登时
-// load/index + home/index 会把权威字段原样覆盖回来，清空反而会丢掉本轮模块已折叠的数据。
+// 惰性重登（置位 + 请求前 ensure）复刻原项目，并【连带清零玩家状态】：登录序列是权威全量
+// 数据源，服务端本轮不再下发的字段与模块本轮折叠的本地增量都不该活过重登（见
+// PlayerState.Reset 与 client.loginSequence）。
 type sessionGuard struct {
 	login   func(context.Context) error // 重登动作（注入以便单测）
 	expired func() bool                 // 报告会话是否已过每日重置点（注入以便单测）

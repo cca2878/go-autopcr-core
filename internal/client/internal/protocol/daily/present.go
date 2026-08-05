@@ -52,15 +52,17 @@ type PresentReceiveAllRequest struct {
 
 func (*PresentReceiveAllRequest) URL() *url.URL { return urlPresentReceiveAll }
 
-// InventoryInfo 是一件库存物品/奖励（此处仅取所需字段；type 为 eInventoryType 枚举值）。
-type InventoryInfo struct {
-	ID    int `msgpack:"id" json:"id"`
-	Type  int `msgpack:"type" json:"type"`
-	Count int `msgpack:"count" json:"count"`
-}
-
 // PresentReceiveAllResponse 携带本次领取到的奖励列表（其余字段由解码器忽略）。
 type PresentReceiveAllResponse struct {
+	StaminaInfo *protocol.UserStaminaInfo `msgpack:"stamina_info" json:"stamina_info"`
 	protocol.ResponseBase
-	Rewards []InventoryInfo `msgpack:"rewards" json:"rewards"`
+	Rewards []protocol.InventoryInfo `msgpack:"rewards" json:"rewards"`
+}
+
+// InventoryChanges 实现 protocol.RewardCarrier——领取回传的奖励条目带 stock（真机实测）。
+func (r *PresentReceiveAllResponse) InventoryChanges() []protocol.InventoryInfo { return r.Rewards }
+
+// StaminaSnapshot 实现 protocol.StaminaCarrier——领取体力药会当场改变体力。
+func (r *PresentReceiveAllResponse) StaminaSnapshot() *protocol.UserStaminaInfo {
+	return r.StaminaInfo
 }

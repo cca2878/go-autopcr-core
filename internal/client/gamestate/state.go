@@ -11,11 +11,23 @@ import (
 	"net/url"
 )
 
-// Jewel 是钻石信息。
-type Jewel struct {
-	Total int // 总钻石
-	Free  int // 免费钻石
+// Currency 是可分「免费 / 付费」两部分的货币持有量。钻石与金币同形，故共用一个类型。
+//
+// 两个口径不可混用：
+//
+//	Total()  账面合计，服务端口径。上行快照必须用它——彩装炼成每发都要带 current_gold，
+//	         金额与服务端账面对不上会被拒。
+//	Free     免费部分，展示口径。付费部分是充值来的，自动化不该动它，故展示默认取这个。
+//
+// 服务端把这两部分分开记账（钻石的 jewel / free_jewel 是互斥的两段，不是「总量与其中的
+// 免费部分」，见 protocol.UserJewel 的取证），扣费时先扣免费部分。
+type Currency struct {
+	Free int64 // 免费部分
+	Paid int64 // 付费部分（充值/购买而来）
 }
+
+// Total 返回账面合计——服务端口径。
+func (c Currency) Total() int64 { return c.Free + c.Paid }
 
 // OwnedUnit 是玩家持有的一个角色（练度/图鉴类报告所需字段）。
 type OwnedUnit struct {
@@ -73,8 +85,13 @@ type PlayerState struct {
 	UserName  string
 	TeamLevel int
 	Stamina   int
-	Jewel     Jewel
-	Gold      int64
+	Jewel     Currency
+	Gold      Currency
+
+	// StaminaFullRecoveryTime 是体力回满的时刻（Unix 秒）。与 Stamina 同源折叠，因为恢复中的
+	// 体力要靠它与当前时刻推算——只存 Stamina 会在恢复过程中读到过期值。推算本身尚未实现
+	// （需要 team_info 母数据给出上限），字段先存着。
+	StaminaFullRecoveryTime int64
 
 	// 公会相关（登录时由 load/index 折叠而来）。
 	ClanID        int64 // 所属公会 id；未加入公会为 0
@@ -90,6 +107,12 @@ type PlayerState struct {
 	// 任务通关状态（登录时由 home/index 折叠而来），供剧情等解锁门禁判定。
 	ClearedQuests      map[int]struct{} // 已通关的普通任务 id（clear_flg>0）
 	ClearedBywayQuests map[int]struct{} // 已通关的支线任务 id
+
+	// Missions 是任务完成状态（mission_id→mission_status，由 mission/index 折叠）。
+	// 与本包多数字段不同，它目前【没有消费者】——ref 存它是为了 is_mission_finished(system_id)
+	// 那类查询（datamgr.py:624），对应模块尚未移植。放在这里是为了让状态面与 ref 对齐，
+	// 同预建的那批协议模型一样，等移植到时直接可用。
+	Missions map[int]int
 
 	// UnitLove 是各角色的好感等级（chara_id→love_level，登录时由 load/index 折叠）。
 	// 未持有的角色不在表中。供角色好感剧情解锁判定。
@@ -176,9 +199,9 @@ func (s *PlayerState) IsQuestUnlocked(questID int) bool {
 func (s *PlayerState) GetInventory(typ, id int) int {
 	switch (InventoryKey{Type: typ, ID: id}) {
 	case keyZMana, keyMana:
-		return clampToInt(s.Gold)
+		return clampToInt(s.Gold.Total())
 	case keyJewel:
-		return s.Jewel.Total + s.Jewel.Free
+		return clampToInt(s.Jewel.Total())
 	}
 	return s.Inventory[InventoryKey{Type: typ, ID: id}]
 }
@@ -196,3 +219,19 @@ func clampToInt(v int64) int {
 
 // New 返回一个空的 PlayerState。
 func New() *PlayerState { return &PlayerState{} }
+
+// Reset 把状态清回零值，供登录序列开始【之前】调用。
+//
+// 登录序列（maintenance + load/index + home/index）是权威的全量数据源，真实客户端也是这么
+// 用的：它下发什么，玩家状态就该是什么。不清零会让两类陈旧值活过重登——
+//
+//	① 折叠器用 if 保护的字段：服务端本轮不下发即保留旧值。退会后 load/index 不带 user_clan，
+//	   ClanID 就会停在旧公会上（见 foldLoadIndex）。
+//	② 模块本轮折叠的本地增量：那是基于旧世界的推断（如点赞后置 1 的 ClanLikeCount），
+//	   重登后一律以服务端全量为准。
+//
+// 保留其一而非全清，得到的是「半旧半新」——比整体过期更难排查。
+//
+// 原地清零而非换新实例：折叠中间件在装配时捕获了本指针（见 client.New），换实例会让后续
+// 折叠写进一个没人读的旧对象。
+func (s *PlayerState) Reset() { *s = PlayerState{} }

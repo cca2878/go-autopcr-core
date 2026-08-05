@@ -284,7 +284,7 @@ func doEnhance(ctx context.Context, gc client.GameClient, rc *automation.RunCont
 			consumeCnt[k] += v
 		}
 
-		pending, err := gc.Exequip().AlcesExec(ctx, serialID, pt, int(gc.Data().Gold))
+		pending, err := gc.Exequip().AlcesExec(ctx, serialID, pt, int(gc.Data().Gold.Total()))
 		if err != nil {
 			return err
 		}
@@ -317,8 +317,8 @@ func doEnhance(ctx context.Context, gc client.GameClient, rc *automation.RunCont
 func computeWeight(target map[int]int, rankOrder []int) map[int]int {
 	weight := map[int]int{}
 	base := 1
-	for i := len(rankOrder) - 1; i >= 0; i-- {
-		key := rankOrder[i]
+	for _, key := range slices.Backward(rankOrder) {
+
 		if _, inTarget := target[key]; !inTarget {
 			weight[key] += base
 			base *= 30

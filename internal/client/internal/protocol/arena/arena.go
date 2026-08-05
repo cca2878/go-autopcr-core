@@ -42,6 +42,8 @@ func (*ArenaTimeRewardAcceptRequest) URL() *url.URL { return urlArenaReward }
 // ArenaTimeRewardAcceptResponse 为领取结果（无需读取的字段由解码器忽略）。
 type ArenaTimeRewardAcceptResponse struct {
 	protocol.ResponseBase
+	// RewardInfo 是本次领取到的奖励（单条，服务端可能不下发）。
+	RewardInfo *protocol.InventoryInfo `msgpack:"reward_info" json:"reward_info"`
 }
 
 // GrandArenaInfoRequest 拉取公主竞技场信息（含时间奖励可领数量）。
@@ -67,4 +69,23 @@ func (*GrandArenaTimeRewardAcceptRequest) URL() *url.URL { return urlGrandArenaR
 // GrandArenaTimeRewardAcceptResponse 为领取结果（无需读取的字段由解码器忽略）。
 type GrandArenaTimeRewardAcceptResponse struct {
 	protocol.ResponseBase
+	// RewardInfo 是本次领取到的奖励（单条，服务端可能不下发）。
+	RewardInfo *protocol.InventoryInfo `msgpack:"reward_info" json:"reward_info"`
+}
+
+// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬 ref
+// （handlers.py:874 / :725 —— reward_info 走 update_inventory）。字段是单条而非列表。
+func (r *ArenaTimeRewardAcceptResponse) InventoryChanges() []protocol.InventoryInfo {
+	if r.RewardInfo == nil {
+		return nil
+	}
+	return []protocol.InventoryInfo{*r.RewardInfo}
+}
+
+// InventoryChanges 实现 protocol.RewardCarrier，同 ArenaTimeRewardAcceptResponse。
+func (r *GrandArenaTimeRewardAcceptResponse) InventoryChanges() []protocol.InventoryInfo {
+	if r.RewardInfo == nil {
+		return nil
+	}
+	return []protocol.InventoryInfo{*r.RewardInfo}
 }

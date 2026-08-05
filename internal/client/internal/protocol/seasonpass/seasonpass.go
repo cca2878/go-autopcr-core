@@ -3,6 +3,7 @@ package seasonpass
 
 import (
 	"net/url"
+	"slices"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
@@ -19,11 +20,6 @@ const MissionStatusEnableReceive = 1
 type UserMission struct {
 	MissionID     int `msgpack:"mission_id" json:"mission_id"`
 	MissionStatus int `msgpack:"mission_status" json:"mission_status"`
-}
-
-// InventoryInfo 是一件奖励（此处仅计数）。
-type InventoryInfo struct {
-	ID int `msgpack:"id" json:"id"`
 }
 
 // IndexRequest 拉取指定女神祭的总览（任务状态、等级等）。
@@ -53,6 +49,18 @@ func (*MissionAcceptRequest) URL() *url.URL { return urlMissionAccept }
 // MissionAcceptResponse 携带领取到的奖励与更新后的等级（其余字段由解码器忽略）。
 type MissionAcceptResponse struct {
 	protocol.ResponseBase
-	SeasonpassLevel int             `msgpack:"seasonpass_level" json:"seasonpass_level"`
-	Rewards         []InventoryInfo `msgpack:"rewards" json:"rewards"`
+	SeasonpassLevel int                      `msgpack:"seasonpass_level" json:"seasonpass_level"`
+	Rewards         []protocol.InventoryInfo `msgpack:"rewards" json:"rewards"`
+}
+
+// InventoryChanges 实现 protocol.RewardCarrier，【逆序】返回。
+//
+// 逆序照搬 ref：它对应的 handler 写的是 `for reward in self.rewards[::-1]`
+// （handlers.py:900），而这是 ref 全部 138 个折叠 handler 里【唯一】一处逆序遍历——只此一
+// 家，说明不是笔误而是这个端点的特性。一次领取会横跨多个等级，逐条的 stock 若是累进中间值，
+// 正序遍历最后留下的就会是最旧的那条。core 没有该端点的真机样本，故保持与 ref 一致。
+func (r *MissionAcceptResponse) InventoryChanges() []protocol.InventoryInfo {
+	out := slices.Clone(r.Rewards)
+	slices.Reverse(out)
+	return out
 }

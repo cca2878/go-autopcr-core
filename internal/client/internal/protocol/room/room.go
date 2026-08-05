@@ -42,15 +42,19 @@ type RoomReceiveItemAllRequest struct {
 
 func (*RoomReceiveItemAllRequest) URL() *url.URL { return urlRoomReceiveAll }
 
-// InventoryInfo 是一件收取到的产物/奖励（type 为 eInventoryType 枚举值）。
-type InventoryInfo struct {
-	ID    int `msgpack:"id" json:"id"`
-	Type  int `msgpack:"type" json:"type"`
-	Count int `msgpack:"count" json:"count"`
-}
-
 // RoomReceiveItemAllResponse 携带本次收取到的产物列表（其余字段由解码器忽略）。
 type RoomReceiveItemAllResponse struct {
+	StaminaInfo *protocol.UserStaminaInfo `msgpack:"stamina_info" json:"stamina_info"`
 	protocol.ResponseBase
-	RewardList []InventoryInfo `msgpack:"reward_list" json:"reward_list"`
+	RewardList []protocol.InventoryInfo `msgpack:"reward_list" json:"reward_list"`
+}
+
+// InventoryChanges 实现 protocol.RewardCarrier——收取回传的产物条目带 stock（真机实测）。
+func (r *RoomReceiveItemAllResponse) InventoryChanges() []protocol.InventoryInfo {
+	return r.RewardList
+}
+
+// StaminaSnapshot 实现 protocol.StaminaCarrier（家园产物含体力药）。
+func (r *RoomReceiveItemAllResponse) StaminaSnapshot() *protocol.UserStaminaInfo {
+	return r.StaminaInfo
 }

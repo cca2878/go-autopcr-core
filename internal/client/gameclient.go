@@ -145,7 +145,7 @@ func New(cred credential.Credential, opts ...Option) GameClient {
 }
 
 func (g *client) Login(ctx context.Context) error {
-	if err := session.Login(markRelogin(ctx), g.tr, g.cred, g.logger); err != nil {
+	if err := g.loginSequence(markRelogin(ctx)); err != nil {
 		return err
 	}
 	g.guard.markFresh()
@@ -160,6 +160,19 @@ func (g *client) Login(ctx context.Context) error {
 // 外壳的事，核心不碰）。不重建母数据——会话失效与母数据版本无关，且查询句柄可能正被
 // 模块持有，中途换掉它比留着更危险；真的版本变更会走维护/版本升级路径。
 func (g *client) relogin(ctx context.Context) error {
+	return g.loginSequence(ctx)
+}
+
+// loginSequence 是两条登录路径（显式 Login、会话自愈 relogin）的公共部分：先把玩家状态
+// 清零，再重跑登录序列。
+//
+// 清零与登录序列必须绑死在这一处——登录序列是权威全量源，任何一条路径漏了清零，都会留下
+// 服务端本轮没再下发的陈旧字段（理由详见 PlayerState.Reset）。
+//
+// 序列中途失败时状态停在半空：这是有意的。登录没走完，状态本就不可信，留个空状态比留半份
+// 旧数据更难被误当成真的。
+func (g *client) loginSequence(ctx context.Context) error {
+	g.state.Reset()
 	return session.Login(ctx, g.tr, g.cred, g.logger)
 }
 
@@ -226,7 +239,7 @@ func foldingMiddleware(s *gamestate.PlayerState, registry *gamestate.Registry) t
 		return func(ctx context.Context, req protocol.Request, out any) (protocol.ResponseHeader, error) {
 			header, err := next(ctx, req, out)
 			if err == nil && out != nil {
-				registry.Apply(s, out)
+				registry.Apply(s, req, out)
 			}
 			return header, err
 		}

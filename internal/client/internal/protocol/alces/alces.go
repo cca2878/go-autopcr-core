@@ -43,13 +43,6 @@ type ExtraEquipInfo struct {
 	IsAlcesPending int         `msgpack:"is_alces_pending" json:"is_alces_pending"`
 }
 
-// InventoryInfo 是一条库存条目（此处用于 exec 后回传的炼成 PT 余量）。
-type InventoryInfo struct {
-	Type  int `msgpack:"type" json:"type"`
-	ID    int `msgpack:"id" json:"id"`
-	Stock int `msgpack:"stock" json:"stock"`
-}
-
 // SubStatusPost 是锁定请求的一条上行副属性（对应 ref ExtraEquipSubStatusPost；is_lock 用 int）。
 type SubStatusPost struct {
 	SlotNumber int `msgpack:"slot_number" json:"slot_number"`
@@ -88,9 +81,9 @@ func (*ExecRequest) URL() *url.URL { return urlExec }
 // 与扣费后的金币余额(user_gold)——后者须折回状态，否则下一发 exec 会带着过期的 current_gold 快照。
 type ExecResponse struct {
 	protocol.ResponseBase
-	PendingAlcesData  *AlcesData         `msgpack:"pending_alces_data" json:"pending_alces_data"`
-	CurrentAlcesPoint *InventoryInfo     `msgpack:"current_alces_point" json:"current_alces_point"`
-	UserGold          *protocol.UserGold `msgpack:"user_gold" json:"user_gold"`
+	PendingAlcesData  *AlcesData              `msgpack:"pending_alces_data" json:"pending_alces_data"`
+	CurrentAlcesPoint *protocol.InventoryInfo `msgpack:"current_alces_point" json:"current_alces_point"`
+	UserGold          *protocol.UserGold      `msgpack:"user_gold" json:"user_gold"`
 }
 
 // FixResultRequest 采纳上次 exec 的结果（定案）。

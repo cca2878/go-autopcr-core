@@ -25,15 +25,6 @@ type UserInfo struct {
 	UserStamina int    `msgpack:"user_stamina" json:"user_stamina"`
 }
 
-// UserJewel 是钻石信息。jewel 为总量，free_jewel 为免费部分。
-type UserJewel struct {
-	Jewel     int `msgpack:"jewel" json:"jewel"`
-	FreeJewel int `msgpack:"free_jewel" json:"free_jewel"`
-}
-
-// UserGold 是金币信息（付费/免费两部分）。定义在协议基包，各域共享。
-type UserGold = protocol.UserGold
-
 // UserClan 是玩家所属公会信息（此处仅取所属公会 id）。未加入公会时该字段为空。
 type UserClan struct {
 	ClanID int64 `msgpack:"clan_id" json:"clan_id"`
@@ -52,14 +43,6 @@ type CharaFortune struct {
 	FortuneID int   `msgpack:"fortune_id" json:"fortune_id"`
 	Rank      int   `msgpack:"rank" json:"rank"`
 	UnitList  []int `msgpack:"unit_list" json:"unit_list"`
-}
-
-// UnitData 是玩家持有的一个角色（此处仅取练度报告所需字段）。
-type UnitData struct {
-	ID             int `msgpack:"id" json:"id"`
-	UnitRarity     int `msgpack:"unit_rarity" json:"unit_rarity"`
-	UnitLevel      int `msgpack:"unit_level" json:"unit_level"`
-	PromotionLevel int `msgpack:"promotion_level" json:"promotion_level"`
 }
 
 // ExtraEquipSubStatus 是一件 EX 装备的一条副属性（对应 ref ExtraEquipSubStatus）。
@@ -83,28 +66,20 @@ type ExtraEquipInfo struct {
 	IsAlcesPending int                   `msgpack:"is_alces_pending" json:"is_alces_pending"`
 }
 
-// InventoryInfo 是一条库存条目（对应 ref InventoryInfo，此处仅取折叠库存所需字段）。
-// type＝eInventoryType，id＝物品 id，stock＝持有量（普通物品的库存以 stock 计）。
-type InventoryInfo struct {
-	Type  int `msgpack:"type" json:"type"`
-	ID    int `msgpack:"id" json:"id"`
-	Stock int `msgpack:"stock" json:"stock"`
-}
-
 // LoadIndexResponse 为所需字段的部分定义（玩家档案相关）。
 type LoadIndexResponse struct {
 	protocol.ResponseBase
-	UserInfo       *UserInfo        `msgpack:"user_info" json:"user_info"`
-	UserJewel      *UserJewel       `msgpack:"user_jewel" json:"user_jewel"`
-	UserGold       *UserGold        `msgpack:"user_gold" json:"user_gold"`
-	UserClan       *UserClan        `msgpack:"user_clan" json:"user_clan"`
-	ClanLikeCount  int              `msgpack:"clan_like_count" json:"clan_like_count"`
-	ReadStoryIDs   []int            `msgpack:"read_story_ids" json:"read_story_ids"`
-	UserCharaInfo  []UserChara      `msgpack:"user_chara_info" json:"user_chara_info"`
-	UnitList       []UnitData       `msgpack:"unit_list" json:"unit_list"`
-	CF             *CharaFortune    `msgpack:"cf" json:"cf"`
-	UserExEquip    []ExtraEquipInfo `msgpack:"user_ex_equip" json:"user_ex_equip"`
-	MaterialList   []InventoryInfo  `msgpack:"material_list" json:"material_list"`
-	ItemList       []InventoryInfo  `msgpack:"item_list" json:"item_list"`
-	DailyResetTime int64            `msgpack:"daily_reset_time" json:"daily_reset_time"`
+	UserInfo       *UserInfo                `msgpack:"user_info" json:"user_info"`
+	UserJewel      *protocol.UserJewel      `msgpack:"user_jewel" json:"user_jewel"`
+	UserGold       *protocol.UserGold       `msgpack:"user_gold" json:"user_gold"`
+	UserClan       *UserClan                `msgpack:"user_clan" json:"user_clan"`
+	ClanLikeCount  int                      `msgpack:"clan_like_count" json:"clan_like_count"`
+	ReadStoryIDs   []int                    `msgpack:"read_story_ids" json:"read_story_ids"`
+	UserCharaInfo  []UserChara              `msgpack:"user_chara_info" json:"user_chara_info"`
+	UnitList       []protocol.UnitData      `msgpack:"unit_list" json:"unit_list"`
+	CF             *CharaFortune            `msgpack:"cf" json:"cf"`
+	UserExEquip    []ExtraEquipInfo         `msgpack:"user_ex_equip" json:"user_ex_equip"`
+	MaterialList   []protocol.InventoryInfo `msgpack:"material_list" json:"material_list"`
+	ItemList       []protocol.InventoryInfo `msgpack:"item_list" json:"item_list"`
+	DailyResetTime int64                    `msgpack:"daily_reset_time" json:"daily_reset_time"`
 }

@@ -28,7 +28,13 @@ type ClanMemberInfo struct {
 }
 
 // ClanData 是公会信息主体（此处仅取成员列表）。
+// ClanDetail 是公会详情（此处仅取公会 id）。
+type ClanDetail struct {
+	ClanID int64 `msgpack:"clan_id" json:"clan_id"`
+}
+
 type ClanData struct {
+	Detail  *ClanDetail      `msgpack:"detail" json:"detail"`
 	Members []ClanMemberInfo `msgpack:"members" json:"members"`
 }
 
@@ -49,5 +55,9 @@ func (*ClanLikeRequest) URL() *url.URL { return urlClanLike }
 
 // ClanLikeResponse 为点赞结果（无需读取的字段由解码器忽略）。
 type ClanLikeResponse struct {
+	StaminaInfo *protocol.UserStaminaInfo `msgpack:"stamina_info" json:"stamina_info"`
 	protocol.ResponseBase
 }
+
+// StaminaSnapshot 实现 protocol.StaminaCarrier（对应 ref handlers.py 的 ClanLikeResponse）。
+func (r *ClanLikeResponse) StaminaSnapshot() *protocol.UserStaminaInfo { return r.StaminaInfo }
