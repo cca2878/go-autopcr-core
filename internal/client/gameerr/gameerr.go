@@ -23,12 +23,14 @@ import (
 
 // 本包各错误的归类（见 errs.Class）。集中列在这里，是为了让「哪种失败该怎么办」这件事
 // 一眼可比对，而不必翻遍六个类型各自的定义。来源一律是 DomainGameAPI——这正是本包的边界。
-func (e *PanicError) ErrorClass() errs.Class        { return errs.DomainGameAPI.With(errs.KindRejected) }
-func (e *RiskError) ErrorClass() errs.Class         { return errs.DomainGameAPI.With(errs.KindRejected) }
-func (e *APIError) ErrorClass() errs.Class          { return errs.DomainGameAPI.With(errs.KindRejected) }
-func (e *NetworkError) ErrorClass() errs.Class      { return errs.DomainGameAPI.With(errs.KindTransient) }
-func (e *ProtocolError) ErrorClass() errs.Class     { return errs.DomainGameAPI.With(errs.KindCorrupt) }
-func (e *SessionBreakError) ErrorClass() errs.Class { return errs.DomainGameAPI.With(errs.KindTransient) }
+func (e *PanicError) ErrorClass() errs.Class    { return errs.DomainGameAPI.With(errs.KindRejected) }
+func (e *RiskError) ErrorClass() errs.Class     { return errs.DomainGameAPI.With(errs.KindRejected) }
+func (e *APIError) ErrorClass() errs.Class      { return errs.DomainGameAPI.With(errs.KindRejected) }
+func (e *NetworkError) ErrorClass() errs.Class  { return errs.DomainGameAPI.With(errs.KindTransient) }
+func (e *ProtocolError) ErrorClass() errs.Class { return errs.DomainGameAPI.With(errs.KindCorrupt) }
+func (e *SessionBreakError) ErrorClass() errs.Class {
+	return errs.DomainGameAPI.With(errs.KindTransient)
+}
 
 // PanicError 表示致命错误：应中止整条流程（对应原项目 PanicError）。
 type PanicError struct {

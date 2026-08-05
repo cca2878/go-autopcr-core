@@ -27,10 +27,10 @@ var (
 type BuildStage string
 
 const (
-	StageDownload BuildStage = "下载资源包"    // 从 CDN 取 masterdata_master.unity3d
+	StageDownload BuildStage = "下载资源包"     // 从 CDN 取 masterdata_master.unity3d
 	StageExtract  BuildStage = "提取 SQLite" // 从 UnityFS 容器里剥出库文件字节
-	StageUnhash   BuildStage = "反混淆"      // 用 rainbow 表把哈希名改回真实表名/列名
-	StageStore    BuildStage = "落盘缓存"     // 建目录、写临时文件、rename 到最终路径
+	StageUnhash   BuildStage = "反混淆"       // 用 rainbow 表把哈希名改回真实表名/列名
+	StageStore    BuildStage = "落盘缓存"      // 建目录、写临时文件、rename 到最终路径
 )
 
 // BuildError 表示某个版本的干净母数据库没能构建出来，Stage 指出它停在哪一步。
