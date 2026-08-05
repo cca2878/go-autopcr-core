@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"slices"
 
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
@@ -19,8 +20,8 @@ type Middleware func(next Handler) Handler
 // 即靠前的中间件在外层。
 func Chain(mws ...Middleware) Middleware {
 	return func(final Handler) Handler {
-		for i := len(mws) - 1; i >= 0; i-- {
-			final = mws[i](final)
+		for _, mw := range slices.Backward(mws) {
+			final = mw(final)
 		}
 		return final
 	}
