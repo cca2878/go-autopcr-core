@@ -1,4 +1,4 @@
-// Package labyrinth 是「黎明界（迷宫）」域的 DTO（labyrinth/top、enter、retire；对应 ref
+// Package labyrinth 是"黎明界（迷宫）"域的 DTO（labyrinth/top、enter、retire；对应参考项目
 // LabyrinthTop/Enter/RetireRequest/Response）。用于刷开局：enter 拉一张随机地图(map_list)，
 // 不满足条件则 retire 重刷。
 package labyrinth
@@ -15,7 +15,7 @@ var (
 	urlRetire = protocol.MustRelURL("labyrinth/retire")
 )
 
-// MapInfo 是黎明界地图上的一个格子（对应 ref LabyrinthMapInfo）。block_type 为 eLabyrinthBlockType：
+// MapInfo 是黎明界地图上的一个格子（对应参考项目 LabyrinthMapInfo）。block_type 为 eLabyrinthBlockType：
 // 1 起点、2 普通怪、3 EX怪、4 角色、5 事件、6 遗物、7 商店、8 Boss。
 type MapInfo struct {
 	Area            int   `msgpack:"area" json:"area"`
@@ -27,7 +27,7 @@ type MapInfo struct {
 	NextBlockIDList []int `msgpack:"next_block_id_list" json:"next_block_id_list"`
 }
 
-// GuildClearedDifficultyInfo 是某公会已通关的难度（对应 ref LabyrinthGuildClearedDifficultyInfo）。
+// GuildClearedDifficultyInfo 是某公会已通关的难度（对应参考项目 LabyrinthGuildClearedDifficultyInfo）。
 type GuildClearedDifficultyInfo struct {
 	GuildID    int `msgpack:"guild_id" json:"guild_id"`
 	Difficulty int `msgpack:"difficulty" json:"difficulty"`

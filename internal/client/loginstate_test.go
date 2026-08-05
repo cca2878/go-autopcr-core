@@ -20,9 +20,9 @@ func (stubCred) DoCaptcha(context.Context) (*captcha.Result, error) {
 	return &captcha.Result{}, nil
 }
 
-// 登录序列是权威全量源，故 loginSequence 必须【先清零再跑序列】。
+// 登录序列是权威全量源，故 loginSequence 必须'先清零再跑序列'。
 //
-// 用已取消的 ctx 让序列在第一发就失败，从而把「清零」与「折叠」分离开单独观察：序列一步没跑，
+// 用已取消的 ctx 让序列在第一发就失败，从而把"清零"与"折叠"分离开单独观察：序列一步没跑，
 // 陈旧字段却已归零，说明 Reset 确实在 session.Login 之前。顺带锁住 loginSequence 声明的那条
 // 语义——序列中途失败时状态停在空，而不是留半份旧数据。
 //

@@ -68,7 +68,7 @@ func TestDownloadFailsOverOn5xx(t *testing.T) {
 	}
 }
 
-// 404 是「要的东西不在」：换台主机问还是不在，白跑一趟。这条把 HTTPError.Retryable 的
+// 404 是"要的东西不在"：换台主机问还是不在，白跑一趟。这条把 HTTPError.Retryable 的
 // 判据真正接进了故障转移——去掉它，下面的 second.hits 就会变成 1。
 func TestDownloadDoesNotFailOverOn404(t *testing.T) {
 	first := newHostSpy(t, http.StatusNotFound, "")
@@ -108,7 +108,7 @@ func TestDownloadAllHostsDown(t *testing.T) {
 }
 
 // 清单解析以整棵树为单位换主机：同一逻辑 url 会在多个子清单里重复出现、以最后一条为准，
-// 半棵来自 A 半棵来自 B 时那个「谁最后」就跨了主机，取出来的可能是任何一条。
+// 半棵来自 A 半棵来自 B 时那个"谁最后"就跨了主机，取出来的可能是任何一条。
 func TestResolveFailsOverWholeTree(t *testing.T) {
 	down := newHostSpy(t, http.StatusServiceUnavailable, "")
 	up := newHostSpy(t, http.StatusOK, "")

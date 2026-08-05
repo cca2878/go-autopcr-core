@@ -1,4 +1,4 @@
-// Package sweep 汇集「扫荡」域的自动化模块（探索/地下城等扫荡；对应 ref sweep.py）。
+// Package sweep 汇集"扫荡"域的自动化模块（探索/地下城等扫荡；对应参考项目 sweep.py）。
 package sweep
 
 import (
@@ -18,7 +18,7 @@ func Register(r *automation.Registry) {
 
 // exploreExpReport 报告今日 EXP 探索还可扫荡多少次（只读，不实际扫荡/消耗体力）。
 //
-// 对应 ref explore_exp：原模块会扫荡消耗体力换取经验药水；此处降级为只读报告，只据登录折叠
+// 对应参考项目 explore_exp：原模块会扫荡消耗体力换取经验药水；此处降级为只读报告，只据登录折叠
 // 的今日已用/上限次数报告剩余可扫荡次数，不发送 training_quest/skip 写请求。
 type exploreExpReport struct{}
 

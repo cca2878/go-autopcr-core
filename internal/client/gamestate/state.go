@@ -1,7 +1,7 @@
-// Package gamestate 保存无头客户端观察到的玩家状态，并提供「响应→状态」折叠。
+// Package gamestate 保存无头客户端观察到的玩家状态，并提供"响应→状态"折叠。
 //
-// 对应原 Python 项目的 datamgr（玩家数据聚合）与 handlers（各响应的 update 逻辑）。
-// M2 先覆盖登录序列可得的基础档案；战力、库存等需要母数据的派生量属后续增量。
+// 对应参考项目的 datamgr（玩家数据聚合）与 handlers（各响应的 update 逻辑）。登录序列可得的
+// 基础档案、库存与 EX 装备实例均已覆盖；角色战力等需要结合母数据计算的派生量尚未折叠。
 //
 // 本包是纯数据层：不依赖 transport / 网络，可被上层用 mock 方式独立测试。
 package gamestate
@@ -13,7 +13,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
-// Currency 是可分「免费 / 付费」两部分的货币持有量。钻石与金币同形，故共用一个类型。
+// Currency 是可分"免费 / 付费"两部分的货币持有量。钻石与金币同形，故共用一个类型。
 //
 // 两个口径不可混用：
 //
@@ -21,8 +21,8 @@ import (
 //	         金额与服务端账面对不上会被拒。
 //	Free     免费部分，展示口径。付费部分是充值来的，自动化不该动它，故展示默认取这个。
 //
-// 服务端把这两部分分开记账（钻石的 jewel / free_jewel 是互斥的两段，不是「总量与其中的
-// 免费部分」，见 protocol.UserJewel 的取证），扣费时先扣免费部分。
+// 服务端把这两部分分开记账（钻石的 jewel / free_jewel 是互斥的两段，不是"总量与其中的
+// 免费部分"，见 protocol.UserJewel 的取证），扣费时先扣免费部分。
 type Currency struct {
 	Free int64 // 免费部分
 	Paid int64 // 付费部分（充值/购买而来）
@@ -46,13 +46,13 @@ type CharaFortune struct {
 	Rank      int // 今日名次
 }
 
-// InventoryKey 是库存物品的 (类型, id) 键（对应 ref ItemType＝(eInventoryType, id)）。
+// InventoryKey 是库存物品的 (类型, id) 键（对应参考项目 ItemType＝(eInventoryType, id)）。
 type InventoryKey struct {
 	Type int // eInventoryType
 	ID   int
 }
 
-// 特殊货币的库存键（对应 ref db.zmana / db.mana / db.jewel）。这三者不进 Inventory 表，
+// 特殊货币的库存键（对应参考项目 db.zmana / db.mana / db.jewel）。这三者不进 Inventory 表，
 // 而由 load/index 折进 PlayerState.Gold / Jewel 专用字段，故 GetInventory 需特判。
 var (
 	keyZMana = InventoryKey{Type: 12, ID: 94000} // (eInventoryType.Gold, 94000)
@@ -111,8 +111,8 @@ type PlayerState struct {
 	ClearedBywayQuests map[int]struct{} // 已通关的支线任务 id
 
 	// Missions 是任务完成状态（mission_id→mission_status，由 mission/index 折叠）。
-	// 与本包多数字段不同，它目前【没有消费者】——ref 存它是为了 is_mission_finished(system_id)
-	// 那类查询（datamgr.py:624），对应模块尚未移植。放在这里是为了让状态面与 ref 对齐，
+	// 与本包多数字段不同，它目前'没有消费者'——参考项目存它是为了 is_mission_finished(system_id)
+	// 那类查询（datamgr.py:624），对应模块尚未移植。放在这里是为了让状态面与参考项目对齐，
 	// 同预建的那批协议模型一样，等移植到时直接可用。
 	Missions map[int]int
 
@@ -131,11 +131,11 @@ type PlayerState struct {
 	CharaFortune *CharaFortune
 
 	// ExEquipIDs 是玩家持有的 EX 装备 ex_equipment_id 列表（登录时由 load/index 折叠），供计数/图鉴报告。
-	// 与 ExEquips 同源折叠，保留以兼容只需 id 的旧调用（如查ex装备计数）。
+	// 与 ExEquips 同源折叠，保留以兼容只需 id 的旧调用（如查 EX 装备计数）。
 	ExEquipIDs []int
 
 	// ExEquips 是玩家持有的 EX 装备完整实例（serial_id→实例，登录时由 load/index 折叠、炼成响应
-	// 增量更新），供彩装炼成/战力搭配。按 serial_id 键以便炼成定案/锁定按序更新（对应 ref ex_equips dict）。
+	// 增量更新），供彩装炼成/战力搭配。按 serial_id 键以便炼成定案/锁定按序更新（对应参考项目 ex_equips dict）。
 	ExEquips map[int]ExEquip
 
 	// Inventory 是普通库存物品持有量（(类型,id)→stock，登录时由 load/index 的 item_list +
@@ -152,7 +152,7 @@ type PlayerState struct {
 	ResVer      string
 	ManifestVer string
 
-	// ResURLs 是维护状态响应下发的【全部】资源 CDN 根（按 res_http_type 定 scheme），顺序即
+	// ResURLs 是维护状态响应下发的'全部'资源 CDN 根（按 res_http_type 定 scheme），顺序即
 	// 下发顺序。供 masterdata 在线获取使用：首台故障时依次换用下一台（见 asset.Source）。
 	// 下发为空/全部非法时为空，由上层回退到内置默认 CDN。
 	ResURLs []*url.URL
@@ -183,7 +183,7 @@ func (s *PlayerState) IsQuestCleared(questID int) bool {
 	return ok
 }
 
-// IsQuestUnlocked 报告某任务是否已通关（供剧情解锁门禁）。复刻 ref unlock_quest_id 的普通/支线
+// IsQuestUnlocked 报告某任务是否已通关（供剧情解锁门禁）。复刻参考项目 unlock_quest_id 的普通/支线
 // 分支：quest==0（无门禁）、已通关普通任务、已通关支线任务。露娜塔分支暂未跟踪（塔剧情才需）。
 func (s *PlayerState) IsQuestUnlocked(questID int) bool {
 	if questID == 0 {
@@ -196,7 +196,7 @@ func (s *PlayerState) IsQuestUnlocked(questID int) bool {
 	return ok
 }
 
-// GetInventory 返回某库存物品 (类型,id) 的持有量（不在库存中＝0）。复刻 ref get_inventory：
+// GetInventory 返回某库存物品 (类型,id) 的持有量（不在库存中＝0）。复刻参考项目 get_inventory：
 // mana/zmana 与 jewel 不在库存表里，需从 Gold / Jewel 专用字段取（如彩装炼成的 mana 消耗）。
 func (s *PlayerState) GetInventory(typ, id int) int {
 	switch (InventoryKey{Type: typ, ID: id}) {
@@ -218,7 +218,7 @@ func (s *PlayerState) ApplyInventory(it protocol.InventoryInfo) {
 	case keyZMana, keyMana:
 		// 金币/钻石不进库存表，落在专用字段上（与 GetInventory 的特判对称）。
 		//
-		// 写入【免费部分】依据 ref（update_inventory 把 stock 赋给 gold_id_free /
+		// 写入'免费部分'依据参考项目（update_inventory 把 stock 赋给 gold_id_free /
 		// free_jewel）。⚠️ 未能证伪：手头两个测试账号的 gold_id_pay 与 jewel 均为 0，
 		// stock 等于免费额还是等于总额在这种账号上无从区分。若将来拿到有付费余额的样本，
 		// 这两行是第一个要复核的地方——若 stock 其实是总额，这里会让免费额虚高。
@@ -247,17 +247,17 @@ func clampToInt(v int64) int {
 // New 返回一个空的 PlayerState。
 func New() *PlayerState { return &PlayerState{} }
 
-// Reset 把状态清回零值，供登录序列开始【之前】调用。
+// Reset 把状态清回零值，供登录序列开始'之前'调用。
 //
-// 登录序列（maintenance + load/index + home/index）是权威的全量数据源，真实客户端也是这么
-// 用的：它下发什么，玩家状态就该是什么。不清零会让两类陈旧值活过重登——
+// 登录序列（maintenance + load/index + home/index）是权威的全量数据源：它下发什么，玩家
+// 状态就该是什么。不清零会让两类陈旧值活过重登——
 //
 //	① 折叠器用 if 保护的字段：服务端本轮不下发即保留旧值。退会后 load/index 不带 user_clan，
 //	   ClanID 就会停在旧公会上（见 foldLoadIndex）。
 //	② 模块本轮折叠的本地增量：那是基于旧世界的推断（如点赞后置 1 的 ClanLikeCount），
 //	   重登后一律以服务端全量为准。
 //
-// 保留其一而非全清，得到的是「半旧半新」——比整体过期更难排查。
+// 保留其一而非全清，得到的是"半旧半新"——比整体过期更难排查。
 //
 // 原地清零而非换新实例：折叠中间件在装配时捕获了本指针（见 client.New），换实例会让后续
 // 折叠写进一个没人读的旧对象。

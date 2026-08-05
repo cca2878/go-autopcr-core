@@ -7,8 +7,8 @@ import (
 	lab "github.com/cca2878/go-autopcr-core/internal/client/gameapi/labyrinth"
 )
 
-// forkedArea 造一张「每列若干行、相邻列全连通」的区域地图。cols[i] 是第 i+1 列各行的类型。
-// 全连通是判定测试想要的：这样通过与否只取决于【有没有贵重格】，不掺连通性噪声。
+// forkedArea 造一张"每列若干行、相邻列全连通"的区域地图。cols[i] 是第 i+1 列各行的类型。
+// 全连通是判定测试想要的：这样通过与否只取决于'有没有贵重格'，不掺连通性噪声。
 func forkedArea(area int, cols [][]int) []lab.Block {
 	id := func(col, row int) int { return area*1000 + col*10 + row }
 	var out []lab.Block
@@ -52,7 +52,7 @@ func area4Like(secondExCol int) []lab.Block {
 }
 
 // TestSecondExInEitherColumnPasses 是这次重新设计的核心回归：第二个 EX 怪落在第5列还是
-// 第6列都应当照样达标。v1 的模板写死「第5列必须是 EX、第6列必须是普通怪」，于是把落在
+// 第6列都应当照样达标。v1 的模板写死"第5列必须是 EX、第6列必须是普通怪"，于是把落在
 // 第6列的那一半地图全判死；按价值判定只问拿到几个贵重格，位置无关。
 func TestSecondExInEitherColumnPasses(t *testing.T) {
 	v := &valuer{}
@@ -87,7 +87,7 @@ func TestBoundIsColumnsWithValuables(t *testing.T) {
 	}
 }
 
-// TestAllowanceLetsRouteMissCells 检查「允许少拿几格」确实放宽判定。
+// TestAllowanceLetsRouteMissCells 检查"允许少拿几格"确实放宽判定。
 func TestAllowanceLetsRouteMissCells(t *testing.T) {
 	// 造一张必须二选一的图：第2列上下分叉且此后不再合流，两条支路各只有一个贵重格。
 	blocks := []lab.Block{
@@ -109,9 +109,9 @@ func TestAllowanceLetsRouteMissCells(t *testing.T) {
 	}
 }
 
-// TestPreferenceNarrowsValuable 检查「同列二选一」偏好：两者同列相遇时只认一个。
+// TestPreferenceNarrowsValuable 检查"同列二选一"偏好：两者同列相遇时只认一个。
 //
-// 偏好按【类型对】表达、不提列号，所以生成器把这一对挪到别的列也照样生效——这正是不再
+// 偏好按'类型对'表达、不提列号，所以生成器把这一对挪到别的列也照样生效——这正是不再
 // 重蹈模板那种位置耦合的关键。
 func TestPreferenceNarrowsValuable(t *testing.T) {
 	// 第2列是 角色/遗物 二选一，第3列只有普通怪。
@@ -178,7 +178,7 @@ func TestBossFilterRejectsWholeMap(t *testing.T) {
 	if ok || route != nil {
 		t.Fatal("不命中所选 Boss 应整区不可达")
 	}
-	// 必须是 unreachable 而不是 0：0 是「一格没少拿」这个最好的结果，用它兼表「走不通」，
+	// 必须是 unreachable 而不是 0：0 是"一格没少拿"这个最好的结果，用它兼表"走不通"，
 	// 遥测就会把 Boss 不命中的地图记成完美开局（实测 418/993 张被这么记错）。
 	if short != unreachable {
 		t.Fatalf("不可达时 short 应为 unreachable(%d)，得 %d", unreachable, short)

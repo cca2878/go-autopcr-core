@@ -10,8 +10,8 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/gameerr"
 )
 
-// probeModule 记录每次运行时【传输层会看到的】断点策略，并可脚本化地撞断点。
-// 它【不】实现 SessionAware——那正是绝大多数模块的样子（默认档）。
+// probeModule 记录每次运行时'传输层会看到的'断点策略，并可脚本化地撞断点。
+// 它'不'实现 SessionAware——那正是绝大多数模块的样子（默认档）。
 type probeModule struct {
 	name string
 	// breakUntil 表示前 n 次运行都撞上断点（0＝从不断点）。
@@ -49,7 +49,7 @@ func runModule(m Module) Result {
 }
 
 // TestSessionBreak_DefaultAborts 断言未声明策略的模块（＝绝大多数）撞上断点即失败、不重跑，
-// 且措辞如实说明「可能已部分执行」——写请求到底发出去没有，我们确实不知道。
+// 且措辞如实说明"可能已部分执行"——写请求到底发出去没有，我们确实不知道。
 func TestSessionBreak_DefaultAborts(t *testing.T) {
 	m := &probeModule{name: "plain", breakUntil: 1}
 
@@ -70,7 +70,7 @@ func TestSessionBreak_DefaultAborts(t *testing.T) {
 }
 
 // TestSessionBreak_RestartRerunsOnce 断言声明可重跑的模块在断点后从头再跑一遍并成功，
-// 且断点【前】那半程的日志保留——那半程可能已经写入过，用户要看得见。
+// 且断点'前'那半程的日志保留——那半程可能已经写入过，用户要看得见。
 func TestSessionBreak_RestartRerunsOnce(t *testing.T) {
 	m := &policyModule{probeModule: probeModule{name: "restartable", breakUntil: 1}, policy: BreakRestart}
 
@@ -109,7 +109,7 @@ func TestSessionBreak_RestartGivesUpAfterOne(t *testing.T) {
 }
 
 // TestSessionBreak_PolicyReachesTransport 断言模块声明的策略确实进了 ctx。这是整条链路的
-// 关键一环：断点是在某次 gc 调用【里面】被发现的，策略传不到那里就当场中止不了。
+// 关键一环：断点是在某次 gc 调用'里面'被发现的，策略传不到那里就当场中止不了。
 func TestSessionBreak_PolicyReachesTransport(t *testing.T) {
 	type probe struct {
 		name  string

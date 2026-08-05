@@ -1,4 +1,4 @@
-// Package race 是「角色赛马」域的游戏 API 能力面（chara_fortune/draw；对应 ref chara_fortune）。
+// Package race 是"角色赛马"域的游戏 API 能力面（chara_fortune/draw；对应参考项目 chara_fortune）。
 //
 // 是否处于赛马开放时段由母数据判定、今日是否已赛马由玩家状态（cf）判定，均在上层模块完成；
 // 本域只负责按传入的 fortune_id/unit_id 发抽取请求。

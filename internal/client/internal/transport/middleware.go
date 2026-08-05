@@ -9,8 +9,8 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/protocol"
 )
 
-// ZeroResponse 清零响应载体。任何「重发同一个 out」的重试路径都必须先调用它：解码器只覆盖本次
-// 响应里出现的字段，上一轮残留的 server_error 会让重发后的【成功】响应被再次误判为业务错误。
+// ZeroResponse 清零响应载体。任何"重发同一个 out"的重试路径都必须先调用它：解码器只覆盖本次
+// 响应里出现的字段，上一轮残留的 server_error 会让重发后的'成功'响应被再次误判为业务错误。
 func ZeroResponse(out any) {
 	if out == nil {
 		return
@@ -23,9 +23,9 @@ func ZeroResponse(out any) {
 // DefaultRetries 是网络错误的默认重试次数（复刻原 errorhandler）。
 const DefaultRetries = 5
 
-// ErrorHandler 复刻原项目 misc.py 的 errorhandler：
+// ErrorHandler 复刻参考项目 misc.py 的 errorhandler：
 //   - 网络错误重试至多 retries 次；
-//   - 业务错误若含「维护」则升级为 PanicError；
+//   - 业务错误若含"维护"则升级为 PanicError；
 //   - 其余错误直接上抛。
 func ErrorHandler(retries int) Middleware {
 	if retries < 0 {

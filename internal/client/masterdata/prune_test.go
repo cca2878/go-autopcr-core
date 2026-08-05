@@ -42,7 +42,7 @@ func exists(path string) bool {
 	return err == nil
 }
 
-// seedCachedDB 造一份【真的、盖着当前 rainbow 指纹】的缓存库，冒充一次成功构建的产物。
+// seedCachedDB 造一份'真的、盖着当前 rainbow 指纹'的缓存库，冒充一次成功构建的产物。
 // 不能用 touch 糊一个假文件顶替：EnsureDB 现在要读库头的指纹，假文件会被判为来路不明而重建。
 func seedCachedDB(t *testing.T, m *Manager, ver int) string {
 	t.Helper()
@@ -97,7 +97,7 @@ func TestPruneKeepsNewerVersionsOnRollback(t *testing.T) {
 	}
 }
 
-// 孤儿临时文件按【年龄】判废：另一个进程可能正在同一目录里构建，我们看不见它进行到哪一步，
+// 孤儿临时文件按'年龄'判废：另一个进程可能正在同一目录里构建，我们看不见它进行到哪一步，
 // 年龄是唯一不需要跨进程协调的判据。
 func TestPruneOnlyRemovesStaleTempFiles(t *testing.T) {
 	m, dbDir := newPruneFixture(t)

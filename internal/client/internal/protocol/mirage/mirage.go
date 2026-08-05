@@ -1,4 +1,4 @@
-// Package mirage 是「追忆战」域的 DTO（mirage/top、mirage/receive_reward；对应 ref mirage_floor_receive）。
+// Package mirage 是"追忆战"域的 DTO（mirage/top、mirage/receive_reward；对应参考项目 mirage_floor_receive）。
 package mirage
 
 import (
@@ -41,12 +41,12 @@ type ReceiveRewardResponse struct {
 	RewardInfo []protocol.InventoryInfo `msgpack:"reward_info" json:"reward_info"`
 }
 
-// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬 ref 的
+// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬参考项目的
 // MirageReceiveRewardResponse（handlers.py:1529，reward_info 逐条走 update_inventory）。
 func (r *ReceiveRewardResponse) InventoryChanges() []protocol.InventoryInfo { return r.RewardInfo }
 
 // GoldSnapshot / JewelSnapshot 实现 protocol.GoldCarrier / JewelCarrier
-// （对应 ref handlers.py:1534-1537）。
+// （对应参考项目 handlers.py:1534-1537）。
 func (r *ReceiveRewardResponse) GoldSnapshot() *protocol.UserGold { return r.UserGold }
 
 // JewelSnapshot 见 GoldSnapshot。

@@ -64,9 +64,9 @@ type MissionAcceptResponse struct {
 	Rewards []protocol.InventoryInfo `msgpack:"rewards" json:"rewards"`
 }
 
-// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬 ref 的
+// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬参考项目的
 // MissionAcceptResponse（handlers.py:464，rewards 逐条走 update_inventory）。
 func (r *MissionAcceptResponse) InventoryChanges() []protocol.InventoryInfo { return r.Rewards }
 
-// StaminaSnapshot 实现 protocol.StaminaCarrier（对应 ref handlers.py:469）。
+// StaminaSnapshot 实现 protocol.StaminaCarrier（对应参考项目 handlers.py:469）。
 func (r *MissionAcceptResponse) StaminaSnapshot() *protocol.UserStaminaInfo { return r.StaminaInfo }

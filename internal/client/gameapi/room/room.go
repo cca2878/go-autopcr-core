@@ -1,4 +1,4 @@
-// Package room 是「家园」域的游戏 API 能力面（家园产物收取等；对应 ref room.py）。
+// Package room 是"家园"域的游戏 API 能力面（家园产物收取等；对应参考项目 room.py）。
 //
 // 能力方法按具体系统分文件，共用同一 Impl（只持传输句柄）。
 package room

@@ -8,7 +8,7 @@ import (
 	"github.com/pierrec/lz4/v4"
 )
 
-// makeBlob 造一个含「长度前缀 + SQLite 内容」的 SerializedFile blob，返回 blob 与期望的 db。
+// makeBlob 造一个含"长度前缀 + SQLite 内容"的 SerializedFile blob，返回 blob 与期望的 db。
 func makeBlob() (blob, wantDB []byte) {
 	content := append([]byte("SQLite format 3\x00"), bytes.Repeat([]byte("A"), 200)...)
 	var buf bytes.Buffer

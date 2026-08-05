@@ -9,14 +9,14 @@ import (
 
 // UnhashResult 概括一次反混淆的战果，供调用方判断这张 rainbow 还配不配得上这份母数据。
 //
-// 只统计到【表】这一级。列级的失配不在这里管：真实母数据里常年有几百个列没被 rainbow 覆盖
+// 只统计到'表'这一级。列级的失配不在这里管：真实母数据里常年有几百个列没被 rainbow 覆盖
 // （实测 202607 的库：10155 列中 353 个仍是哈希名，散在 58 张表里），拿它当信号只会天天误报；
 // 而查到那些列的模块自己会报 no such column，那才是说得清是谁、缺什么的地方。
 type UnhashResult struct {
 	// Renamed 是还原成功的表数。
 	Renamed int
 	// Stale 是仍保留原名的表数（已排除 sqlite_ 内部表）。正常也不为零——rainbow 对新加的
-	// 表总是慢一拍（实测同期基线为 3），故它是个「看趋势」的量，不是「非零即错」的开关。
+	// 表总是慢一拍（实测同期基线为 3），故它是个"看趋势"的量，不是"非零即错"的开关。
 	Stale int
 	// StaleSample 是 Stale 里的头几个表名，供日志举例——全列出来会刷屏（失配时可达数百）。
 	StaleSample []string
@@ -35,8 +35,8 @@ const staleSampleMax = 3
 // 后续连接下次准备语句时重载 schema；后者让当前连接立即重载，从而同一 *sql.DB 句柄
 // 在 Unhash 返回后即可用真实名查询。
 //
-// rainbow 未覆盖的列自动保留原名（不在替换表中即不动）。该操作是破坏性的：直接改写
-// 传入的 db。对「落盘的干净库」执行一次即可。
+// rainbow 未覆盖的列保留原名（不在替换表中即不动）。该操作是破坏性的：直接改写传入的
+// db，对"落盘的干净库"执行一次即可。
 func Unhash(db *sql.DB, rainbow Rainbow) (UnhashResult, error) {
 	var res UnhashResult
 	ctx := context.Background()
@@ -96,7 +96,7 @@ func Unhash(db *sql.DB, rainbow Rainbow) (UnhashResult, error) {
 		if r.sqlText.Valid {
 			newSQL.String = repl.Replace(r.sqlText.String)
 		}
-		// 「反混淆前后各存一份表名再比对」不需要存两份：替换结果当场就能和原名比，这一步
+		// "反混淆前后各存一份表名再比对"不需要存两份：替换结果当场就能和原名比，这一步
 		// 本来就在做（用来跳过无需改写的行），顺手把没动过的表记下来即零成本。
 		if newName == r.name && newTbl == r.tbl && newSQL.String == r.sqlText.String {
 			// sqlite_stat1/stat4 等内部表由 SQLite 自己维护，永远不带哈希名，不算失配。

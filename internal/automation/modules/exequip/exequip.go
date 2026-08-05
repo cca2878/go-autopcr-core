@@ -1,4 +1,4 @@
-// Package exequip 汇集「EX 装备」域的自动化模块（彩装究极炼成等；对应 ref exequip.py）。
+// Package exequip 汇集"EX 装备"域的自动化模块（彩装究极炼成等；对应参考项目 exequip.py）。
 package exequip
 
 import (
@@ -17,7 +17,7 @@ import (
 	mdexequip "github.com/cca2878/go-autopcr-core/internal/client/masterdata/exequip"
 )
 
-// alcesUnlockQuest 是「究极炼成」的解锁任务（对应 ref alces_top 的 is_quest_cleared(11018002)）。
+// alcesUnlockQuest 是"究极炼成"的解锁任务（对应参考项目 alces_top 的 is_quest_cleared(11018002)）。
 const alcesUnlockQuest = 11018002
 
 // Register 登记本域全部模块。
@@ -27,7 +27,7 @@ func Register(r *automation.Registry) {
 
 func intPtr(n int) *int { return &n }
 
-// rainbowEnhance 是「彩装究极炼成」模块（对应 ref ex_equip_rainbow_enchance）。
+// rainbowEnhance 是"彩装究极炼成"模块（对应参考项目 ex_equip_rainbow_enchance）。
 //
 // 看属性＝列出彩装 id 与当前副属性；炼成＝按目标副属性反复重掷未锁槽（贪心：满级目标即锁、按
 // 字典序权重取优）直至达标/资源耗尽；看概率暂未实现（本地统计已移交遥测侧，见 rc.Emit 每 roll 发射）。
@@ -43,7 +43,7 @@ func (rainbowEnhance) Meta() automation.Meta {
 	}
 }
 
-// Params 见 automation.Module。「彩装」与四个「炼成属性」「属性优先级」都不给静态候选——它们
+// Params 见 automation.Module。"彩装"与四个"炼成属性""属性优先级"都不给静态候选——它们
 // 依赖世界（前者是玩家库存、后者是母数据），由 Candidates 在登录后解析。
 func (rainbowEnhance) Params() []automation.Param {
 	return []automation.Param{
@@ -63,7 +63,7 @@ func (rainbowEnhance) Params() []automation.Param {
 	}
 }
 
-// Candidates 见 automation.Candidates：解析依赖世界的候选——「彩装」来自玩家库存（登录后才知道
+// Candidates 见 automation.Candidates：解析依赖世界的候选——"彩装"来自玩家库存（登录后才知道
 // 有哪几件），副属性来自母数据。一次 LoadSnapshot 摊给全部六个参数。
 //
 // 只读已有的世界：母数据快照 + gc.Data() 的玩家态，不发网络请求。
@@ -84,7 +84,7 @@ func (rainbowEnhance) Candidates(ctx context.Context, gc client.GameClient) (map
 		name := mdexequip.ParamNameCh(st)
 		subs = append(subs, automation.Option{Value: name, Label: name})
 	}
-	// 炼成目标额外可选「任意」＝不指定该槽（对应 ref 的 status 0）。
+	// 炼成目标额外可选"任意"＝不指定该槽（对应参考项目的 status 0）。
 	targets := append([]automation.Option{{Value: "任意", Label: "任意"}}, subs...)
 
 	out := map[string][]automation.Option{
@@ -98,7 +98,7 @@ func (rainbowEnhance) Candidates(ctx context.Context, gc client.GameClient) (map
 }
 
 // rainbowOptions 是玩家持有的彩装候选：值＝serial_id，显示＝名称+当前副属性。按 serial_id 升序
-// （玩家态是 map，迭代序不定）。无彩装→空切片，即「世界里当前没有可选项」，由 Run 的守卫报
+// （玩家态是 map，迭代序不定）。无彩装→空切片，即"世界里当前没有可选项"，由 Run 的守卫报
 // Skip("无彩装")。
 func rainbowOptions(gc client.GameClient, snap *mdexequip.Snapshot) []automation.Option {
 	equips := gc.Data().ExEquips
@@ -160,7 +160,7 @@ func viewAttributes(gc client.GameClient, rc *automation.RunContext, snap *mdexe
 	return nil
 }
 
-// doEnhance 执行究极炼成主流程（对应 ref action=='炼成' 分支）。
+// doEnhance 执行究极炼成主流程（对应参考项目 action=='炼成' 分支）。
 func doEnhance(ctx context.Context, gc client.GameClient, rc *automation.RunContext, snap *mdexequip.Snapshot) error {
 	if !gc.Data().IsQuestCleared(alcesUnlockQuest) {
 		return automation.Skip("究极炼成未解锁")
@@ -312,7 +312,7 @@ func doEnhance(ctx context.Context, gc client.GameClient, rc *automation.RunCont
 	return nil
 }
 
-// computeWeight 按优先级把 status 编码为加权值（对应 ref 的 base*=30 字典序编码）：优先级由低到高
+// computeWeight 按优先级把 status 编码为加权值（对应参考项目的 base*=30 字典序编码）：优先级由低到高
 // 逐个赋当前 base 后 ×30，使高优先级属性一档即压过低优先级满值；目标属性统一取最终 base（最高）。
 func computeWeight(target map[int]int, rankOrder []int) map[int]int {
 	weight := map[int]int{}
@@ -330,7 +330,7 @@ func computeWeight(target map[int]int, rankOrder []int) map[int]int {
 	return weight
 }
 
-// enhanceRun 承载一次炼成的共享状态与动作（对应 ref 模块的实例方法 + self.weight/target）。
+// enhanceRun 承载一次炼成的共享状态与动作（对应参考项目模块的实例方法 + self.weight/target）。
 type enhanceRun struct {
 	gc       client.GameClient
 	rc       *automation.RunContext
@@ -342,7 +342,7 @@ type enhanceRun struct {
 	rollIdx  int // 本次会话累计观测到的 roll 次数（遥测 roll_index）
 }
 
-// doLock 把已满级(step5)且仍需的目标属性槽锁定，其余解锁；返回锁定数（对应 ref do_lock）。
+// doLock 把已满级(step5)且仍需的目标属性槽锁定，其余解锁；返回锁定数（对应参考项目 do_lock）。
 func (r *enhanceRun) doLock(ctx context.Context) (int, error) {
 	currentMax := map[int]int{}
 	lockCnt := 0
@@ -362,7 +362,7 @@ func (r *enhanceRun) doLock(ctx context.Context) (int, error) {
 	return lockCnt, nil
 }
 
-// decideAlces 决定采纳/放弃一份待决定炼成数据（对应 ref decide_alces）：命中新的满级目标即采纳，
+// decideAlces 决定采纳/放弃一份待决定炼成数据（对应参考项目 decide_alces）：命中新的满级目标即采纳，
 // 否则按加权字典序更优才采纳。每份待决定数据均经 rc.Emit 发射遥测。
 func (r *enhanceRun) decideAlces(ctx context.Context, pending *apiexequip.AlcesPending) (bool, error) {
 	r.emitRoll(pending)
@@ -400,7 +400,7 @@ func (r *enhanceRun) decideAlces(ctx context.Context, pending *apiexequip.AlcesP
 	return false, r.gc.Exequip().AlcesCancelResult(ctx, pending.SerialID)
 }
 
-// getAchieved 统计已达成的目标属性数（含满级子计数；对应 ref get_achived_sub_status_cnt）。
+// getAchieved 统计已达成的目标属性数（含满级子计数；对应参考项目 get_achived_sub_status_cnt）。
 func (r *enhanceRun) getAchieved() (achievedMax, achieved int) {
 	current := map[int]int{}
 	maxc := map[int]int{}

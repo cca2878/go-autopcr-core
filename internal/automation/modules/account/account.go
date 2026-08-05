@@ -1,4 +1,4 @@
-// Package account 汇集「账号/首页」域的自动化模块（概览、刷新首页）。
+// Package account 汇集"账号/首页"域的自动化模块（概览、刷新首页）。
 package account
 
 import (
@@ -39,13 +39,13 @@ func (summary) Run(_ context.Context, gc client.GameClient, rc *automation.RunCo
 		return nil
 	}
 	rc.Logf("昵称 %s（等级 %d）", d.UserName, d.TeamLevel)
-	// 金币/钻石一律展示【免费部分】：付费部分靠充值而来，自动化不该动它，报出去只会误导。
+	// 金币/钻石一律展示'免费部分'：付费部分靠充值而来，自动化不该动它，报出去只会误导。
 	// 需要账面合计的地方（如上行快照）走 Currency.Total()，两个口径不混用。
 	rc.Logf("体力 %d ｜ 金币 %d ｜ 钻石 %d", d.Stamina, d.Gold.Free, d.Jewel.Free)
 	return nil
 }
 
-// home 重新拉取首页（幂等读），验证「账号域能力面被模块驱动」这条链路。
+// home 重新拉取首页（幂等读），验证"账号域能力面被模块驱动"这条链路。
 type home struct{}
 
 func (home) Meta() automation.Meta {

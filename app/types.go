@@ -8,9 +8,9 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
 )
 
-// 以下别名把 app 之下各内部域的类型提升为 app 包的【公开命名面】：外部消费方（如
+// 以下别名把 app 之下各内部域的类型提升为 app 包的'公开命名面'：外部消费方（如
 // go-autopcr-mobile）无需 import 内部包即可命名它们，且零转换成本（别名即同一类型）。
-// 这是 app 作为"三前端共享的应用服务门面"应有之义——门面之下才是 internal。
+// 这是 app 作为'三前端共享的应用服务门面'应有之义——门面之下才是 internal。
 
 // —— 自动化域：模块 / 任务 / 结果 ——
 type (
@@ -23,7 +23,7 @@ type (
 	Preset      = automation.Preset      // 具名模块批
 	Task        = automation.Task        // 一次待执行任务的纯数据描述（可序列化）
 	Result      = automation.Result      // 单个任务运行结果
-	Source      = automation.Source      // 「模块名→参数名→值」配置源
+	Source      = automation.Source      // "模块名→参数名→值"配置源
 	Status      = automation.Status      // 任务结果状态
 	Observer    = automation.Observer    // 只写进度端口（外壳注入、核心推送）
 	Event       = automation.Event       // 任务级进度事件
@@ -40,7 +40,7 @@ const (
 	ParamInt         = automation.ParamInt         // 整数（Bounds.Min/Max）
 	ParamString      = automation.ParamString      // 字符串
 	ParamChoice      = automation.ParamChoice      // 从 Bounds.Choices 单选
-	ParamMultiChoice = automation.ParamMultiChoice // 从 Bounds.Choices 多选（值为【有序】[]string）
+	ParamMultiChoice = automation.ParamMultiChoice // 从 Bounds.Choices 多选（值为'有序'[]string）
 )
 
 // 进度事件阶段常量（转发 automation 同名量）。
@@ -68,7 +68,7 @@ func TasksFor(mods []Module, src Source) []Task { return automation.TasksFor(mod
 // —— 玩家状态 / 母数据只读面 / 验证码端口 ——
 //
 // CaptchaResult 与 Solver 一同导出是必须的：Solver 的方法签名引用它，只导出接口而不导出其
-// 结果类型，模块外就【实现不了】这个端口。名字没跟着 captcha.Result 走，是因为 Result 在本
+// 结果类型，模块外就'实现不了'这个端口。名字没跟着 captcha.Result 走，是因为 Result 在本
 // 门面已归任务运行结果所有（见上）；求解结果是另一回事，故显式冠以 Captcha。
 type (
 	PlayerState   = gamestate.PlayerState // 聚合玩家状态

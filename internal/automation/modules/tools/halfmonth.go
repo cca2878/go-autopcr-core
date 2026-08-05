@@ -10,10 +10,10 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// halfMonth 汇总当前与未来的活动日程（半月刊；对应 ref half_schedule，只读、纯母数据）。
+// halfMonth 汇总当前与未来的活动日程（半月刊；对应参考项目 half_schedule，只读、纯母数据）。
 //
 // 收录的排程表见 masterdata/schedule（当前为公会战/女神祭/活动/露娜塔/庆典的高信号子集，其余
-// 同类表按同法追加）。只列出「尚未结束」的排程，按开始时间排序，未来项单列。
+// 同类表按同法追加）。只列出"尚未结束"的排程，按开始时间排序，未来项单列。
 type halfMonth struct{}
 
 func (halfMonth) Meta() automation.Meta {

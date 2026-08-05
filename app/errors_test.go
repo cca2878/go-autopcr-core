@@ -1,4 +1,4 @@
-// 本文件【有意】放在外部测试包 app_test 里：它只能碰 app 导出的符号，因而是「外壳视角」的
+// 本文件'有意'放在外部测试包 app_test 里：它只能碰 app 导出的符号，因而是"外壳视角"的
 // 活体检验——门面漏掉哪个类型或哨兵，这里第一个编译不过。core 之下全是 internal，外壳没有
 // 第二条路可走。
 package app_test
@@ -103,7 +103,7 @@ func TestForeignErrorIsUnknown(t *testing.T) {
 
 // ★ 本表是 Domain 这一维存在的理由，也是外壳真正要写的那个 switch 的样子。
 //
-// 只看 Kind 的话，第 1、2 行都是「数据损坏」，第 3、4 行都是「用法错误」——但每一对的处置
+// 只看 Kind 的话，第 1、2 行都是"数据损坏"，第 3、4 行都是"用法错误"——但每一对的处置
 // 都相反：提示更新客户端 vs 清缓存重下；重新登录 vs 改模块配置。少了 Domain，外壳拿到 Kind
 // 会以为信息够了，实际做不出正确动作。
 func TestDomainSeparatesOtherwiseIdenticalKinds(t *testing.T) {
@@ -138,7 +138,7 @@ func TestDomainSeparatesOtherwiseIdenticalKinds(t *testing.T) {
 		})
 	}
 
-	// 同为 ErrorMisuse 的三条，来源各不相同——这正是「凭据不对」「配置不对」「调用顺序不对」
+	// 同为 ErrorMisuse 的三条，来源各不相同——这正是"凭据不对""配置不对""调用顺序不对"
 	// 三种完全不同的引导得以分开的依据。
 	misuse := []error{app.ErrNoSolver, app.ErrMasterdataUnavailable, app.ErrNotLoggedIn}
 	seen := map[app.ErrorDomain]bool{}

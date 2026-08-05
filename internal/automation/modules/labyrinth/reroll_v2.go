@@ -11,18 +11,18 @@ import (
 	lab "github.com/cca2878/go-autopcr-core/internal/client/gameapi/labyrinth"
 )
 
-// startRerollV2 是「黎明界刷开局」的重新设计版，与 startReroll【并存】以便实测对比。
+// startRerollV2 是"黎明界刷开局"的重新设计版，与 startReroll'并存'以便实测对比。
 //
-// 与 v1 的唯一实质差别在【判定】：v1 逐列比对固定模板（某列必须是某类格子），v2 求路线取到的
+// 与 v1 的唯一实质差别在'判定'：v1 逐列比对固定模板（某列必须是某类格子），v2 求路线取到的
 // 贵重格数量、与这张图自身的上界比较。位置无关，因而不会重蹈 v1 那处结构性错配——模板要求
 // EX 怪同时在第3、5列，可生成器有一半的图把第二个 EX 放在第6列，那些图无论怎么走都判死。
 //
-// 「要什么」由两组参数表达，都不提列号：
+// "要什么"由两组参数表达，都不提列号：
 //   - 允许少拿几格：0＝把能拿的都拿到；放宽一格通常能把重开次数降一个量级。
-//   - 三对「同列二选一」偏好：角色⇄遗物、遗物⇄商店、遗物⇄事件。它们只在同列相遇时才需要
-//     取舍，所以按【类型对】而非列号表达，生成器挪位置也不会失效。
+//   - 三对"同列二选一"偏好：角色⇄遗物、遗物⇄商店、遗物⇄事件。它们只在同列相遇时才需要
+//     取舍，所以按'类型对'而非列号表达，生成器挪位置也不会失效。
 //
-// core 不知道任何分布数据：上界由地图自身算出。「这组条件要刷多少次」是外壳/文档的事。
+// core 不知道任何分布数据：上界由地图自身算出。"这组条件要刷多少次"是外壳/文档的事。
 type startRerollV2 struct{}
 
 // 参数名前缀。与 v1 完全分开，两个模块可同时出现在配置里互不干扰。
@@ -60,7 +60,7 @@ func (startRerollV2) Params() []automation.Param {
 			Description: "难度", Bounds: automation.Bounds{Choices: []string{"1", "2", "3", "4", "5"}}},
 		// 公会候选依赖母数据，由 Candidates 在世界已知时填（同 v1）。
 		{Name: v2GuildID, Type: automation.ParamChoice, Default: "5", Description: "公会"},
-		// 【逐区域】生效：每个目标区域各自最多少拿这么多格，不是五区合计。
+		// '逐区域'生效：每个目标区域各自最多少拿这么多格，不是五区合计。
 		{Name: v2Allowance, Type: automation.ParamChoice, Default: "0",
 			Description: "每个区域允许少拿几格（0=完美）",
 			Bounds:      automation.Bounds{Choices: []string{"0", "1", "2", "3"}}},
@@ -180,7 +180,7 @@ func (startRerollV2) Run(ctx context.Context, gc client.GameClient, rc *automati
 }
 
 // judgeAll 逐区判定。全部达标才算命中；否则给出最短板的说明。
-// worst 是达标时各区里最大的「少拿格数」，供日志说明这次到底拿到了什么。
+// worst 是达标时各区里最大的"少拿格数"，供日志说明这次到底拿到了什么。
 func (v *valuer) judgeAll(difficulty int, blocks []lab.Block, allowance int) (map[int][]lab.Block, int, string) {
 	routes := map[int][]lab.Block{}
 	var failures []string
@@ -205,7 +205,7 @@ func (v *valuer) judgeAll(difficulty int, blocks []lab.Block, allowance int) (ma
 	return routes, worst, ""
 }
 
-// prefsFrom 把三个「同列二选一」参数翻成判定用的偏好。
+// prefsFrom 把三个"同列二选一"参数翻成判定用的偏好。
 func prefsFrom(rc *automation.RunContext) []pref {
 	byName := map[string]int{"角色": blockChar, "遗物": blockRelic, "商店": blockShop, "事件": blockEvent}
 	pick := func(param string, a, b int) int {
@@ -230,7 +230,7 @@ func prefsFrom(rc *automation.RunContext) []pref {
 // emitMapV2 发射地图样本。
 //
 // 沿用 v1 的 kind：地图本身是同质样本，两个模块采到的合起来才够估生成分布。载荷里带
-// `module` 标出来源与本模块特有的判定参数——**没有该字段的记录即 v1**（v1 有意保持不动）。
+// `module` 标出来源与本模块特有的判定参数——没有该字段的记录即 v1（v1 有意保持不动）。
 func emitMapV2(rc *automation.RunContext, v *valuer, difficulty, guildID, attempt, maxCount, allowance int,
 	blocks []lab.Block, matched bool,
 ) {
@@ -247,8 +247,8 @@ func emitMapV2(rc *automation.RunContext, v *valuer, difficulty, guildID, attemp
 			"next": b.NextBlockIDList, "boss_units": bossUnits,
 		}
 	}
-	// 少拿格数逐区上报。Boss 不命中的区域【整个键缺席】，不记 0——那不是「少拿 0 格」而是
-	// 「没有可达路线」，两者混同会让分析侧把最差的样本当成最好的。缺席的区域仍可从 blocks
+	// 少拿格数逐区上报。Boss 不命中的区域'整个键缺席'，不记 0——那不是"少拿 0 格"而是
+	// "没有可达路线"，两者混同会让分析侧把最差的样本当成最好的。缺席的区域仍可从 blocks
 	// 与 areaN_boss 重算结构性少拿数，信息没丢。
 	shortfall := map[string]int{}
 	for _, area := range targetAreas(difficulty) {

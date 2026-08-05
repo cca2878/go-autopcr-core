@@ -14,11 +14,11 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/errs"
 )
 
-// 解码失败被 ProtocolError 化之后，【必须仍然照旧参与网络重试】。
+// 解码失败被 ProtocolError 化之后，'必须仍然照旧参与网络重试'。
 //
 // 这条是本次错误结构化里唯一碰得到既有行为的地方：Client.transport 把 decodeEnvelope 的
 // 失败包成 gameerr.Network(...)，ErrorHandler 据 errors.As(*NetworkError) 决定重发。若哪天
-// 有人「顺手」把解码失败改成直接返回 ProtocolError，重试就会静默消失——这个用例会先红。
+// 有人"顺手"把解码失败改成直接返回 ProtocolError，重试就会静默消失——这个用例会先红。
 func TestErrorHandlerRetriesWrappedProtocolError(t *testing.T) {
 	const retries = 3
 	calls := 0
@@ -67,7 +67,7 @@ func TestErrorHandlerDoesNotRetryAPIError(t *testing.T) {
 }
 
 // 上一个用例直接构造了 Network(Protocol(...))，钉的是 ErrorHandler 那一半；这个用例走真实
-// 的 Client.transport，钉的是另一半：解码失败【确实被包成了 NetworkError】。少了它，有人把
+// 的 Client.transport，钉的是另一半：解码失败'确实被包成了 NetworkError'。少了它，有人把
 // client.go 里那句 gameerr.Network(err) 改成直接返回 err，上面的用例照样绿，而重试已经没了。
 func TestTransportWrapsDecodeFailureAsNetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

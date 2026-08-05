@@ -11,7 +11,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/gamestate"
 )
 
-// matchedGC 造一个「迷宫已解锁 + 地图必命中」的世界，供只关心配置解析的用例复用。
+// matchedGC 造一个"迷宫已解锁 + 地图必命中"的世界，供只关心配置解析的用例复用。
 func matchedGC() (*moduletest.FakeClient, *fakeLab) {
 	var blocks []lab.Block
 	blocks = append(blocks, linearArea(1, []int{1, 2, 4, 2, 4, 6}, 0)...)
@@ -66,7 +66,7 @@ func TestCandidates_NoMasterdata(t *testing.T) {
 	}
 }
 
-// TestStartReroll_RejectsGuildNotInWorld 是本次接线的核心收益：母数据里没有的公会会被【校验挡下】，
+// TestStartReroll_RejectsGuildNotInWorld 是本次接线的核心收益：母数据里没有的公会会被'校验挡下'，
 // 而不是照原样发给服务器。接 Candidates 之前该参数是裸 int，填 99 会一路发包。
 func TestStartReroll_RejectsGuildNotInWorld(t *testing.T) {
 	gc, fl := matchedGC()
@@ -79,7 +79,7 @@ func TestStartReroll_RejectsGuildNotInWorld(t *testing.T) {
 	if res.Status != automation.StatusError {
 		t.Fatalf("未知公会应被挡下(StatusError)，得 %s", res.Status)
 	}
-	// 必须是【候选集】拒绝而非类型错误——否则本用例会因「字符串 vs int」这种无关理由假绿。
+	// 必须是'候选集'拒绝而非类型错误——否则本用例会因"字符串 vs int"这种无关理由假绿。
 	msg := res.Err.Error()
 	if !strings.Contains(msg, "labyrinth_reroll_guild_id") || !strings.Contains(msg, "[4 5 6]") {
 		t.Errorf("错误应点名该参数并列出世界给出的候选，得 %v", res.Err)
@@ -107,7 +107,7 @@ func TestStartReroll_AcceptsWorldGuild(t *testing.T) {
 	}
 }
 
-// TestStartReroll_DefaultGuild 断言不填公会时走默认 5（对应 ref LabyrinthGuildConfig 的 default）。
+// TestStartReroll_DefaultGuild 断言不填公会时走默认 5（对应参考项目 LabyrinthGuildConfig 的 default）。
 func TestStartReroll_DefaultGuild(t *testing.T) {
 	gc, fl := matchedGC()
 

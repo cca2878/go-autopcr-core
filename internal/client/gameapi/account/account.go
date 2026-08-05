@@ -1,4 +1,4 @@
-// Package account 是「账号/首页」域的游戏 API 能力面（home/index、后续 profile 等）。
+// Package account 是"账号/首页"域的游戏 API 能力面（home/index 等；随需增量）。
 package account
 
 import (

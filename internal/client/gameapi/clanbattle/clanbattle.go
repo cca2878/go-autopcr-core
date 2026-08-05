@@ -1,4 +1,4 @@
-// Package clanbattle 是「公会战」域的游戏 API 能力面（clan_battle/top；对应 ref clan_battle_knive）。
+// Package clanbattle 是"公会战"域的游戏 API 能力面（clan_battle/top；对应参考项目 clan_battle_knive）。
 //
 // 是否已加入公会由上层据玩家状态判定（未加入时 clan_battle/top 会触发业务错误，故须先查后动）。
 package clanbattle

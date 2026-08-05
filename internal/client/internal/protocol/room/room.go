@@ -1,4 +1,4 @@
-// Package room 是「家园」域的 DTO（家园产物收取、家具升级等；对应 ref room.py）。
+// Package room 是"家园"域的 DTO（家园产物收取、家具升级等；对应参考项目 room.py）。
 package room
 
 import (

@@ -11,7 +11,7 @@ import (
 
 // missionReceive 领取任务奖励（日常/常驻/纹章，不消耗资源）。
 //
-// 领取接口 mission/accept 只接受【类别】(type=1/2/4)而非单个任务 id，故需母数据把待领任务
+// 领取接口 mission/accept 只接受'类别'(type=1/2/4)而非单个任务 id，故需母数据把待领任务
 // 归类，只对确有可领任务的类别发起领取（先查+分类+领），避免对空类别触发业务错误。
 type missionReceive struct{}
 

@@ -1,4 +1,4 @@
-// Package arena 是「竞技场」域的游戏 API 能力面（jjc/pjjc 时间奖励领取；对应 ref jjc_reward）。
+// Package arena 是"竞技场"域的游戏 API 能力面（jjc/pjjc 时间奖励领取；对应参考项目 jjc_reward）。
 //
 // 能力方法按具体系统分文件，共用同一 Impl（只持传输句柄）。解锁门禁（是否已通关对应任务）由
 // 上层模块经玩家状态判定，本域只负责发包。

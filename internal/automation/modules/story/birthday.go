@@ -8,7 +8,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// birthdayStoryReport 报告【可阅读但未读】的生日剧情（只读，不实际阅读）。
+// birthdayStoryReport 报告'可阅读但未读'的生日剧情（只读，不实际阅读）。
 type birthdayStoryReport struct{}
 
 func (birthdayStoryReport) Meta() automation.Meta {
@@ -47,7 +47,7 @@ func (birthdayStoryReport) Run(ctx context.Context, gc client.GameClient, rc *au
 			continue // 前置未读
 		}
 		readable = append(readable, s.Title)
-		read[s.StoryID] = struct{}{} // 视为已读，使后续篇章前置判定成立（复刻 ref 链式解锁）
+		read[s.StoryID] = struct{}{} // 视为已读，使后续篇章前置判定成立（复刻参考项目链式解锁）
 	}
 	if len(readable) == 0 {
 		return automation.Skip("没有可阅读的生日剧情")

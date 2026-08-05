@@ -18,8 +18,8 @@ var (
 
 // HTTPError 表示 CDN 对某个 URL 返回了非 200。
 //
-// 带上状态码，是为了让调用方分得清两件处置方式相反的事：「这个资源/这个版本本来就不在」
-// （4xx，换台主机再要一次还是 404）与「这台 CDN 这会儿不行」（5xx/429，换一台或稍后重试
+// 带上状态码，是为了让调用方分得清两件处置方式相反的事："这个资源/这个版本本来就不在"
+// （4xx，换台主机再要一次还是 404）与"这台 CDN 这会儿不行"（5xx/429，换一台或稍后重试
 // 就好）。见 Retryable。
 type HTTPError struct {
 	URL    string
@@ -31,7 +31,7 @@ func (e *HTTPError) Error() string {
 }
 
 // Retryable 报告这次失败是否值得换一台主机或稍后再试：5xx 是服务端侧故障，429 是限流，
-// 二者都不代表资源不存在；4xx 的其余码则是「要的东西不对」，重试多少次都一样。
+// 二者都不代表资源不存在；4xx 的其余码则是"要的东西不对"，重试多少次都一样。
 func (e *HTTPError) Retryable() bool {
 	return e.Status >= http.StatusInternalServerError || e.Status == http.StatusTooManyRequests
 }

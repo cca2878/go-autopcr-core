@@ -1,4 +1,4 @@
-// Package unit 是母数据「角色」域的只读查询（角色名、数量等；随需增量）。
+// Package unit 是母数据"角色"域的只读查询（角色名、数量等；随需增量）。
 package unit
 
 import (
@@ -22,7 +22,7 @@ type API interface {
 	Count(ctx context.Context) (int, error)
 	// Obtainables 返回全部可获得角色（unlock_unit_condition ∩ unit_data），供图鉴缺口判定。
 	Obtainables(ctx context.Context) ([]Obtainable, error)
-	// MaxTotalLove 返回给定星级下的好感上限（love_level, total_love）——对应 ref db.max_total_love：
+	// MaxTotalLove 返回给定星级下的好感上限（love_level, total_love）——对应参考项目 db.max_total_love：
 	// 取 rarity ≤ 给定值的排程里 total_love 最大者（喂蛋糕判定亲密度是否已满）。
 	MaxTotalLove(ctx context.Context, rarity int) (loveLevel, totalLove int, err error)
 }
@@ -75,7 +75,7 @@ func (a *Impl) Obtainables(ctx context.Context) ([]Obtainable, error) {
 }
 
 func (a *Impl) MaxTotalLove(ctx context.Context, rarity int) (int, int, error) {
-	// love_chara 以 love_level 为主键、每行带 (total_love, rarity)。ref 按 rarity 分组取组内
+	// love_chara 以 love_level 为主键、每行带 (total_love, rarity)。参考项目按 rarity 分组取组内
 	// (love_level,total_love) 最大，再对 rarity ≤ 给定值取最大；因两列随好感单调递增，等价于
 	// 直接取 rarity ≤ 给定值范围内两列各自的最大值。
 	var loveLevel, totalLove int

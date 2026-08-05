@@ -19,13 +19,13 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/unit"
 )
 
-// Reader 是母数据【只读查询面】：无头客户端经 gc.Masterdata() 把它暴露给上层自动化模块。
+// Reader 是母数据'只读查询面'：无头客户端经 gc.Masterdata() 把它暴露给上层自动化模块。
 //
-// 组织（与 gameapi/protocol 一致）：查询【按游戏功能域拆子包】（masterdata/mission、unit…），
-// 顶层以【访问器】聚合各域（md.Mission()/md.Unit()…），从源头避免长成巨型对象、也为日后大量
-// 查询方法预留确定落位。每种查询目的在其域子包内**唯一实现**，杜绝散落重复。
+// 组织（与 gameapi/protocol 一致）：查询'按游戏功能域拆子包'（masterdata/mission、unit…），
+// 顶层以'访问器'聚合各域（md.Mission()/md.Unit()…），从源头避免长成巨型对象、也为日后大量
+// 查询方法预留确定落位。每种查询目的在其域子包内'唯一实现'，杜绝散落重复。
 //
-// 另暴露【低层只读查询】作兜底：个别模块偶尔需要特有的复杂查询时可内联实现，无需每次都给某个
+// 另暴露'低层只读查询'作兜底：个别模块偶尔需要特有的复杂查询时可内联实现，无需每次都给某个
 // 域新增方法，兼顾工程化与便捷性。返回接口而非具体 *Query 是为便于上层 mock 单测。
 type Reader interface {
 	// —— 各域查询访问器（新增域时在此加一个）——

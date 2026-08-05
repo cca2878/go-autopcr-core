@@ -12,7 +12,7 @@ import (
 // maxMissingEmblemNames 是报告里最多列出的称号名数量（其余以计数概括，避免刷屏）。
 const maxMissingEmblemNames = 50
 
-// missingEmblem 报告【尚未获得的称号】（只读；对应 ref missing_emblem）。
+// missingEmblem 报告'尚未获得的称号'（只读；对应参考项目 missing_emblem）。
 type missingEmblem struct{}
 
 func (missingEmblem) Meta() automation.Meta {

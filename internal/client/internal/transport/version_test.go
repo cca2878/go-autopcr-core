@@ -53,9 +53,9 @@ func (r *versionProbeRequest) URL() *url.URL { return protocol.MustRelURL("test/
 func (r *versionProbeRequest) Crypted() bool { return false }
 
 // 服务端在 APP-VER 过期时拒绝请求（result_code=204、status=3）并在 store_url 里下发真实版本号；
-// 这与「会话失效」共用同一个 status（见 relogin.go 的 statusSessionInvalid），若不在传输层就地
+// 这与"会话失效"共用同一个 status（见 relogin.go 的 statusSessionInvalid），若不在传输层就地
 // 纠正，会被误判成要重登。本用例钉住：探测到 store_url 后自动升级 APP-VER 头并重发一次，
-// 最终把【第二次】的成功响应当作本次调用的结果返回，且过程中只多打一次请求。
+// 最终把'第二次'的成功响应当作本次调用的结果返回，且过程中只多打一次请求。
 func TestTransportSelfHealsStaleAppVer(t *testing.T) {
 	const staleVer = "11.4.0"
 	const realVer = "11.7.2"
@@ -112,7 +112,7 @@ func TestTransportSelfHealsStaleAppVer(t *testing.T) {
 }
 
 // store_url 里的版本号与当前 APP-VER 相同时不该多打一次请求——常态下每次维护状态调用都可能
-// 带 store_url，若不做「有变化才重试」的判断，会让本无问题的调用平白多一次往返。
+// 带 store_url，若不做"有变化才重试"的判断，会让本无问题的调用平白多一次往返。
 func TestTransportNoRetryWhenVersionUnchanged(t *testing.T) {
 	const ver = "11.7.2"
 	calls := 0

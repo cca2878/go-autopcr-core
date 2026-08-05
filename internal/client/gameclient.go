@@ -1,8 +1,8 @@
-// Package client 组装「无头游戏客户端」——本项目的枢纽缝（S2）。
+// Package client 组装"无头游戏客户端"——本项目的枢纽层。
 //
-// 它把 L2 传输/会话、L3 母数据/状态 装配成一个可被上层「操作」的对象：登录后
-// 通过 GameClient 接口读取玩家状态（M2），后续里程碑再在其上叠加高层动作方法，
-// 供自动化模块（M3）调用。上层只依赖 GameClient 接口，可用 mock 独立测试。
+// 它把传输/会话、母数据/玩家状态装配成一个可被上层"操作"的对象：登录后通过 GameClient
+// 接口读取玩家状态、调用游戏 API 能力面（gameapi）、查询母数据（masterdata），供自动化
+// 模块调用。上层只依赖 GameClient 接口，可用 mock 独立测试。
 //
 // 客户端拥有一个共享的底层 *http.Transport：游戏 API 与 masterdata 资源 CDN 下载
 // 复用它（统一 proxy/TLS/HTTP1.1/连接池，只配一次），各自再包成不同超时的 http.Client。
@@ -26,7 +26,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
 )
 
-// GameClient 是无头客户端对上层暴露的接口（S2 缝）。
+// GameClient 是无头客户端对上层暴露的接口。
 type GameClient interface {
 	// Login 执行登录序列并把玩家状态折叠进 Data()；若启用了 masterdata，登录后按
 	// 下发的 res + manifest_ver 确保干净库就绪并打开只读查询句柄。
@@ -82,7 +82,7 @@ type client struct {
 	md    *masterdata.Query
 	guard *sessionGuard // 严重错误码 → 重走登录序列（见 relogin.go）
 
-	// callMu 串行化「一次调用的全过程」：网络重试 + 状态折叠 + 传输。传输层自己那把锁只
+	// callMu 串行化"一次调用的全过程"：网络重试 + 状态折叠 + 传输。传输层自己那把锁只
 	// 盖住 HTTP 那一段，折叠在它外面，两个并发请求会同时改 PlayerState 的 map/slice。
 	callMu sync.Mutex
 
@@ -157,7 +157,7 @@ func (g *client) Login(ctx context.Context) error {
 	return nil
 }
 
-// relogin 是会话失效时的自愈动作：用【同一凭据】重跑登录序列（重新获取 access_key 是
+// relogin 是会话失效时的自愈动作：用'同一凭据'重跑登录序列（重新获取 access_key 是
 // 外壳的事，核心不碰）。不重建母数据——会话失效与母数据版本无关，且查询句柄可能正被
 // 模块持有，中途换掉它比留着更危险；真的版本变更会走维护/版本升级路径。
 func (g *client) relogin(ctx context.Context) error {
@@ -218,10 +218,10 @@ func (g *client) ServerTime() int64 { return g.tr.ServerTime() }
 
 func (g *client) Close() error { return g.md.Close() }
 
-// serializeMiddleware 让「重试 + 折叠 + 传输」整体互斥（对应原项目把 mutexhandler 注册在
+// serializeMiddleware 让"重试 + 折叠 + 传输"整体互斥（对应参考项目把 mutexhandler 注册在
 // 最外层的做法——它那把锁同样盖住 datamgr 的折叠）。
 //
-// 位置很关键：它必须在重登守卫【之内】。守卫的 ensure 会在本层加锁【之前】跑完整套登录
+// 位置很关键：它必须在重登守卫'之内'。守卫的 ensure 会在本层加锁'之前'跑完整套登录
 // 序列，那些请求自身也走这条链；若把锁放到守卫之外，重登就会在同一把非重入锁上自死锁。
 func serializeMiddleware(mu *sync.Mutex) transport.Middleware {
 	return func(next transport.Handler) transport.Handler {
@@ -234,7 +234,7 @@ func serializeMiddleware(mu *sync.Mutex) transport.Middleware {
 }
 
 // foldingMiddleware 在每次成功响应后，把响应折叠进玩家状态
-// （对应原项目 datamgr 作为管道组件拦截响应的做法）。
+// （对应参考项目 datamgr 作为管道组件拦截响应的做法）。
 func foldingMiddleware(s *gamestate.PlayerState, registry *gamestate.Registry) transport.Middleware {
 	return func(next transport.Handler) transport.Handler {
 		return func(ctx context.Context, req protocol.Request, out any) (protocol.ResponseHeader, error) {

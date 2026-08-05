@@ -1,6 +1,6 @@
 package protocol
 
-// 本文件是可分「免费 / 付费」两部分的货币模型。服务端把两者分开记账，扣费时先扣免费部分。
+// 本文件是可分"免费 / 付费"两部分的货币模型。服务端把两者分开记账，扣费时先扣免费部分。
 //
 // 两个口径不可混用，混了就是线上事故：
 //
@@ -15,7 +15,7 @@ type UserGold struct {
 	GoldIDFree int64 `msgpack:"gold_id_free" json:"gold_id_free"`
 }
 
-// Total 返回付费+免费合计——服务端账面口径（对应 ref get_inventory 的 mana 分支）。
+// Total 返回付费+免费合计——服务端账面口径（对应参考项目 get_inventory 的 mana 分支）。
 func (g *UserGold) Total() int64 {
 	if g == nil {
 		return 0
@@ -33,8 +33,8 @@ func (g *UserGold) Free() int64 {
 
 // UserJewel 是钻石持有量。
 //
-// jewel 与 free_jewel 是【互斥的两部分】，不是「总量与其中的免费部分」——后者是很容易犯的
-// 误读，犯了就会把付费钻当成总额展示。取证见 ref pcrclient.py：扣费时先扣 free_jewel、不足
+// jewel 与 free_jewel 是'互斥的两部分'，不是"总量与其中的免费部分"——后者是很容易犯的
+// 误读，犯了就会把付费钻当成总额展示。取证见参考项目 pcrclient.py：扣费时先扣 free_jewel、不足
 // 再扣 jewel（788-793），且上行的 current_currency_num 传的是两者之和（1450 等处）——若
 // jewel 已是总量，这个和会超出账面而被服务端拒。
 type UserJewel struct {
@@ -42,7 +42,7 @@ type UserJewel struct {
 	FreeJewel int `msgpack:"free_jewel" json:"free_jewel"` // 免费部分
 }
 
-// Total 返回付费+免费合计——服务端账面口径（对应 ref get_inventory 的 jewel 分支）。
+// Total 返回付费+免费合计——服务端账面口径（对应参考项目 get_inventory 的 jewel 分支）。
 func (j *UserJewel) Total() int {
 	if j == nil {
 		return 0
@@ -61,7 +61,7 @@ func (j *UserJewel) Free() int {
 // GoldCarrier / JewelCarrier 让折叠层取出响应携带的货币余额快照。
 //
 // 拆成两个单方法接口而非合并：多数响应只回传其中一种，合并会逼着实现方写一个恒返回 nil
-// 的方法。user_gold 是 ref 折叠面里出现频次第二高的模型（40 处），仅次于库存条目。
+// 的方法。user_gold 是参考项目折叠面里出现频次第二高的模型（40 处），仅次于库存条目。
 type GoldCarrier interface {
 	// GoldSnapshot 返回本次响应携带的金币余额；未携带时返回 nil。
 	GoldSnapshot() *UserGold

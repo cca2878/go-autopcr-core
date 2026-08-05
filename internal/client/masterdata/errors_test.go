@@ -31,7 +31,7 @@ func TestBuildErrNilPassesThrough(t *testing.T) {
 	}
 }
 
-// 类别【委托给成因】：下载/解包那几步究竟属哪一类，只有里面那层知道，BuildError 不替它拍板。
+// 类别'委托给成因'：下载/解包那几步究竟属哪一类，只有里面那层知道，BuildError 不替它拍板。
 func TestBuildErrorDelegatesKindToCause(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -57,7 +57,7 @@ func TestBuildErrorDelegatesKindToCause(t *testing.T) {
 }
 
 // 落盘与反混淆包的是 os / database/sql 的裸错误，它们不可能自报类别；没有按阶段的兜底，
-// 一次「磁盘写满」就会以 KindUnknown 冒到外壳，什么引导都给不出。
+// 一次"磁盘写满"就会以 KindUnknown 冒到外壳，什么引导都给不出。
 func TestBuildErrorFallsBackToStageForSilentCauses(t *testing.T) {
 	if got := errs.Classify(fs.ErrPermission).Kind; got != errs.KindUnknown {
 		t.Fatalf("前提失效：os 裸错误本应无类别，得到 %v", got)
@@ -82,19 +82,19 @@ func TestBuildErrorCauseWinsOverStageFallback(t *testing.T) {
 	}
 }
 
-// BuildError 只把【处置类别】委托给成因，来源域始终是母数据——委托时把 Domain 一起交出去
-// 就错了：成因可能是 unityfs 的（同属母数据链，看不出问题），但调用方要的是「这是母数据链
-// 上的事」这个稳定答案，而不是随成因所在的包漂移。
+// BuildError 只把'处置类别'委托给成因，来源域始终是母数据——委托时把 Domain 一起交出去
+// 就错了：成因可能是 unityfs 的（同属母数据链，看不出问题），但调用方要的是"这是母数据链
+// 上的事"这个稳定答案，而不是随成因所在的包漂移。
 func TestBuildErrorKeepsMasterdataDomainWhileDelegatingKind(t *testing.T) {
 	cases := []error{
 		unityfs.ErrMalformed,
 		unityfs.ErrUnsupported,
 		fs.ErrPermission, // 无类别的裸错误
 		errs.DomainMasterdata.New(errs.KindTransient, "503"),
-		// 【跨域成因】——现实中构建链的成因都在母数据域内，正因如此，只用同域成因去测
-		// 根本分不出「固定 Domain」与「连 Domain 一起委托」。这条人造用例才钉得住设计意图：
+		// '跨域成因'——现实中构建链的成因都在母数据域内，正因如此，只用同域成因去测
+		// 根本分不出"固定 Domain"与"连 Domain 一起委托"。这条人造用例才钉得住设计意图：
 		// 将来若有别域的错误漏进构建链（如共享 transport 冒出 gameerr），调用方看到的仍
-		// 应是「母数据链出事了」，而不是被带到另一个域上去。
+		// 应是"母数据链出事了"，而不是被带到另一个域上去。
 		errs.DomainGameAPI.New(errs.KindTransient, "来自另一个域的成因"),
 	}
 	for _, cause := range cases {

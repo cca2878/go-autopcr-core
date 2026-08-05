@@ -20,7 +20,7 @@ type fakeUnitMD struct {
 }
 
 func (f *fakeUnitMD) MaxTotalLove(_ context.Context, rarity int) (int, int, error) {
-	// 复刻 ref：取 rarity ≤ 给定值范围内的最大上限。
+	// 复刻参考项目：取 rarity ≤ 给定值范围内的最大上限。
 	best := [2]int{}
 	for r, v := range f.totalByRarity {
 		if r <= rarity && v[1] > best[1] {

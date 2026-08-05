@@ -17,7 +17,7 @@ type Mission struct {
 }
 
 // MissionList 拉取任务列表（mission/index），返回各任务及其是否可领取。月卡（季票）附带任务
-// 与普通任务平行下发、走同一套 type 归类领取，故一并并入返回（对应 ref 对 season_pack 的或判）。
+// 与普通任务平行下发、走同一套 type 归类领取，故一并并入返回（对应参考项目对 season_pack 的或判）。
 func (a *Impl) MissionList(ctx context.Context) ([]Mission, error) {
 	resp, err := transport.Call[dailypb.MissionIndexResponse](ctx, a.tr, &dailypb.MissionIndexRequest{})
 	if err != nil {

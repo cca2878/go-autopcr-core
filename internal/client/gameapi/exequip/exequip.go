@@ -1,4 +1,4 @@
-// Package exequip 是「EX 装备（含彩装究极炼成）」域的游戏 API 能力面（对应 ref alces_* 调用）。
+// Package exequip 是"EX 装备（含彩装究极炼成）"域的游戏 API 能力面（对应参考项目 alces_* 调用）。
 //
 // 炼成是一次性重掷未锁副属性的 gacha：AlcesExec 产出待决定数据，AlcesFixResult 采纳、
 // AlcesCancelResult 放弃、AlcesLockSlot 改锁定。是否解锁（究极炼成 quest）由上层据玩家任务状态

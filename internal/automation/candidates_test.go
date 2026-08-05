@@ -10,7 +10,7 @@ import (
 )
 
 // candModule 是带依赖世界候选的测试模块：candidates/err 可控，故各用例能单独构造出
-// 「解析失败」「漏给候选」「候选给了未声明参数」等情形。不触碰 client，Run 可传 nil。
+// "解析失败""漏给候选""候选给了未声明参数"等情形。不触碰 client，Run 可传 nil。
 type candModule struct {
 	stubModule
 	cands map[string][]Option
@@ -26,7 +26,7 @@ func dynParam(name string) Param {
 	return Param{Name: name, Type: ParamChoice, Default: "", Description: name}
 }
 
-// TestBindCandidates_FillsBounds 检查解析出的候选被填进 Bounds.Choices，且【不改入参】——
+// TestBindCandidates_FillsBounds 检查解析出的候选被填进 Bounds.Choices，且'不改入参'——
 // Bounds.Choices 是唯一的候选源，依赖世界的参数只是要到 gc 可用时才填得上。
 func TestBindCandidates_FillsBounds(t *testing.T) {
 	params := []Param{dynParam("equip")}
@@ -64,7 +64,7 @@ func TestBindCandidates_MissingCandidates(t *testing.T) {
 		{"multichoice", Param{Name: "rank", Type: ParamMultiChoice}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// 别的参数给了候选，唯独漏了它——即「实现了 Candidates 但漏掉某一个参数」。
+			// 别的参数给了候选，唯独漏了它——即"实现了 Candidates 但漏掉某一个参数"。
 			_, err := bindCandidates([]Param{tc.param, dynParam("other")},
 				map[string][]Option{"other": {{Value: "x"}}})
 			if err == nil || !strings.Contains(err.Error(), "未给出") {
@@ -74,8 +74,8 @@ func TestBindCandidates_MissingCandidates(t *testing.T) {
 	}
 }
 
-// TestBindCandidates_EmptyIsLegal 检查【给了空候选】合法：它表示世界里当前没有可选项（如新号
-// 一件彩装都没有），与「压根没给」是两回事。此时无可校验，由模块自己的 Skip 守卫接管。
+// TestBindCandidates_EmptyIsLegal 检查'给了空候选'合法：它表示世界里当前没有可选项（如新号
+// 一件彩装都没有），与"压根没给"是两回事。此时无可校验，由模块自己的 Skip 守卫接管。
 func TestBindCandidates_EmptyIsLegal(t *testing.T) {
 	out, err := bindCandidates([]Param{dynParam("equip")}, map[string][]Option{"equip": {}})
 	if err != nil {
@@ -103,7 +103,7 @@ func TestBindCandidates_StaticUntouched(t *testing.T) {
 	}
 }
 
-// TestRunOne_ValidatesAgainstWorld 是这套机制的要点：校验按【当前世界】解析出的候选进行。
+// TestRunOne_ValidatesAgainstWorld 是这套机制的要点：校验按'当前世界'解析出的候选进行。
 // 配置的合法性本就是相对世界而言的——同一个 "3"，世界里有就合法、没有就该在跑起来前被挡下。
 func TestRunOne_ValidatesAgainstWorld(t *testing.T) {
 	ran := false

@@ -1,4 +1,4 @@
-// Package dungeon 是母数据「地下城」域的只读查询（区域名等；对应 ref db.dungeon_name）。
+// Package dungeon 是母数据"地下城"域的只读查询（区域名等；对应参考项目 db.dungeon_name）。
 package dungeon
 
 import (

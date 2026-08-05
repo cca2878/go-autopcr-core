@@ -2,7 +2,7 @@ package discovery
 
 import "testing"
 
-// 保留【全部】下发主机是故障转移的前提：服务端下发多台正是让它们互为备份（实测 l1/l3/l4），
+// 保留'全部'下发主机是故障转移的前提：服务端下发多台正是让它们互为备份（实测 l1/l3/l4），
 // 只取首个等于把冗余丢掉，首台一挂就只能回退到写死的内置 CDN。
 func TestResolveResURLsKeepsEveryHost(t *testing.T) {
 	got := ResolveResURLs(0, []string{

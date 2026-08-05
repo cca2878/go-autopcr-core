@@ -77,7 +77,7 @@ func linearArea(area int, types []int, lastQuestID int) []lab.Block {
 	return bs
 }
 
-// TestStartReroll_E2E 端到端跑「黎明界刷开局」：合成一张难度1(区域1-3)的完美地图 + 区域3 Boss，
+// TestStartReroll_E2E 端到端跑"黎明界刷开局"：合成一张难度1(区域1-3)的完美地图 + 区域3 Boss，
 // 完美开局一次命中；接真实 Collector 抓遥测，打印详细结果与 labyrinth_map 观测。
 func TestStartReroll_E2E(t *testing.T) {
 	// 完美模板：area1[1,2,4,2,4,6]、area2[1,4,2,6,3,4,6]、area3[1,2,6,4,3,7,8]（末列 col7＝Boss）。

@@ -7,7 +7,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// 竞技场/公主竞技场的解锁任务 id（对应 ref get_arena_info / get_grand_arena_info 的门禁）。
+// 竞技场/公主竞技场的解锁任务 id（对应参考项目 get_arena_info / get_grand_arena_info 的门禁）。
 const (
 	arenaUnlockQuestID      = 11004006
 	grandArenaUnlockQuestID = 11008015

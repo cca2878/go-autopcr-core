@@ -85,7 +85,7 @@ func TestMarshalMsgpackRequestRoundTrip(t *testing.T) {
 	}
 }
 
-// TestDecodeEnvelopeMsgpack 用「新协议(str8)」服务器句柄编码响应，
+// TestDecodeEnvelopeMsgpack 用"新协议(str8)"服务器句柄编码响应，
 // 验证信封解码对 str8/bin 的健壮性以及部分 DTO 解码。
 func TestDecodeEnvelopeMsgpack(t *testing.T) {
 	// 服务器侧：故意用 WriteExt=true（新协议，长字符串走 str8）编码。
@@ -162,7 +162,7 @@ func TestDecodeEnvelopeIntViewerID(t *testing.T) {
 	}
 }
 
-// TestResponseDecodeStrAsString 锁定「响应用新规范」：str 家族解入 interface{}
+// TestResponseDecodeStrAsString 锁定"响应用新规范"：str 家族解入 interface{}
 // 时，responseHandle 应得 string；作为对照，旧规范的 requestHandle 会得 []byte。
 func TestResponseDecodeStrAsString(t *testing.T) {
 	// 服务器用新规范编码一个含字符串值的 map。
@@ -205,7 +205,7 @@ func TestDecodeEnvelopeJSONServerError(t *testing.T) {
 }
 
 // TestDecodeEnvelopeRiskExtra 锁定风控数据采集：tool/sdk_login 响应 data 里除已声明的 is_risk
-// 外的所有【未声明】字段，应经 codec.MissingFielder 原样落入 ToolSdkLoginResponse.Extra（而非被
+// 外的所有'未声明'字段，应经 codec.MissingFielder 原样落入 ToolSdkLoginResponse.Extra（而非被
 // 丢弃），以便看清 is_risk 到底带了什么。
 func TestDecodeEnvelopeRiskExtra(t *testing.T) {
 	serverHandle := &codec.MsgpackHandle{WriteExt: true}

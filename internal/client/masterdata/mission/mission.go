@@ -1,4 +1,4 @@
-// Package mission 是母数据「任务」域的只读查询（任务归类等；随需增量）。
+// Package mission 是母数据"任务"域的只读查询（任务归类等；随需增量）。
 package mission
 
 import (
@@ -7,7 +7,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
 
-// 任务领取类别（对应 mission/accept 的 type 参数；复刻 ref 的 1/2/4）。
+// 任务领取类别（对应 mission/accept 的 type 参数；复刻参考项目的 1/2/4）。
 const (
 	CategoryDaily      = 1 // 日常任务（含女神祭 season_pack）
 	CategoryStationary = 2 // 常驻任务
@@ -30,7 +30,7 @@ func New(db *mddb.DB) *Impl { return &Impl{db: db} }
 
 // Classifier 加载任务分类所需的几张母数据小表，返回按 mission_id 归类的分类器。
 //
-// 归类规则复刻 ref：日常=daily_mission_data ∪ season_pack(mission_id≠0)，常驻=
+// 归类规则复刻参考项目：日常=daily_mission_data ∪ season_pack(mission_id≠0)，常驻=
 // stationary_mission_data，纹章=emblem_mission_data。
 func (a *Impl) Classifier(ctx context.Context) (*Classifier, error) {
 	c := &Classifier{

@@ -8,7 +8,7 @@ import (
 	gapidaily "github.com/cca2878/go-autopcr-core/internal/client/gameapi/daily"
 )
 
-// maxReceiveBatches 是「按批领取」类任务的循环上限，防止意外死循环（实际一般 1~2 批即清空）。
+// maxReceiveBatches 是"按批领取"类任务的循环上限，防止意外死循环（实际一般 1~2 批即清空）。
 const maxReceiveBatches = 20
 
 // presentReceive 领取礼物箱中的奖励（只领已获得、不消耗任何资源）。
@@ -32,7 +32,7 @@ func (presentReceive) Params() []automation.Param {
 func (presentReceive) Run(ctx context.Context, gc client.GameClient, rc *automation.RunContext) error {
 	exclude := rc.Bool("exclude_stamina")
 	var total []gapidaily.Reward
-	// 先查后领：只在礼物箱确有可领取礼物时才 receive，避免触发「已领取」等业务错误。
+	// 先查后领：只在礼物箱确有可领取礼物时才 receive，避免触发"已领取"等业务错误。
 	for range maxReceiveBatches {
 		box, err := gc.Daily().PresentBox(ctx)
 		if err != nil {

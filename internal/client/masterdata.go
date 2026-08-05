@@ -13,14 +13,14 @@ import (
 // embeddedRainbow 是随客户端编译进二进制的默认反混淆表，gzip 压缩存放。
 //
 // rainbow 归无头客户端所有：游戏每次大更新（更换 APK 包体）时全量变化，首期以内嵌
-// 静态资产承载，不做版本化/热更。将来热更落地时可演进为「内嵌默认 + 下载版本覆盖」。
+// 静态资产承载，不做版本化/热更。将来热更落地时可演进为"内嵌默认 + 下载版本覆盖"。
 //
-// 选 gzip 而不是项目里已用的 lz4（UnityFS 解包用它是因为解压快，见 internal/client/unityfs）：
-// 后者为解压速度牺牲压缩比，而 rainbow 只在启动时解一次，这里在乎的是体积不是速度——lz4
-// 压到原始大小的六成左右，gzip -9 能压到四成出头，取舍正好相反。
+// 选 gzip 而不是项目里已用于 UnityFS 解包的 lz4（见 internal/client/unityfs，那里图的是解压快）：
+// rainbow 只在启动时解一次，在乎的是体积不是速度——lz4 压到原始大小六成左右，gzip -9 能压到
+// 四成出头，取舍正好相反。
 //
 // 只有压缩后的 rainbow.json.gz 进本仓库，可读源文件不进：更新频率低（游戏大版本才需要，约
-// 半年一次），Go 又没有编译期钩子能校验「源文件」与「内嵌产物」是否同步，放一份进来除了
+// 半年一次），Go 又没有编译期钩子能校验"源文件"与"内嵌产物"是否同步，放一份进来除了
 // 膨胀仓库体积不解决任何问题。可读版本与人工复核记录留在 ref/masterdata（工作区内的兄弟
 // 目录）。更新时用 `make rainbow SRC=/path/to/rainbow.json` 重新生成本文件。
 //
@@ -43,7 +43,7 @@ func defaultRainbow() (masterdata.Rainbow, error) {
 
 // NewMasterdataRefresher 用内嵌 rainbow 装配一个母数据 Refresher。
 //
-// 供【无需登录/凭证】地确保或刷新母数据：调用其 Refresh(ctx) 即自行握手取最新版本并落库，
+// 供'无需登录/凭证'地确保或刷新母数据：调用其 Refresh(ctx) 即自行握手取最新版本并落库，
 // 保证程序总能拿到并展示最新数据。rainbow 归客户端所有，故由客户端包注入、对上层保持封装。
 func NewMasterdataRefresher(cacheDir string, opts ...masterdata.RefresherOption) (*masterdata.Refresher, error) {
 	rainbow, err := defaultRainbow()

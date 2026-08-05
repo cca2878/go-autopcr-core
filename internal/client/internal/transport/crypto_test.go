@@ -58,7 +58,7 @@ func TestGenKeyIsHex(t *testing.T) {
 	}
 }
 
-// TestPackUnpackCryptedRoundTrip 覆盖「请求打包 → 服务器 base64 回传 → 响应解包」。
+// TestPackUnpackCryptedRoundTrip 覆盖"请求打包 → 服务器 base64 回传 → 响应解包"。
 func TestPackUnpackCryptedRoundTrip(t *testing.T) {
 	type body struct {
 		A string `msgpack:"a"`

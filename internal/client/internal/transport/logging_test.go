@@ -60,7 +60,7 @@ func serveBusinessError(t *testing.T, resultCode int, message string) *httptest.
 
 // 业务错误默认记 Warn，不记 Error。
 //
-// 传输层【不知道后果】：会话失效那一类紧接着就被 sessionGuard 自愈了，记 Error 会让一次
+// 传输层'不知道后果'：会话失效那一类紧接着就被 sessionGuard 自愈了，记 Error 会让一次
 // 成功的自愈在日志里留下一条吓人的错误；模块的业务错误则会变成该任务的 Result.Err，由调用
 // 方决定它算不算失败。谁知道后果，谁记 Error。
 func TestBusinessErrorLogsWarnNotError(t *testing.T) {

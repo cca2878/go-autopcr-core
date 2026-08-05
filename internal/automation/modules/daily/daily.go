@@ -1,4 +1,4 @@
-// Package daily 汇集「每日收取」域的自动化模块（礼物箱、任务奖励…）。
+// Package daily 汇集"每日收取"域的自动化模块（礼物箱、任务奖励…）。
 package daily
 
 import "github.com/cca2878/go-autopcr-core/internal/automation"

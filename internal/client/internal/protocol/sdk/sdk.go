@@ -1,5 +1,5 @@
-// Package sdk 是「登录握手/SDK」域的 DTO（source_ini、tool/sdk_login、check/game_start；
-// 对应 ref model/sdkrequests.py）。供 session 登录序列使用。
+// Package sdk 是"登录握手/SDK"域的 DTO（source_ini、tool/sdk_login、check/game_start；
+// 对应参考项目 model/sdkrequests.py）。供 session 登录序列使用。
 package sdk
 
 import (
@@ -52,7 +52,7 @@ type SourceIniGetMaintenanceStatusResponse struct {
 // ToolSdkLoginRequest 用鉴权四要素登录游戏服。
 //
 // 验证码相关字段仅在触发风控(is_risk)时才填充（由 session.passRisk 带票据重提交，求解器由外壳
-// 注入）；未触发时以指针 nil 编码为 msgpack nil，与原项目 use_bin_type=False 的 None 一致。
+// 注入）；未触发时以指针 nil 编码为 msgpack nil，与参考项目 use_bin_type=False 的 None 一致。
 type ToolSdkLoginRequest struct {
 	protocol.RequestBase
 	UID         string  `msgpack:"uid" json:"uid"`
@@ -71,10 +71,10 @@ func (*ToolSdkLoginRequest) URL() *url.URL { return urlToolSdkLogin }
 
 // ToolSdkLoginResponse 表示登录结果；is_risk 为真时需验证码。
 //
-// 除 is_risk 外，服务器在【风控(is_risk)】响应里可能携带我们尚未建模的字段——其真实形状目前
-// 未知（原项目登录响应同样只声明 is_risk，验证码 gt/challenge 另经 do_captcha 服务获取，不在此
+// 除 is_risk 外，服务器在'风控(is_risk)'响应里可能携带我们尚未建模的字段——其真实形状目前
+// 未知（参考项目登录响应同样只声明 is_risk，验证码 gt/challenge 另经 do_captcha 服务获取，不在此
 // 响应里）。为积累数据、看清风控响应到底带什么，本类型实现 codec.MissingFielder：解码时把所有
-// 【未声明】字段原样收进 Extra（单次解码、无额外往返）。仅 crypted(msgpack) 路径填充——登录恒走
+// '未声明'字段原样收进 Extra（单次解码、无额外往返）。仅 crypted(msgpack) 路径填充——登录恒走
 // 该路径。经 session.passRisk 透出为 gameerr.RiskError.Payload。
 type ToolSdkLoginResponse struct {
 	protocol.ResponseBase

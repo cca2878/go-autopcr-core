@@ -175,7 +175,7 @@ func TestPassRiskNoSolverHardFails(t *testing.T) {
 	}
 }
 
-// TestPassRiskThreadsInitialPayload 覆盖「无求解器（mobile）」路径：DoCaptcha 首轮即失败、不发
+// TestPassRiskThreadsInitialPayload 覆盖"无求解器（mobile）"路径：DoCaptcha 首轮即失败、不发
 // 重登，故透出的 RiskError.Payload 应为传入的首个风控响应载荷（原样保留），且被内联进错误消息。
 func TestPassRiskThreadsInitialPayload(t *testing.T) {
 	cred := &fakeCred{captchaErr: captcha.ErrNoSolver}
@@ -201,7 +201,7 @@ func TestPassRiskThreadsInitialPayload(t *testing.T) {
 	}
 }
 
-// TestPassRiskThreadsReloginPayload 覆盖「求解后仍风控直至耗尽」：透出的 Payload 应刷新为最近
+// TestPassRiskThreadsReloginPayload 覆盖"求解后仍风控直至耗尽"：透出的 Payload 应刷新为最近
 // 一次重登风控响应的 Extra（而非最初传入的 nil）。
 func TestPassRiskThreadsReloginPayload(t *testing.T) {
 	cred := &fakeCred{}
@@ -268,7 +268,7 @@ func TestLoginSequence(t *testing.T) {
 }
 
 // 发现握手拿到的 manifest_ver / res_ver 必须原样折进后续请求的头，而不是留着出厂默认值——
-// 二者都是「服务端认可什么，这次握手就已经告诉你了」的权威值，没有理由继续沿用旧的。
+// 二者都是"服务端认可什么，这次握手就已经告诉你了"的权威值，没有理由继续沿用旧的。
 func TestLoginAdoptsDiscoveredHeaders(t *testing.T) {
 	c := transport.New(&fakeCred{})
 	var urls []string

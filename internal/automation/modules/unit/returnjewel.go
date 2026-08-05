@@ -9,10 +9,10 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// 返钻公式常量（复刻 ref return_jewel）：等级同步只统计练度最高的 20 个之外的角色。
+// 返钻公式常量（复刻参考项目 return_jewel）：等级同步只统计练度最高的 20 个之外的角色。
 const (
 	syncTopCount      = 20  // 等级同步保留的角色数（前 20 不计入返钻）
-	maxPromotionLevel = 31  // 满品级基准（ref 用于「最大 box 返钻」与满品级计数）
+	maxPromotionLevel = 31  // 满品级基准（参考项目用于"最大 box 返钻"与满品级计数）
 	maxUnitLevel      = 305 // 满等级基准
 	returnJewelBase   = 1500
 )

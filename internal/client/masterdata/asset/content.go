@@ -1,6 +1,6 @@
 // Package asset 负责从 B 服 patch CDN 解析资源清单并下载资源包。
 //
-// 对应原 Python 项目 db/assetmgr.py。清单（manifest）是层级 CSV：顶层清单列出
+// 对应参考项目 db/assetmgr.py。清单（manifest）是层级 CSV：顶层清单列出
 // 若干子清单与资源条目，子清单再列出更多条目；每个资源条目携带 md5，实际文件位于
 // pool/{category}/{md5[:2]}/{md5}。
 package asset

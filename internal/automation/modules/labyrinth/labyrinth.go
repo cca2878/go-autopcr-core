@@ -1,6 +1,6 @@
-// Package labyrinth 汇集「黎明界（迷宫）」域的自动化模块（刷开局；对应 ref labyrint.py）。
+// Package labyrinth 汇集"黎明界（迷宫）"域的自动化模块（刷开局；对应参考项目 labyrint.py）。
 //
-// 本文件是模块【编排】：解锁判定、配置解析、进入/撤退重刷循环与地图遥测发射；纯路线判定算法
+// 本文件是模块'编排'：解锁判定、配置解析、进入/撤退重刷循环与地图遥测发射；纯路线判定算法
 // 独立在 route.go（可独立单测）。
 package labyrinth
 
@@ -16,7 +16,7 @@ import (
 	lab "github.com/cca2878/go-autopcr-core/internal/client/gameapi/labyrinth"
 )
 
-// labyrinthUnlockQuest 是「黎明界」的解锁任务（对应 ref labyrinth_top 的 is_quest_cleared(11065001)）。
+// labyrinthUnlockQuest 是"黎明界"的解锁任务（对应参考项目 labyrinth_top 的 is_quest_cleared(11065001)）。
 const labyrinthUnlockQuest = 11065001
 
 // bossInfo 是一个 Boss 的（unit_id, 名称, 难度）。
@@ -51,7 +51,7 @@ func bossNamesOf(bosses []bossInfo) []string {
 	return out
 }
 
-// simpleBossNamesOf 返回某区「简单」Boss 名列表（供配置默认）。
+// simpleBossNamesOf 返回某区"简单"Boss 名列表（供配置默认）。
 func simpleBossNamesOf(bosses []bossInfo) []string {
 	var out []string
 	for _, b := range bosses {
@@ -83,9 +83,9 @@ func Register(r *automation.Registry) {
 	r.Register(startRerollV2{}) // 重新设计版，与 v1 并存以便实测对比
 }
 
-// startReroll 是「黎明界刷开局」模块（对应 ref labyrinth_start_reroll）。
+// startReroll 是"黎明界刷开局"模块（对应参考项目 labyrinth_start_reroll）。
 //
-// 反复「进入→判定路线→撤退重刷」直至刷到满足条件的地图：完美开局要求路线逐列吻合模板（不错过 EX 关
+// 反复"进入→判定路线→撤退重刷"直至刷到满足条件的地图：完美开局要求路线逐列吻合模板（不错过 EX 关
 // 与必要遗物），并可指定区域 3/5 的 Boss 与第 3 格类型。每次进入的地图经 rc.Emit 发射（生成分布采样）。
 type startReroll struct{}
 
@@ -118,7 +118,7 @@ func (startReroll) Params() []automation.Param {
 	}
 }
 
-// Candidates 把「公会」解析成母数据里可进入的公会：值是 guild_id、显示是公会名（对应 ref
+// Candidates 把"公会"解析成母数据里可进入的公会：值是 guild_id、显示是公会名（对应参考项目
 // LabyrinthGuildConfig——candidates=db.labyrinth_enter_guild、candidate_display=guild_name）。
 func (startReroll) Candidates(ctx context.Context, gc client.GameClient) (map[string][]automation.Option, error) {
 	md := gc.Masterdata()
@@ -217,7 +217,7 @@ func (startReroll) Run(ctx context.Context, gc client.GameClient, rc *automation
 	return fmt.Errorf("重开%d次仍未刷到目标路线，最后失败原因：%s", maxCount, lastReason)
 }
 
-// maxUnlockedDifficulty 返回当前最大可挑战难度（对应 ref _max_unlocked_difficulty）。
+// maxUnlockedDifficulty 返回当前最大可挑战难度（对应参考项目 _max_unlocked_difficulty）。
 func maxUnlockedDifficulty(top *lab.TopResult) int {
 	if len(top.ClearedDifficulties) == 0 {
 		return 1
@@ -227,10 +227,10 @@ func maxUnlockedDifficulty(top *lab.TopResult) int {
 
 // emitMap 发射一次进入的地图（生成分布采样：每格 area/column/row/type/quest/boss + 是否命中）。
 //
-// 除地图本身还带上**停止规则**（attempt/max_count + 匹配条件）。循环命中即停，
-// 但「首次命中」是个停止时间——{N≥i} 只由前 i-1 次抽取决定——故由 Wald 恒等式，
+// 除地图本身还带上停止规则（attempt/max_count + 匹配条件）。循环命中即停，
+// 但"首次命中"是个停止时间——{N≥i} 只由前 i-1 次抽取决定——故由 Wald 恒等式，
 // 池化频次对地图生成分布仍然一致，重掷样本不作废。attempt 的价值不在去偏，而在让
-// 分析侧能**检验**这个前提（命中是否真的只出现在末次）、能按会话聚类算标准误
+// 分析侧能检验这个前提（命中是否真的只出现在末次）、能按会话聚类算标准误
 // （独立单元是会话而非格子），并能识别跑满 max_count 而截断的会话。匹配条件因人而异，
 // 不记录则 matched 在账号间不可比。会话边界由同一批次内 attempt 的重复值界定，
 // 无需在 core 里造随机 run id。

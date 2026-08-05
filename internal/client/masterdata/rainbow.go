@@ -1,8 +1,9 @@
-// Package masterdata 处理母数据 SQLite：反混淆（rainbow）与（后续）查询。
+// Package masterdata 处理母数据 SQLite：反混淆（rainbow）与只读查询（见 Reader）。
 //
-// CN 版 masterdata 的表名与列名被哈希混淆，data/rainbow.json 给出
-// 哈希名→真实名 的映射。反混淆是一次性的：datagen 离线把干净库落盘，运行时
-// 只读干净库、不再每次反混淆（见 Unhash）。
+// CN 版 masterdata 的表名与列名被哈希混淆，rainbow.json（随客户端 go:embed 内嵌，见
+// internal/client/masterdata.go）给出哈希名→真实名的映射。反混淆按版本一次性完成并落盘：
+// Manager.EnsureDB 检测到新版本时下载、提取、反混淆并写入干净库，之后同一版本只读该库、
+// 不再重复反混淆（见 Unhash）。
 package masterdata
 
 import (
@@ -31,14 +32,14 @@ func ParseRainbow(data []byte) (Rainbow, error) {
 	return r, nil
 }
 
-// Fingerprint 是这张 rainbow 的内容指纹，用来标记「某个干净库是用哪张表反混淆出来的」。
+// Fingerprint 是这张 rainbow 的内容指纹，用来标记"某个干净库是用哪张表反混淆出来的"。
 //
 // 为什么要它：干净库按 db/{ver}.db 缓存，而缓存键里没有 rainbow 的份。换了 rainbow 却撞上
 // 同一个 ver 时，EnsureDB 会命中那份用旧表建出来的库并直接返回——修好 rainbow 发了新版也
 // 救不回来，除非用户手动删缓存。指纹补上的正是这一维。
 //
 // 取 SHA256 前 4 字节而非全量，是为了塞进 SQLite 的 user_version（int32，见 Manager 的
-// stampFingerprint）。这里防的是「版本对不上」而不是攻击，候选集只有寥寥几张历史 rainbow，
+// stampFingerprint）。这里防的是"版本对不上"而不是攻击，候选集只有寥寥几张历史 rainbow，
 // 4 字节足够；即便真撞上，代价也不过是少重建一次。
 //
 // 遍历 map 前先排序：Go 的 map 迭代顺序是随机的，不排序则同一张表每次算出的指纹都不同，

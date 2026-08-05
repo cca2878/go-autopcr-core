@@ -10,10 +10,10 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// exRarityNames 是 EX 装备稀有度名（对应 ref db.ex_rarity_name）。
+// exRarityNames 是 EX 装备稀有度名（对应参考项目 db.ex_rarity_name）。
 var exRarityNames = map[int]string{1: "铜", 2: "银", 3: "金", 4: "粉", 5: "彩"}
 
-// exEquipInfo 报告玩家 EX 装备按稀有度的持有数量（只读；对应 ref ex_equip_info，简化为计数）。
+// exEquipInfo 报告玩家 EX 装备按稀有度的持有数量（只读；对应参考项目 ex_equip_info，简化为计数）。
 type exEquipInfo struct{}
 
 func (exEquipInfo) Meta() automation.Meta {

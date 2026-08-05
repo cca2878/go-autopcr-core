@@ -1,16 +1,16 @@
-// Package appversion 把【服务端权威下发的、会随游戏更新变化的请求头值】（APP-VER、RES-VER）
+// Package appversion 把'服务端权威下发的、会随游戏更新变化的请求头值'（APP-VER、RES-VER）
 // 落盘缓存，避免每个新进程都要从零重新探测。
 //
 // APP-VER 靠 transport.Client 的 store_url 自愈探测（见其 transport 方法 +
 // WithOnVersionUpdate）；RES-VER 没有对应的拒绝信号，握手成功的响应本身就带着权威值
 // （discovery.Result.ResVer），故直接在拿到后原样写入即可，不需要自愈重试那一套。
 //
-// cacheDir 为空即整包空操作：CLI 一类每次都是全新进程的外壳，接上它就不必每次都从头探测；
-// 没有缓存目录的调用方仍能正常工作，只是每次都要重新走一遍探测/自愈。
+// cacheDir 为空即整包空操作：没有缓存目录的调用方仍能正常工作，只是每次都要重新走一遍探测/
+// 自愈；CLI 这类每次都是全新进程的外壳，接上缓存目录就能省掉这个开销。
 //
 // 两个键暂时存进同一个文件（key=value 逐行），没有做成通用缓存抽象：现在只有这两个使用者，
-// 母数据缓存（masterdata.Manager）的目录结构/淘汰策略与这里的诉求也不同，猜测将来的形状
-// 不如等真的需要时再抽象。
+// 母数据缓存（masterdata.Manager）的目录结构/淘汰策略与这里的诉求也不同，不如等真的需要时
+// 再抽象。
 package appversion
 
 import (
@@ -23,7 +23,7 @@ import (
 const filename = "version.txt"
 
 // Read 读出 cacheDir 下缓存的 key 对应值。cacheDir 为空、文件不存在、key 不存在或值为空都
-// 返回 ok=false——调用方据此判断「有没有可用的缓存值」，不必关心具体原因。
+// 返回 ok=false——调用方据此判断"有没有可用的缓存值"，不必关心具体原因。
 func Read(cacheDir, key string) (value string, ok bool) {
 	if cacheDir == "" {
 		return "", false

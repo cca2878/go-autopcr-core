@@ -1,4 +1,4 @@
-// Package modules 装配默认注册表：聚合各【域子包】登记的具体自动化模块与批预设。
+// Package modules 装配默认注册表：聚合各'域子包'登记的具体自动化模块与批预设。
 //
 // 与框架分离：框架（Module/Runner/Registry/Config…）在 internal/automation；具体模块按游戏域
 // 拆到子包（modules/account、modules/daily、modules/story…），每个子包内模块类型不导出、由其

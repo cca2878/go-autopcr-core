@@ -23,11 +23,11 @@ const masterdataURL = "a/masterdata_master.unity3d"
 
 // Source 从 CDN 解析清单并下载资源。
 //
-// res 是「目录形式」的 base URL 列表（各项经 urlx.ParseBase 规整，末尾带 "/"），所有拼接
+// res 是"目录形式"的 base URL 列表（各项经 urlx.ParseBase 规整，末尾带 "/"），所有拼接
 // 统一用 ResolveReference 相对解析（相对引用不带前导 "/"）。
 //
 // 多个 res 互为备份：服务端下发多台正是这个用途（实测 l1/l3/l4）。一台失败时按序换下一台，
-// 但只在「换一台可能有救」时才换——见 worthAnotherHost。
+// 但只在"换一台可能有救"时才换——见 worthAnotherHost。
 type Source struct {
 	res    []*url.URL
 	http   *http.Client
@@ -107,12 +107,12 @@ func worthAnotherHost(err error) bool {
 
 // Resolve 拉取并递归解析清单，返回 url→Content 注册表。
 //
-// 【必须走完整棵树】：同一个逻辑 url 会在多个子清单里重复出现，且以【最后一条】为准——
+// '必须走完整棵树'：同一个逻辑 url 会在多个子清单里重复出现，且以'最后一条'为准——
 // 实测 a/masterdata_master.unity3d 先出现的那条给的是内容摘要、按它拼出的 pool 路径 404，
-// 最后一条给的才是 pool 键。任何「命中即停」的优化都会取错条目。
-// 故障转移以【整棵树】为单位：一台不成就换下一台从头解析，而不是中途接着往下走。因为同一
-// 个逻辑 url 会在多个子清单里重复出现、以最后一条为准（见上），半棵树来自 A、半棵来自 B 时
-// 这个「谁最后」就跨了两台主机的内容，取出来的可能是任何一条。整棵重来只多花一次清单拉取。
+// 最后一条给的才是 pool 键。任何"命中即停"的优化都会取错条目。
+// 故障转移以'整棵树'为单位：一台不成就换下一台从头解析，而不是中途接着往下走——同上的
+// "以最后一条为准"若半棵树来自 A、半棵来自 B，"谁最后"就跨了两台主机，取出来的可能是任何
+// 一条。整棵重来只多花一次清单拉取。
 func (s *Source) Resolve(ctx context.Context, ver int) (map[string]*Content, error) {
 	var lastErr error
 	for i, root := range s.res {
@@ -133,8 +133,8 @@ func (s *Source) Resolve(ctx context.Context, ver int) (map[string]*Content, err
 
 // resolveManifest 递归展开一张清单。ancestors 是当前递归路径上的清单集合，仅用于防环：
 // 清单内容由服务端下发，自引用/互引用会让这里无限递归下去（每层还附带一次 HTTP 拉取）。
-// 注意只能按【路径】去重而非全局去重——同一张子清单在树中被引用多次是合法的，跳过重复展开
-// 会改变「后者覆盖前者」的最终取值。
+// 注意只能按'路径'去重而非全局去重——同一张子清单在树中被引用多次是合法的，跳过重复展开
+// 会改变"后者覆盖前者"的最终取值。
 func (s *Source) resolveManifest(ctx context.Context, base *url.URL, ref, category string, registry map[string]*Content, ancestors map[string]bool) error {
 	text, err := s.getText(ctx, base.ResolveReference(&url.URL{Path: ref}))
 	if err != nil {
@@ -169,7 +169,7 @@ func (s *Source) Download(ctx context.Context, c *Content) ([]byte, error) {
 	if len(c.MD5) < 2 {
 		return nil, fmt.Errorf("%w：条目 %s 的 md5 键为 %q", ErrBadManifest, c.URL, c.MD5)
 	}
-	// 注意 c.MD5 是 pool 的【寻址键】，不保证等于内容摘要：实测 masterdata 条目的该字段为
+	// 注意 c.MD5 是 pool 的'寻址键'，不保证等于内容摘要：实测 masterdata 条目的该字段为
 	// 16 位十六进制，而下下来的内容 md5 是另一个 32 位值。故此处不能拿它当校验和。
 	ref := &url.URL{Path: "pool/" + c.Category + "/" + c.MD5[:2] + "/" + c.MD5}
 	return s.fetchAcrossHosts(ctx, ref)

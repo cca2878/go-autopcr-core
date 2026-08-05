@@ -12,7 +12,7 @@ import (
 // clanBattlePointFull 是体力点数满值（三刀出完时为满且无剩余刀/尾刀）。
 const clanBattlePointFull = 900
 
-// clanBattleKnive 报告公会战今日剩余刀数/尾刀/体力点数（只读；对应 ref clan_battle_knive）。
+// clanBattleKnive 报告公会战今日剩余刀数/尾刀/体力点数（只读；对应参考项目 clan_battle_knive）。
 type clanBattleKnive struct{}
 
 func (clanBattleKnive) Meta() automation.Meta {

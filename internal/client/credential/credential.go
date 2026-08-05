@@ -1,12 +1,12 @@
-// Package credential 定义无头客户端向下依赖的凭据端口（SC 缝）。
+// Package credential 定义无头客户端向下依赖的凭据端口。
 //
 // 游戏服务器鉴权只需四要素 uid/access_key/platform/channel_id；bsdk/qsdk 等
-// 「渠道」只是获取 access_key 的手段与静态配置来源。核心唯一实现为「AccessKey 四要素
-// 直传」（见子包 accesskey）——核心只吃 (channel, uid, access_key)。
+// "渠道"只是获取 access_key 的手段与静态配置来源。核心唯一实现为"AccessKey 四要素
+// 直传"（见子包 accesskey）——核心只吃 (channel, uid, access_key)。
 //
-// 账密→access_key 属【冷启动】、是外壳(imperative shell)职责：核心不携带登录 SDK、
-// 也不依赖 bsdkv3-go（见架构决策：SDK 移出核心）。外壳完成账密登录后，仍以
-// accesskey.Credential 喂本端口，故对 transport/session 完全透明。
+// 账密→access_key 属'冷启动'、是外壳(imperative shell)职责：核心不携带登录 SDK、
+// 也不依赖 bsdkv3-go（见 docs/architecture.md：登录 SDK 为什么移出核心）。外壳完成
+// 账密登录后，仍以 accesskey.Credential 喂本端口，故对 transport/session 完全透明。
 package credential
 
 import (

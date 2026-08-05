@@ -150,7 +150,7 @@ func parseBlocksInfo(raw []byte, h *header) (blocks []block, dataOff int, err er
 }
 
 func decompressBlocks(raw []byte, blocks []block, dataOff int) ([]byte, error) {
-	// 预分配用的总长同样来自不可信的块表：逐块核对「解压后大小 vs 压缩后大小」，并用 int64
+	// 预分配用的总长同样来自不可信的块表：逐块核对"解压后大小 vs 压缩后大小"，并用 int64
 	// 累加后再收口成 int，避免 32 位平台上溢出成负数（makeslice 会直接 panic）。
 	var total int64
 	for i, b := range blocks {
@@ -163,7 +163,7 @@ func decompressBlocks(raw []byte, blocks []block, dataOff int) ([]byte, error) {
 	if total > int64(len(raw))*maxLZ4Expansion+16 {
 		return nil, fmt.Errorf("%w：块表声称的解压总长 %d 与文件长度 %d 不相称", ErrMalformed, total, len(raw))
 	}
-	// 就地解到 blob 的尾部：容量已按总长备好，逐块「先解到临时缓冲再 append」会让几十 MB 的
+	// 就地解到 blob 的尾部：容量已按总长备好，逐块"先解到临时缓冲再 append"会让几十 MB 的
 	// 母数据库在解包时被多分配、多拷贝一整遍。
 	blob := make([]byte, 0, total)
 	cur := dataOff
@@ -196,7 +196,7 @@ func decompress(chunk []byte, uncompressedSize int, compFlag uint32) ([]byte, er
 	return dst, nil
 }
 
-// decompressInto 把一个块解压进【已备好长度】的 dst，不做分配。
+// decompressInto 把一个块解压进'已备好长度'的 dst，不做分配。
 func decompressInto(dst, chunk []byte, compFlag uint32) error {
 	switch compFlag & flagCompressionMask {
 	case compNone:

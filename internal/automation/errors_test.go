@@ -9,7 +9,7 @@ import (
 
 func intp(n int) *int { return &n }
 
-// 校验失败要答两个问题：【哪个参数】和【什么毛病】。前者靠 ParamError.Param，后者靠原因哨兵。
+// 校验失败要答两个问题：'哪个参数'和'什么毛病'。前者靠 ParamError.Param，后者靠原因哨兵。
 // 只给一句拼好的中文串，外壳就没法把错误落到表单的某一栏上。
 func TestValidateReportsParamAndReason(t *testing.T) {
 	params := []Param{
@@ -68,7 +68,7 @@ func TestValidateAcceptsGoodValues(t *testing.T) {
 	}
 }
 
-// 母数据缺席是【装配错误】：各模块措辞不同，但判定必须统一，否则外壳只能去匹配中文串。
+// 母数据缺席是'装配错误'：各模块措辞不同，但判定必须统一，否则外壳只能去匹配中文串。
 func TestRequireMasterdata(t *testing.T) {
 	err := RequireMasterdata("判定赛马开放时段")
 
@@ -81,7 +81,7 @@ func TestRequireMasterdata(t *testing.T) {
 	if msg := err.Error(); msg != "母数据未启用：本模块需要它判定赛马开放时段" {
 		t.Errorf("Error() = %q", msg)
 	}
-	// 它绝不能被当成「跳过」——那会把一次配置事故伪装成正常运行。
+	// 它绝不能被当成"跳过"——那会把一次配置事故伪装成正常运行。
 	if isSkip(err) {
 		t.Error("母数据缺席不是 Skip")
 	}

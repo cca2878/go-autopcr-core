@@ -1,4 +1,4 @@
-// Package tower 是母数据「露娜塔」域的只读查询（最新一期开放窗口；对应 ref get_newest_tower_id）。
+// Package tower 是母数据"露娜塔"域的只读查询（最新一期开放窗口；对应参考项目 get_newest_tower_id）。
 package tower
 
 import (

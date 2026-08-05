@@ -2,7 +2,7 @@ package automation
 
 import "fmt"
 
-// Preset 是一个具名的模块批（模块名列表），供「批处理预设」选择。
+// Preset 是一个具名的模块批（模块名列表），供"批处理预设"选择。
 type Preset struct {
 	Name    string
 	Title   string
@@ -28,7 +28,7 @@ func NewRegistry() *Registry {
 // 退回零校验（Bounds.Choices 空＝不约束），而这正是 Candidates 要消灭的东西。之所以 panic 而
 // 不返回 error——注册表由各域 Register 在进程启动时静态装配，装配错了是程序 bug，不是运行期
 // 可恢复的输入错误；而 DefaultRegistry() 是所有模块测试的必经之路，故 CI 必抓。这也是这条不变
-// 量能落到的最早时机：Go 的类型系统表达不了「Choice 必有候选」。
+// 量能落到的最早时机：Go 的类型系统表达不了"Choice 必有候选"。
 func (r *Registry) Register(m Module) {
 	name := m.Meta().Name
 	if _, ok := m.(Candidates); !ok {

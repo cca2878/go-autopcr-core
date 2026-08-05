@@ -1,4 +1,4 @@
-// Package clan 是「公会」域的游戏 API 能力面（公会信息、点赞等；对应 ref clan.py）。
+// Package clan 是"公会"域的游戏 API 能力面（公会信息、点赞等；对应参考项目 clan.py）。
 //
 // 能力方法按具体系统分文件，共用同一 Impl（只持传输句柄）。
 package clan

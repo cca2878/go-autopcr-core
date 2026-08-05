@@ -9,7 +9,7 @@ import (
 
 // exploreManaReport 报告今日 Mana 探索还可扫荡多少次（只读，不实际扫荡/消耗体力）。
 //
-// 对应 ref explore_mana：原模块扫荡消耗体力换取 mana；此处与 exploreExpReport 同法降级为只读
+// 对应参考项目 explore_mana：原模块扫荡消耗体力换取 mana；此处与 exploreExpReport 同法降级为只读
 // 报告，只据登录折叠的今日已用/上限次数报告剩余可扫荡次数。
 type exploreManaReport struct{}
 

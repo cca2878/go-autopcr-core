@@ -1,5 +1,5 @@
-// Package alces 是「彩装究极炼成」域的 DTO（alces/top、exec、fix_result、cancel_result、
-// lock_slot；对应 ref AlcesXxxRequest/Response）。炼成是一次性重掷未锁副属性的 gacha：exec 产出
+// Package alces 是"彩装究极炼成"域的 DTO（alces/top、exec、fix_result、cancel_result、
+// lock_slot；对应参考项目 AlcesXxxRequest/Response）。炼成是一次性重掷未锁副属性的 gacha：exec 产出
 // 待决定的 pending_alces_data，fix_result 定案回传完整实例，cancel_result 放弃回退，lock_slot 改锁定。
 package alces
 
@@ -17,7 +17,7 @@ var (
 	urlLockSlot     = protocol.MustRelURL("alces/lock_slot")
 )
 
-// SubStatus 是一条 EX 装备副属性（对应 ref ExtraEquipSubStatus）。status＝属性类型(eParamType)，
+// SubStatus 是一条 EX 装备副属性（对应参考项目 ExtraEquipSubStatus）。status＝属性类型(eParamType)，
 // step＝档位(1..5，5＝满)，is_lock＝是否锁定。
 type SubStatus struct {
 	SlotNumber int  `msgpack:"slot_number" json:"slot_number"`
@@ -32,7 +32,7 @@ type AlcesData struct {
 	SubStatus []SubStatus `msgpack:"sub_status" json:"sub_status"`
 }
 
-// ExtraEquipInfo 是炼成定案(fix_result)后回传的完整 EX 装备实例（对应 ref ExtraEquipInfo）。
+// ExtraEquipInfo 是炼成定案(fix_result)后回传的完整 EX 装备实例（对应参考项目 ExtraEquipInfo）。
 type ExtraEquipInfo struct {
 	SerialID       int         `msgpack:"serial_id" json:"serial_id"`
 	ExEquipmentID  int         `msgpack:"ex_equipment_id" json:"ex_equipment_id"`
@@ -43,13 +43,13 @@ type ExtraEquipInfo struct {
 	IsAlcesPending int         `msgpack:"is_alces_pending" json:"is_alces_pending"`
 }
 
-// SubStatusPost 是锁定请求的一条上行副属性（对应 ref ExtraEquipSubStatusPost；is_lock 用 int）。
+// SubStatusPost 是锁定请求的一条上行副属性（对应参考项目 ExtraEquipSubStatusPost；is_lock 用 int）。
 type SubStatusPost struct {
 	SlotNumber int `msgpack:"slot_number" json:"slot_number"`
 	IsLock     int `msgpack:"is_lock" json:"is_lock"`
 }
 
-// AlcesDataPost 是锁定请求的上行体（对应 ref AlcesDataPost）。
+// AlcesDataPost 是锁定请求的上行体（对应参考项目 AlcesDataPost）。
 type AlcesDataPost struct {
 	SerialID  int             `msgpack:"serial_id" json:"serial_id"`
 	SubStatus []SubStatusPost `msgpack:"sub_status" json:"sub_status"`

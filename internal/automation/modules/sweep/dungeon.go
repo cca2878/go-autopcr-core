@@ -10,7 +10,7 @@ import (
 
 // dungeonReport 报告地下城今日是否还可挑战/扫荡（只读，不实际进入/扫荡）。
 //
-// 对应 ref underground_skip（地下城扫荡）：原模块会进入并扫荡地下城换取 mana；此处降级为只读
+// 对应参考项目 underground_skip（地下城扫荡）：原模块会进入并扫荡地下城换取 mana；此处降级为只读
 // 报告，只据 dungeon/info 的剩余挑战次数与当前所在区域给出状态，不发送进入/扫荡写请求。
 type dungeonReport struct{}
 

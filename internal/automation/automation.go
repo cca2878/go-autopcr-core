@@ -1,4 +1,4 @@
-// Package automation 是单账号自动化层（S3 运行器缝）——它「操作」无头客户端(S2)执行
+// Package automation 是单账号自动化层——它"操作"无头客户端(client.GameClient)执行
 // 一组任务模块。
 //
 // 模块只依赖 client.GameClient 的公共能力面（请求体构造与发包由客户端内部完成），不接触
@@ -61,7 +61,7 @@ type Observation struct {
 	Fields map[string]any
 }
 
-// Collector 是 Run 的【只写遥测端口】：外壳注入，模块经 rc.Emit 同步推送 Observation。
+// Collector 是 Run 的'只写遥测端口'：外壳注入，模块经 rc.Emit 同步推送 Observation。
 // 契约同 Observer（尽快返回、不得 panic、勿依赖时序）。为 nil 时 Emit 为 no-op——不注入
 // 采集器时模块行为不变、Run 返回的结果逐字节相同（确定性不受采集器影响）。
 type Collector func(Observation)
@@ -94,24 +94,24 @@ type Module interface {
 	Run(ctx context.Context, gc client.GameClient, rc *RunContext) error
 }
 
-// Candidates 是 Module 的【可选】扩展：声明那些候选依赖世界（母数据 / 账号态）的参数如何解析。
+// Candidates 是 Module 的'可选'扩展：声明那些候选依赖世界（母数据 / 账号态）的参数如何解析。
 //
-// 为什么要它：Params() 是纯静态声明、够不着 gc，故只表达得了编译期就固定的候选。而「炼成哪件
-// 彩装」这类参数的候选是玩家库存——登录后才知道。没有这个口子，这类参数只能退化成不受约束的
+// 为什么要它：Params() 是纯静态声明、够不着 gc，故只表达得了编译期就固定的候选。而"炼成哪件
+// 彩装"这类参数的候选是玩家库存——登录后才知道。没有这个口子，这类参数只能退化成不受约束的
 // 自由文本，选单与校验一起失去。
 //
-// 契约：只读【已有的世界】（母数据库 + gc.Data() 的玩家态快照），【不发新的网络请求】。满足
+// 契约：只读'已有的世界'（母数据库 + gc.Data() 的玩家态快照），'不发新的网络请求'。满足
 // 这条，它读的就是 Run 本就依赖的同一个世界，不给确定性引入新的隐藏输入。
 //
-// 返回「参数名 → 候选」。一次调用可服务多个参数，同一次母数据加载因此能摊给它们（如彩装模块
-// 的四个副属性槽与「炼成哪件」共用一次快照）。参数名须已在 Params() 声明；每个无静态候选的
+// 返回"参数名 → 候选"。一次调用可服务多个参数，同一次母数据加载因此能摊给它们（如彩装模块
+// 的四个副属性槽与"炼成哪件"共用一次快照）。参数名须已在 Params() 声明；每个无静态候选的
 // Choice 类参数都须在此给出候选（空切片＝世界里当前没有可选项，合法）——两条都由
 // bindCandidates 强制。
 type Candidates interface {
 	Candidates(ctx context.Context, gc client.GameClient) (map[string][]Option, error)
 }
 
-// BreakPolicy 是模块对「执行到一半会话被顶掉、客户端已重登」的处置声明。别名自 client 包
+// BreakPolicy 是模块对"执行到一半会话被顶掉、客户端已重登"的处置声明。别名自 client 包
 // （策略要传到传输层才起作用），模块只需用这里的名字。
 type BreakPolicy = client.BreakPolicy
 
@@ -124,23 +124,23 @@ const (
 	BreakIgnore = client.BreakIgnore
 )
 
-// SessionAware 是 Module 的【可选】扩展：声明模块如何应对执行期间的会话断点。
+// SessionAware 是 Module 的'可选'扩展：声明模块如何应对执行期间的会话断点。
 //
 // 为什么要它：会话失效（被其他客户端顶号、数据不一致）时客户端会自动重登，但重登只修得了
-// 会话——修不了模块【已经查到、存在局部变量里】的那份世界快照。「刚查到礼物箱有 3 件」在
+// 会话——修不了模块'已经查到、存在局部变量里'的那份世界快照。"刚查到礼物箱有 3 件"在
 // 断点之后可能已经不成立，而框架看不见这些局部变量，无从校正。故断点后怎么办只有模块自己
 // 知道，这里是它表态的唯一位置。
 //
 // 不实现即 BreakAbort——最保守的一档：宁可让任务失败让用户重跑，也不拿旧世界的结论去写新世界。
 //
-// 选 BreakRestart 前请确认【重跑一遍不会重复扣资源】：这正是「先查后动」铁律的红利——收取类
+// 选 BreakRestart 前请确认'重跑一遍不会重复扣资源'：这正是"先查后动"铁律的红利——收取类
 // 模块重跑时会先查、发现已领完即无操作。若模块按次数循环消耗（如按配置扫荡 N 次），重跑就是
-// 又扣 N 次，那它【不能】声明 BreakRestart。
-// 选 BreakIgnore 请确认模块【完全不写入】（纯查询/报告）：此档下断点被静默重发掩盖，模块会
+// 又扣 N 次，那它'不能'声明 BreakRestart。
+// 选 BreakIgnore 请确认模块'完全不写入'（纯查询/报告）：此档下断点被静默重发掩盖，模块会
 // 拿着可能过时的快照继续跑完。
 //
-// 另注：BreakRestart 会把断点前 rc.Emit 过的观测【再发一遍】（遥测按次计），声明前一并考虑。
-// 别按 Meta.Category 反推本策略——那是展示用的分组字符串，不是「是否写入」的契约。
+// 另注：BreakRestart 会把断点前 rc.Emit 过的观测'再发一遍'（遥测按次计），声明前一并考虑。
+// 别按 Meta.Category 反推本策略——那是展示用的分组字符串，不是"是否写入"的契约。
 type SessionAware interface {
 	OnSessionBreak() BreakPolicy
 }
@@ -154,10 +154,10 @@ func breakPolicyOf(m Module) BreakPolicy {
 }
 
 // CheckCandidates 在给定世界下解析模块的参数候选并报告其是否自洽，供模块单测做契约检查——
-// runOne 每次运行都做同样的解析，故它就是「这个模块跑起来会不会因参数候选而失败」的提前问询。
+// runOne 每次运行都做同样的解析，故它就是"这个模块跑起来会不会因参数候选而失败"的提前问询。
 //
-// Registry.Register 只抓得住「整个 Candidates 接口都没实现」（无需世界即可判定）；漏掉其中
-// 【某一个】参数则要真解析一次才知道，那正是本函数的位置。gc 用模块单测现成的假客户端即可。
+// Registry.Register 只抓得住"整个 Candidates 接口都没实现"（无需世界即可判定）；漏掉其中
+// '某一个'参数则要真解析一次才知道，那正是本函数的位置。gc 用模块单测现成的假客户端即可。
 func CheckCandidates(ctx context.Context, gc client.GameClient, m Module) error {
 	_, err := resolveParams(ctx, gc, m)
 	return err
@@ -175,17 +175,17 @@ func resolveParams(ctx context.Context, gc client.GameClient, m Module) ([]Param
 	return bindCandidates(m.Params(), cands)
 }
 
-// skipError 表示「主动跳过」，由 Skip 构造，Run 据此区分跳过与失败。
+// skipError 表示"主动跳过"，由 Skip 构造，Run 据此区分跳过与失败。
 type skipError struct{ reason string }
 
 func (e *skipError) Error() string { return e.reason }
 
-// Skip 构造一个「跳过」信号（携带原因），供模块在前置条件不满足时返回。
+// Skip 构造一个"跳过"信号（携带原因），供模块在前置条件不满足时返回。
 func Skip(format string, args ...any) error {
 	return &skipError{reason: fmt.Sprintf(format, args...)}
 }
 
-// Task 是一次待执行的任务的【纯数据】描述：模块标识符（Registry 中的名字）+ 该实例的原始
+// Task 是一次待执行的任务的'纯数据'描述：模块标识符（Registry 中的名字）+ 该实例的原始
 // 配置值（未 resolve，nil=全默认）。以 Task 为单位（而非直接持模块），故同一模块可在一批内
 // 重复并各带不同配置；且 Task 可序列化（配置驱动的批定义），执行时经 Registry 解析名字。
 type Task struct {
@@ -212,7 +212,7 @@ const (
 	PhaseFinished              // 任务已结束（Result 为已定稿结果的副本）
 )
 
-// Event 是一条【任务级】进度事件，按值传递。
+// Event 是一条'任务级'进度事件，按值传递。
 type Event struct {
 	Phase        Phase
 	Index, Total int    // 第 Index（从 0 计）个任务，共 Total 个
@@ -220,7 +220,7 @@ type Event struct {
 	Result       Result // 仅 PhaseFinished 有意义：已定稿结果的独立副本
 }
 
-// Observer 是 Run 的【只写进度端口】：外壳注入，核心在任务边界【同步、按序推送】Event。
+// Observer 是 Run 的'只写进度端口'：外壳注入，核心在任务边界'同步、按序推送'Event。
 //
 // 注入方须遵守（同步 push 固有）：
 //   - 回调必须尽快返回、不得阻塞——它在 Run 的 goroutine 上同步调用，慢/阻塞会拖慢整条
@@ -236,16 +236,16 @@ type Observer func(Event)
 // 列表，批处理=多元素，二者走同一路径（统一单/批）。单个任务失败/跳过（含未知模块名）不影响
 // 其余继续执行。
 //
-// 进度：obs 非 nil 时在每个任务前后推送 PhaseStarted / PhaseFinished（见 Observer 契约）；obs
-// 为 nil 即无进度、行为与不传观察者完全一致。
+// 进度：obs 非 nil 时在每个任务前后推送 PhaseStarted / PhaseFinished（见 Observer 契约）；
+// 为 nil 即无进度。
 //
-// 取消（边界语义 / B1）：在开跑下一个任务前检查 ctx，已取消则【停止调度后续任务】，返回【已完成
-// 部分】+ ctx.Err()。正在执行的任务【其错误链上确实是取消】时，归为取消而非失败——丢弃该结果、就地
+// 取消（边界语义）：在开跑下一个任务前检查 ctx，已取消则'停止调度后续任务'，返回'已完成
+// 部分'+ ctx.Err()。正在执行的任务'其错误链上确实是取消'时，归为取消而非失败——丢弃该结果、就地
 // 停止（但仍补推一条 PhaseFinished，以守住 Started→Finished 成对的观察者契约）。故返回的 error 非
-// nil 即“被取消，只跑了这些”，而结果里的 StatusError 永远只表示【真实失败】，不含取消假象；反过来，
+// nil 即"被取消，只跑了这些"，而结果里的 StatusError 永远只表示'真实失败'，不含取消假象；反过来，
 // 与取消擦肩而过的真实失败也仍按失败记录，不会被 ctx 的当下状态吞掉。
 // col 是可选的遥测采集端口（见 Collector）：非 nil 时模块经 rc.Emit 推送的观测转交外壳；
-// nil 即无遥测、行为与不传采集器完全一致。
+// nil 即无遥测。
 func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task, obs Observer, col Collector) ([]Result, error) {
 	total := len(tasks)
 	results := make([]Result, 0, total)
@@ -267,13 +267,13 @@ func Run(ctx context.Context, gc client.GameClient, reg *Registry, tasks []Task,
 			res = Result{Meta: meta, Status: StatusError, Err: fmt.Errorf("%w %q", ErrUnknownModule, t.Module)}
 		} else {
 			res = runOne(ctx, gc, m, t.Values, col)
-			// 取消判定：只认【错误链上确实是取消】的失败，不看 ctx 的当下状态——否则恰好与超时
+			// 取消判定：只认'错误链上确实是取消'的失败，不看 ctx 的当下状态——否则恰好与超时
 			// 擦肩而过的真实业务失败会被误记成取消、诊断信息随结果一起丢掉。
 			if res.Status == StatusError && isCanceled(res.Err) {
 				// 结果按既定语义丢弃，但已推过 Started 就必须补一条 Finished：Observer 契约
 				// 承诺 Started(i)→Finished(i) 成对，否则外壳的进度条会永远停在这一项上。
 				emit(obs, Event{Phase: PhaseFinished, Index: i, Total: total, Meta: res.Meta, Result: cloneResult(res)})
-				// 返回值必须非 nil：nil 按契约表示「全部跑完」。若取消来自模块内部自建的
+				// 返回值必须非 nil：nil 按契约表示"全部跑完"。若取消来自模块内部自建的
 				// ctx（外层 ctx 仍存活），ctx.Err() 是 nil，此时用模块自己的错误兜底。
 				return results, cmp.Or(ctx.Err(), res.Err)
 			}
@@ -307,7 +307,7 @@ func cloneResult(r Result) Result {
 }
 
 func runOne(ctx context.Context, gc client.GameClient, m Module, values map[string]any, col Collector) Result {
-	// 把模块的会话断点策略交给传输层：断点是在某次 gc 调用【里面】被发现的，只有那里能当场
+	// 把模块的会话断点策略交给传输层：断点是在某次 gc 调用'里面'被发现的，只有那里能当场
 	// 中止（而不是等模块跑完再秋后算账，那时旧世界的结论早已写进新世界）。见 SessionAware。
 	policy := breakPolicyOf(m)
 	ctx = client.WithBreakPolicy(ctx, policy)
@@ -315,7 +315,7 @@ func runOne(ctx context.Context, gc client.GameClient, m Module, values map[stri
 	// 过程日志跨重跑保留：断点前那半程也是用户要看的（尤其它可能已经写入过）。
 	rep := &Reporter{}
 	for attempt := 0; ; attempt++ {
-		// 先按【当前世界】把依赖它的候选解析出来，校验才是真校验：配置的合法性本就是相对世界而言
+		// 先按'当前世界'把依赖它的候选解析出来，校验才是真校验：配置的合法性本就是相对世界而言
 		// 的（彩装 #123 合不合法，取决于你有没有这件），故这步必须在 Validate 之前、且在 gc 已备好
 		// 之后——这也正是它在 runOne 而不在 Params() 里的原因。重跑时重解析一遍：世界已经变了。
 		params, err := resolveParams(ctx, gc, m)

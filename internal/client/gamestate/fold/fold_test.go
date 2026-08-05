@@ -22,7 +22,7 @@ import (
 func TestFoldRewardsNeedsNoRegistration(t *testing.T) {
 	r := fold.DefaultRegistry()
 	s := gamestate.New()
-	// room 的收取响应【没有】域专属折叠器登记，只靠实现接口被通用层折叠。
+	// room 的收取响应'没有'域专属折叠器登记，只靠实现接口被通用层折叠。
 	r.Apply(s, nil, &room.RoomReceiveItemAllResponse{
 		RewardList: []protocol.InventoryInfo{
 			{Type: 2, ID: 23001, Stock: 275737, Count: 28, Received: 28},
@@ -34,7 +34,7 @@ func TestFoldRewardsNeedsNoRegistration(t *testing.T) {
 }
 
 // 按 Stock 覆盖而非累加 Count——这是真机数据定的案：同一 id 的多条奖励里 Stock 是同一个
-// 「结算后最终余额」，Count 才逐条不同。累加 Count 会让库存翻倍。
+// "结算后最终余额"，Count 才逐条不同。累加 Count 会让库存翻倍。
 func TestFoldRewardsOverwritesWithStock(t *testing.T) {
 	r := fold.DefaultRegistry()
 	s := gamestate.New()
@@ -78,7 +78,7 @@ func TestFoldRewardsRoutesCurrencies(t *testing.T) {
 	}
 }
 
-// seasonpass 是唯一逆序的那个（照搬 ref handlers.py:900 的 rewards[::-1]）。若逐条 stock 是
+// seasonpass 是唯一逆序的那个（照搬参考项目 handlers.py:900 的 rewards[::-1]）。若逐条 stock 是
 // 累进中间值，正序遍历会让最旧的一条胜出——这里用不同 stock 的两条把顺序钉死。
 func TestSeasonpassRewardsFoldInReverse(t *testing.T) {
 	r := fold.DefaultRegistry()
@@ -94,8 +94,8 @@ func TestSeasonpassRewardsFoldInReverse(t *testing.T) {
 	}
 }
 
-// 赛马抽取【不实现】RewardCarrier——ref 的 handlers.py 里该响应根本没有 handler。
-// 无样本又无 ref 依据时不折，比猜一个语义安全。
+// 赛马抽取'不实现'RewardCarrier——参考项目的 handlers.py 里该响应根本没有 handler。
+// 无样本又无参考项目依据时不折，比猜一个语义安全。
 func TestCharaFortuneDrawCarriesNoRewards(t *testing.T) {
 	var resp any = &race.CharaFortuneDrawResponse{}
 	if _, ok := resp.(protocol.RewardCarrier); ok {
@@ -103,8 +103,8 @@ func TestCharaFortuneDrawCarriesNoRewards(t *testing.T) {
 	}
 }
 
-// 体力快照必须折回：不折就是【状态过期】而非报错——领取类模块跑完后，模块读到的还是登录时
-// 的旧体力。ref 的对应 handler 都折了（clan/like、mission/accept、present、room 四处）。
+// 体力快照必须折回：不折就是'状态过期'而非报错——领取类模块跑完后，模块读到的还是登录时
+// 的旧体力。参考项目的对应 handler 都折了（clan/like、mission/accept、present、room 四处）。
 func TestStaminaSnapshotFolds(t *testing.T) {
 	r := fold.DefaultRegistry()
 	s := gamestate.New()
@@ -125,7 +125,7 @@ func TestStaminaSnapshotFolds(t *testing.T) {
 	}
 }
 
-// 余额快照同理（ref 的 mirage/receive_reward 折 user_gold + user_jewel）。
+// 余额快照同理（参考项目的 mirage/receive_reward 折 user_gold + user_jewel）。
 func TestBalanceSnapshotFolds(t *testing.T) {
 	r := fold.DefaultRegistry()
 	s := gamestate.New()
@@ -141,7 +141,7 @@ func TestBalanceSnapshotFolds(t *testing.T) {
 	}
 }
 
-// team_level 走域专属层（裸 int 没有共用模型可依附）。ref 用 `if self.team_level` 守卫：
+// team_level 走域专属层（裸 int 没有共用模型可依附）。参考项目用 `if self.team_level` 守卫：
 // 服务端不下发时是 0，无条件赋值会把等级抹掉。
 func TestMissionAcceptKeepsTeamLevelWhenAbsent(t *testing.T) {
 	r := fold.DefaultRegistry()
@@ -259,7 +259,7 @@ func TestApplyFoldsGuardsAfterWrites(t *testing.T) {
 	}
 }
 
-// 钻石的 jewel 与 free_jewel 是【互斥的两段】（付费 / 免费），不是「总量与其中的免费部分」。
+// 钻石的 jewel 与 free_jewel 是'互斥的两段'（付费 / 免费），不是"总量与其中的免费部分"。
 // 这条单独锁：误读过一次——本地字段一度叫 Jewel.Total 却装着付费部分，展示层于是把付费钻
 // 当成总额报了出去。取证见 protocol.UserJewel 的说明。
 func TestJewelPaidAndFreeAreDisjoint(t *testing.T) {

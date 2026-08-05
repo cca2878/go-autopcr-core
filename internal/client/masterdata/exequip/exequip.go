@@ -1,5 +1,5 @@
-// Package exequip 是母数据「EX 装备」域的只读查询（稀有度、名称、彩装副属性与炼成消耗等；
-// 对应 ref ex_equipment_data / ex_equipment_sub_status(_group) / alces_cost / item_data）。
+// Package exequip 是母数据"EX 装备"域的只读查询（稀有度、名称、彩装副属性与炼成消耗等；
+// 对应参考项目 ex_equipment_data / ex_equipment_sub_status(_group) / alces_cost / item_data）。
 package exequip
 
 import (
@@ -12,10 +12,10 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata/mddb"
 )
 
-// exRarityNames 是 EX 装备稀有度名（对应 ref ex_rarity_name）。
+// exRarityNames 是 EX 装备稀有度名（对应参考项目 ex_rarity_name）。
 var exRarityNames = map[int]string{1: "铜", 2: "银", 3: "金", 4: "粉", 5: "彩"}
 
-// paramNameCh 是副属性(eParamType)中文名（对应 ref UnitAttribute.index2ch）。
+// paramNameCh 是副属性(eParamType)中文名（对应参考项目 UnitAttribute.index2ch）。
 var paramNameCh = map[int]string{
 	1: "血量", 2: "物攻", 4: "魔攻", 3: "物防", 5: "魔防",
 	6: "物爆", 7: "法爆", 10: "wave_hp_recovery", 11: "wave_energy_recovery",
@@ -23,20 +23,20 @@ var paramNameCh = map[int]string{
 	14: "物爆提升", 16: "法爆提升", 17: "命中",
 }
 
-// paramIsPresent 是副属性是否为百分比值（对应 ref is_present，按属性直接映射）。
+// paramIsPresent 是副属性是否为百分比值（对应参考项目 is_present，按属性直接映射）。
 var paramIsPresent = map[int]bool{
 	1: true, 2: true, 3: true, 4: true, 5: true, 6: true, 7: true,
 	8: false, 9: false, 10: false, 11: false, 12: false, 13: false,
 	14: false, 15: false, 16: false, 17: false,
 }
 
-// ItemKey 是库存物品 (类型, id) 键（对应 ref ItemType＝(eInventoryType, id)）。
+// ItemKey 是库存物品 (类型, id) 键（对应参考项目 ItemType＝(eInventoryType, id)）。
 type ItemKey struct {
 	Type int
 	ID   int
 }
 
-// RainbowEnhancePt 是彩装究极炼成 PT 的库存键（对应 ref ex_rainbow_enhance_pt＝(Item, 26202)）。
+// RainbowEnhancePt 是彩装究极炼成 PT 的库存键（对应参考项目 ex_rainbow_enhance_pt＝(Item, 26202)）。
 var RainbowEnhancePt = ItemKey{Type: 2, ID: 26202}
 
 // ParamNameCh 返回某副属性(eParamType)的中文名（未知→"未知属性N"）。
@@ -74,7 +74,7 @@ type SubStatusEntry struct {
 type API interface {
 	// RarityByID 返回全部 EX 装备的 ex_equipment_id→rarity 映射（供按稀有度计数）。
 	RarityByID(ctx context.Context) (map[int]int, error)
-	// AlcesCost 返回究极炼成的单次基础材料消耗（(类型,id)→count；对应 ref alces_cost）。
+	// AlcesCost 返回究极炼成的单次基础材料消耗（(类型,id)→count；对应参考项目 alces_cost）。
 	AlcesCost(ctx context.Context) (map[ItemKey]int, error)
 	// LoadSnapshot 一次性加载彩装炼成所需的全部母数据（名称/稀有度/副属性表/物品名），
 	// 返回内存快照以避免逐次炼成打 DB。
@@ -222,7 +222,7 @@ func NewSnapshot(rarity, group map[int]int, names, itemNames map[int]string, val
 // Rarity 返回某 EX 装备稀有度（未知→0）。
 func (s *Snapshot) Rarity(exEquipmentID int) int { return s.rarity[exEquipmentID] }
 
-// ExEquipName 返回 "{稀有度名}-{装备名}"（对应 ref get_ex_equip_name，略 rank）。
+// ExEquipName 返回 "{稀有度名}-{装备名}"（对应参考项目 get_ex_equip_name，略 rank）。
 func (s *Snapshot) ExEquipName(exEquipmentID int) string {
 	name, ok := s.rawName[exEquipmentID]
 	if !ok {
@@ -240,8 +240,8 @@ func (s *Snapshot) ItemName(itemID int) string {
 }
 
 // SubStatusCandidates 返回本快照中出现过的全部副属性(status)，升序去重——即彩装副属性的候选集
-// （对应 ref ex_equip_sub_status_candidate：取 ex_equipment_sub_status 全表 distinct status）。
-// 不含 0：ref 里的 0＝「任意」是配置层语义，由模块自行添加。
+// （对应参考项目 ex_equip_sub_status_candidate：取 ex_equipment_sub_status 全表 distinct status）。
+// 不含 0：参考项目里的 0＝"任意"是配置层语义，由模块自行添加。
 //
 // 从已加载的快照里收集而不另发查询，故与炼成主流程共用同一次 LoadSnapshot。
 func (s *Snapshot) SubStatusCandidates() []int {
@@ -254,7 +254,7 @@ func (s *Snapshot) SubStatusCandidates() []int {
 	return slices.Sorted(maps.Keys(seen))
 }
 
-// StatusSupported 报告某 EX 装备是否支持某副属性（对应 ref status not in sub_status_data 的反）。
+// StatusSupported 报告某 EX 装备是否支持某副属性（对应参考项目 status not in sub_status_data 的反）。
 func (s *Snapshot) StatusSupported(exEquipmentID, status int) bool {
 	vals, ok := s.values[s.group[exEquipmentID]]
 	if !ok {
@@ -264,7 +264,7 @@ func (s *Snapshot) StatusSupported(exEquipmentID, status int) bool {
 	return ok
 }
 
-// SubStatusStr 把一组副属性格式化为 "血量x123/物攻x45.00%"（对应 ref get_ex_equip_sub_status_str）：
+// SubStatusStr 把一组副属性格式化为 "血量x123/物攻x45.00%"（对应参考项目 get_ex_equip_sub_status_str）：
 // 按属性求 step 值之和，百分比属性除 100 并以两位小数百分号展示。空→"空"。
 func (s *Snapshot) SubStatusStr(exEquipmentID int, subs []SubStatusEntry) string {
 	vals := s.values[s.group[exEquipmentID]]

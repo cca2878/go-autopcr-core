@@ -1,4 +1,4 @@
-// Package clanbattle 是「公会战」域的 DTO（clan_battle/top；对应 ref clan_battle_knive）。
+// Package clanbattle 是"公会战"域的 DTO（clan_battle/top；对应参考项目 clan_battle_knive）。
 package clanbattle
 
 import (

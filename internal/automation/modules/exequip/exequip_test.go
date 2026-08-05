@@ -198,7 +198,7 @@ func TestViewAttributes_NoRainbow(t *testing.T) {
 
 // --- 依赖世界的参数候选 ---
 
-// worldGC 是一个「有一件彩装(serial 100)、母数据只认得物攻/物贯两种副属性」的世界。
+// worldGC 是一个"有一件彩装(serial 100)、母数据只认得物攻/物贯两种副属性"的世界。
 func worldGC() *moduletest.FakeClient {
 	snap := mdexequip.NewSnapshot(
 		map[int]int{1: 5, 2: 4},            // 1=彩装，2=粉装
@@ -220,7 +220,7 @@ func worldGC() *moduletest.FakeClient {
 }
 
 // TestCandidatesContract 是契约检查：每个无静态候选的 Choice 参数都须被 Candidates 覆盖。
-// Registry.Register 只抓得住「整个接口没实现」，漏掉其中某一个参数要真解析一次才知道。
+// Registry.Register 只抓得住"整个接口没实现"，漏掉其中某一个参数要真解析一次才知道。
 func TestCandidatesContract(t *testing.T) {
 	if err := automation.CheckCandidates(context.Background(), worldGC(), rainbowEnhance{}); err != nil {
 		t.Fatalf("参数候选不自洽: %v", err)
@@ -228,7 +228,7 @@ func TestCandidatesContract(t *testing.T) {
 }
 
 // TestCandidates_FromWorld 检查候选确实来自世界而非硬编码：彩装取自玩家库存（且滤掉非彩装、
-// 显示成人话），副属性取自母数据里【出现过的】属性。后者曾是一张手选的常量表，会随版本漂移。
+// 显示成人话），副属性取自母数据里'出现过的'属性。后者曾是一张手选的常量表，会随版本漂移。
 func TestCandidates_FromWorld(t *testing.T) {
 	cands, err := rainbowEnhance{}.Candidates(context.Background(), worldGC())
 	if err != nil {
@@ -248,14 +248,14 @@ func TestCandidates_FromWorld(t *testing.T) {
 	if len(rank) != 2 || rank[0].Value != "物攻" || rank[1].Value != "物贯" {
 		t.Fatalf("副属性候选=%+v want [物攻 物贯]", rank)
 	}
-	// 炼成目标额外可选「任意」＝不指定该槽。
+	// 炼成目标额外可选"任意"＝不指定该槽。
 	target := cands["ex_equip_rainbow_enchance_sub_status_1"]
 	if len(target) != 3 || target[0].Value != "任意" {
 		t.Fatalf("炼成属性候选=%+v want 任意打头的 3 项", target)
 	}
 }
 
-// TestEnhance_RejectsUnownedEquip 是这套机制的正题：选了一件【自己没有的】彩装，在跑起来之前
+// TestEnhance_RejectsUnownedEquip 是这套机制的正题：选了一件'自己没有的'彩装，在跑起来之前
 // 就被挡下。以前这个参数是不受约束的自由文本，非法值要一路走到炼成主流程里才发现。
 func TestEnhance_RejectsUnownedEquip(t *testing.T) {
 	res := moduletest.RunOne(worldGC(), rainbowEnhance{}, map[string]any{
@@ -271,7 +271,7 @@ func TestEnhance_RejectsUnownedEquip(t *testing.T) {
 }
 
 // TestEnhance_RejectsUnknownSubStatus 检查副属性同样按世界校验：母数据里没有的属性名（如本世界
-// 没有的「魔攻」）不再蒙混过关。
+// 没有的"魔攻"）不再蒙混过关。
 func TestEnhance_RejectsUnknownSubStatus(t *testing.T) {
 	res := moduletest.RunOne(worldGC(), rainbowEnhance{}, map[string]any{
 		"ex_equip_rainbow_enchance_action":       "炼成",

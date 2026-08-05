@@ -8,7 +8,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// charaFortune 抽取今日赛马（免费每日活动，获得宝石；对应 ref chara_fortune）。
+// charaFortune 抽取今日赛马（免费每日活动，获得宝石；对应参考项目 chara_fortune）。
 type charaFortune struct{}
 
 func (charaFortune) Meta() automation.Meta {

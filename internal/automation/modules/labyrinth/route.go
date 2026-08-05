@@ -8,16 +8,16 @@ import (
 	lab "github.com/cca2878/go-autopcr-core/internal/client/gameapi/labyrinth"
 )
 
-// 本文件是「黎明界刷开局」的【纯路线判定算法】：给定一张地图(map_list)与刷取参数，判断各目标区域
+// 本文件是"黎明界刷开局"的'纯路线判定算法'：给定一张地图(map_list)与刷取参数，判断各目标区域
 // 是否存在满足条件的可达路线（完美开局逐列匹配模板 / Boss 命中 / 第 3 格类型），并格式化输出。
-// 与网络/客户端无关，可独立单测（见 route_test.go）。对应 ref labyrint.py 中的路线判定部分。
+// 与网络/客户端无关，可独立单测（见 route_test.go）。对应参考项目 labyrint.py 中的路线判定部分。
 
-// blockTypeName 是格子类型名（对应 ref LABYRINTH_BLOCK_TYPE_NAME）。
+// blockTypeName 是格子类型名（对应参考项目 LABYRINTH_BLOCK_TYPE_NAME）。
 var blockTypeName = map[int]string{
 	1: "起点", 2: "普通怪物", 3: "EX怪物", 4: "角色", 5: "事件", 6: "遗物", 7: "商店", 8: "Boss",
 }
 
-// areaRequirements 是各区域每列的期望格子类型（完美开局模板；对应 ref AREA_REQUIREMENTS）。
+// areaRequirements 是各区域每列的期望格子类型（完美开局模板；对应参考项目 AREA_REQUIREMENTS）。
 var areaRequirements = map[int]map[int]int{
 	1: {1: 1, 2: 2, 3: 4, 4: 2, 5: 4, 6: 6},
 	2: {1: 1, 2: 4, 3: 2, 4: 6, 5: 3, 6: 4, 7: 6},
@@ -26,7 +26,7 @@ var areaRequirements = map[int]map[int]int{
 	5: {1: 1, 2: 2, 3: 6, 4: 3, 5: 6, 6: 3, 7: 7, 8: 8},
 }
 
-// bossNameByUnit 是 unit_id→Boss 名（两区合并；对应 ref LABYRINTH_BOSS_NAME_BY_UNIT）。
+// bossNameByUnit 是 unit_id→Boss 名（两区合并；对应参考项目 LABYRINTH_BOSS_NAME_BY_UNIT）。
 var bossNameByUnit = func() map[int]string {
 	m := map[int]string{}
 	for _, b := range append(append([]bossInfo{}, area3Bosses...), area5Bosses...) {
@@ -44,7 +44,7 @@ type finder struct {
 	perfectStart   bool
 }
 
-// targetAreas 返回需满足条件的区域（对应 ref _target_areas）。
+// targetAreas 返回需满足条件的区域（对应参考项目 _target_areas）。
 func targetAreas(difficulty int) []int {
 	if difficulty == 1 {
 		return []int{1, 2, 3}
@@ -52,7 +52,7 @@ func targetAreas(difficulty int) []int {
 	return []int{1, 2, 3, 4, 5}
 }
 
-// bossUnitIDs 返回某格子（Boss 关）的 unit_id 集合（对应 ref _boss_unit_ids）。
+// bossUnitIDs 返回某格子（Boss 关）的 unit_id 集合（对应参考项目 _boss_unit_ids）。
 func (f *finder) bossUnitIDs(block lab.Block) map[int]bool {
 	set := map[int]bool{}
 	if block.QuestID == 0 {
@@ -64,7 +64,7 @@ func (f *finder) bossUnitIDs(block lab.Block) map[int]bool {
 	return set
 }
 
-// bossMatches 报告某 Boss 格是否命中所选 Boss（对应 ref _boss_matches）。空选择＝不约束。
+// bossMatches 报告某 Boss 格是否命中所选 Boss（对应参考项目 _boss_matches）。空选择＝不约束。
 func (f *finder) bossMatches(area int, block lab.Block) bool {
 	selected := f.selectedBosses(area)
 	if len(selected) == 0 {
@@ -89,7 +89,7 @@ func (f *finder) selectedBosses(area int) map[int]bool {
 	return nil
 }
 
-// expectedBlockTypes 返回某区某列的期望格子类型集合（对应 ref _expected_block_types）。
+// expectedBlockTypes 返回某区某列的期望格子类型集合（对应参考项目 _expected_block_types）。
 func (f *finder) expectedBlockTypes(area, column int) map[int]bool {
 	if (area == 3 || area == 5) && column == 3 {
 		switch f.thirdBlockType {
@@ -104,7 +104,7 @@ func (f *finder) expectedBlockTypes(area, column int) map[int]bool {
 	return map[int]bool{areaRequirements[area][column]: true}
 }
 
-// findRoutes 对所有目标区域逐一找满足条件的路线（对应 ref _find_routes）。
+// findRoutes 对所有目标区域逐一找满足条件的路线（对应参考项目 _find_routes）。
 func (f *finder) findRoutes(difficulty int, blocks []lab.Block) (map[int][]lab.Block, string) {
 	routes := map[int][]lab.Block{}
 	var failures []string
@@ -122,7 +122,7 @@ func (f *finder) findRoutes(difficulty int, blocks []lab.Block) (map[int][]lab.B
 	return routes, ""
 }
 
-// findAreaRoute 在某区域用 DFS 找一条满足条件的可达路线（对应 ref _find_area_route）。
+// findAreaRoute 在某区域用 DFS 找一条满足条件的可达路线（对应参考项目 _find_area_route）。
 func (f *finder) findAreaRoute(area int, mapList []lab.Block) ([]lab.Block, string) {
 	expected := areaRequirements[area]
 	var blocks []lab.Block
@@ -177,7 +177,7 @@ type areaCtx struct {
 	byID       map[int]lab.Block
 }
 
-// dfs 从 block 出发深搜一条满足条件的路线（对应 ref 内层 dfs）。
+// dfs 从 block 出发深搜一条满足条件的路线（对应参考项目内层 dfs）。
 func (f *finder) dfs(c *areaCtx, block lab.Block, path []lab.Block, seen map[int]bool) []lab.Block {
 	if f.perfectStart && !f.expectedBlockTypes(c.area, block.Column)[block.BlockType] {
 		return nil
@@ -213,7 +213,7 @@ func appendBlock(path []lab.Block, block lab.Block) []lab.Block {
 	return out
 }
 
-// formatRoute 把一条路线格式化为可读字符串（对应 ref _format_route）。
+// formatRoute 把一条路线格式化为可读字符串（对应参考项目 _format_route）。
 func (f *finder) formatRoute(area int, route []lab.Block, mapList []lab.Block) string {
 	areaColumns := map[int][]lab.Block{}
 	for _, b := range mapList {
@@ -264,7 +264,7 @@ func (f *finder) bossExtra(area int, block lab.Block) string {
 	return fmt.Sprintf("(%s)", strings.Join(names, "/"))
 }
 
-// positionName 把格子行位翻译为 上/中/下/合流（对应 ref _position_name）。
+// positionName 把格子行位翻译为 上/中/下/合流（对应参考项目 _position_name）。
 func positionName(block lab.Block, areaColumns map[int][]lab.Block) string {
 	maxRow := block.Row
 	for _, b := range areaColumns[block.Column] {

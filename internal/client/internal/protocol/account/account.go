@@ -1,4 +1,4 @@
-// Package account 是「账号/首页」域的 DTO（load/index；后续 profile 等）。
+// Package account 是"账号/首页"域的 DTO（load/index 等；随需增量）。
 package account
 
 import (
@@ -45,7 +45,7 @@ type CharaFortune struct {
 	UnitList  []int `msgpack:"unit_list" json:"unit_list"`
 }
 
-// ExtraEquipSubStatus 是一件 EX 装备的一条副属性（对应 ref ExtraEquipSubStatus）。
+// ExtraEquipSubStatus 是一件 EX 装备的一条副属性（对应参考项目 ExtraEquipSubStatus）。
 // status＝属性类型(eParamType)，step＝档位(1..5，5＝满)，is_lock＝是否锁定。
 type ExtraEquipSubStatus struct {
 	SlotNumber int  `msgpack:"slot_number" json:"slot_number"`
@@ -54,7 +54,7 @@ type ExtraEquipSubStatus struct {
 	IsLock     bool `msgpack:"is_lock" json:"is_lock"`
 }
 
-// ExtraEquipInfo 是玩家持有的一件 EX 装备（对应 ref ExtraEquipInfo）。彩装炼成/战力搭配需要
+// ExtraEquipInfo 是玩家持有的一件 EX 装备（对应参考项目 ExtraEquipInfo）。彩装炼成/战力搭配需要
 // 完整实例（serial_id/rank/enhancement_pt/sub_status…），故此处取全字段而非仅 id。
 type ExtraEquipInfo struct {
 	SerialID       int                   `msgpack:"serial_id" json:"serial_id"`

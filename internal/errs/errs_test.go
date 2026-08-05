@@ -38,7 +38,7 @@ func TestWrappedSentinelKeepsIsAndClass(t *testing.T) {
 }
 
 // ★ 这是 Domain 这一维存在的理由：同一个 Kind 落在不同 Domain 上，处置完全不同。
-// 「数据损坏」来自游戏服务是响应解不开（多半版本对不上，该提示更新），来自母数据是资源包
+// "数据损坏"来自游戏服务是响应解不开（多半版本对不上，该提示更新），来自母数据是资源包
 // 下坏了（清掉重下即可）。只给 Kind，调用方以为拿到了足够信息，其实分不出该做哪件事。
 func TestSameKindDifferentDomainStaysDistinguishable(t *testing.T) {
 	fromGame := DomainGameAPI.New(KindCorrupt, "响应解不开")
@@ -55,7 +55,7 @@ func TestSameKindDifferentDomainStaysDistinguishable(t *testing.T) {
 	}
 }
 
-// 归类取【最外层】自报的，两维一起取：包装它的那一层往往正是判断了「这是谁的事、该怎么办」
+// 归类取'最外层'自报的，两维一起取：包装它的那一层往往正是判断了"这是谁的事、该怎么办"
 // 的一层。
 func TestClassifyTakesOutermost(t *testing.T) {
 	inner := DomainMasterdata.New(KindCorrupt, "里层")
@@ -120,7 +120,7 @@ func TestStrings(t *testing.T) {
 	}
 }
 
-// classedWrapper 是测试用的「自报归类且可继续 Unwrap」的错误。
+// classedWrapper 是测试用的"自报归类且可继续 Unwrap"的错误。
 type classedWrapper struct {
 	class Class
 	err   error

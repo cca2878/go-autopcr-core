@@ -121,7 +121,7 @@ func TestManagerEnsureDB(t *testing.T) {
 }
 
 // 构建母数据库要下载几十 MB、解包、再改写整个库的 schema，是首次登录里最久的一段。
-// 全程静默的话，用户看到的就是长时间无响应——故这段路径必须在【默认级别】说话。
+// 全程静默的话，用户看到的就是长时间无响应——故这段路径必须在'默认级别'说话。
 func TestEnsureDBReportsProgress(t *testing.T) {
 	srcPath := filepath.Join(t.TempDir(), "src.db")
 	sdb, err := sql.Open("sqlite", srcPath)
@@ -145,7 +145,7 @@ func TestEnsureDBReportsProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Info 级别下要能看出「开始了」和「完成了」，否则等待期间无从判断是否卡死。
+	// Info 级别下要能看出"开始了"和"完成了"，否则等待期间无从判断是否卡死。
 	got := buf.String()
 	for _, want := range []string{"开始构建", "构建完成", "ver=42"} {
 		if !strings.Contains(got, want) {

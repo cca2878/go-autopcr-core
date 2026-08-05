@@ -18,7 +18,7 @@ var (
 	// ErrRainbowMismatch 表示内嵌 rainbow 与这个版本的母数据完全对不上——一张表都没还原。
 	// 典型成因是游戏换了包体、混淆口径随之改变，而本二进制里的 rainbow 还是旧的。
 	//
-	// 归 KindUnsupported 而非 KindCorrupt：数据本身没坏，是【我们这一版还认不出它】。二者
+	// 归 KindUnsupported 而非 KindCorrupt：数据本身没坏，是'我们这一版还认不出它'。二者
 	// 的处置截然不同——损坏该清缓存重下（重下多少次都一样），认不出该升级客户端等新版。
 	ErrRainbowMismatch = errs.DomainMasterdata.New(errs.KindUnsupported, "rainbow 与该版本母数据不匹配")
 )
@@ -40,9 +40,8 @@ const (
 // 或落盘，则是本地环境的问题——磁盘满、目录没权限、rainbow 表与这个版本对不上，重试再多次
 // 也是同一个结果。
 //
-// 它也补上了原先最难查的一类现场：落盘那几步（MkdirAll / CreateTemp / Rename）过去直接
-// 上抛 os 的裸错误，用户只看得到一句 "permission denied"，既不知道是哪个版本、也不知道
-// 是构建链上的哪一步出的事。
+// 落盘那几步（MkdirAll / CreateTemp / Rename）若直接上抛 os 的裸错误，用户只看得到一句
+// "permission denied"，看不出是哪个版本、哪一步出的问题——这类现场正是它要补上的。
 type BuildError struct {
 	Ver   int
 	Stage BuildStage
@@ -55,12 +54,12 @@ func (e *BuildError) Error() string {
 
 func (e *BuildError) Unwrap() error { return e.Err }
 
-// ErrorClass 的来源固定是母数据（构建链本身就是这一域），处置类别则【优先听成因的】：
+// ErrorClass 的来源固定是母数据（构建链本身就是这一域），处置类别则'优先听成因的'：
 // 下载失败是暂时性还是被拒、解包失败是损坏还是不支持，只有里面那层知道，这层不该替它拍板。
 //
 // 只有当成因不吭声时（落盘与反混淆两步包的是 os 与 database/sql 的裸错误，它们不可能自报
 // 类别）才按阶段兜底——那两步失败无一例外是本地这台机器的事：磁盘满、目录没权限、库文件被
-// 占用或损坏。少了这个兜底，一次「磁盘写满」会以未分类冒到外壳，什么引导都给不出。
+// 占用或损坏。少了这个兜底，一次"磁盘写满"会以未分类冒到外壳，什么引导都给不出。
 func (e *BuildError) ErrorClass() errs.Class {
 	if k := errs.Classify(e.Err).Kind; k != errs.KindUnknown {
 		return errs.DomainMasterdata.With(k)

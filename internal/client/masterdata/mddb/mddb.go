@@ -1,4 +1,4 @@
-// Package mddb 是母数据各域查询共享的【低层只读 DB 句柄】。
+// Package mddb 是母数据各域查询共享的'低层只读 DB 句柄'。
 //
 // 类比 gameapi 的 transport：各域查询子包（masterdata/mission、masterdata/unit…）都只持有
 // *mddb.DB 并在其上写自己的 SQL，从而顶层 masterdata 能以访问器聚合各域而不产生 import 环。
@@ -19,7 +19,7 @@ import (
 // 归 KindEnvironment：这台机器上的事，重新下载一次母数据通常能修好。
 var ErrOpenDB = errs.DomainMasterdata.New(errs.KindEnvironment, "打开母数据库失败")
 
-// timeFormats 复刻 ref db.parse_time 支持的时间字符串格式（Go 参考布局，非零填充亦可解析）。
+// timeFormats 复刻参考项目 db.parse_time 支持的时间字符串格式（Go 参考布局，非零填充亦可解析）。
 var timeFormats = []string{
 	"2006/1/2 15:4:5",
 	"2006/1/2 15:4",
@@ -29,7 +29,7 @@ var timeFormats = []string{
 	"20060102150405",
 }
 
-// serverZone 是母数据时间字符串的时区：母数据记的是国服挂钟时间（UTC+8）。ref 靠部署环境把
+// serverZone 是母数据时间字符串的时区：母数据记的是国服挂钟时间（UTC+8）。参考项目靠部署环境把
 // 本机时区钉成 Asia/Shanghai 才等价，而本仓是库、不能假设宿主时区，故显式固定，否则 UTC 主机上
 // 所有活动窗口都会偏 8 小时，且同一账号在不同时区主机上的模块输出不一致（违反确定性）。
 var serverZone = time.FixedZone("CST", 8*60*60)

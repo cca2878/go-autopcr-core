@@ -12,9 +12,9 @@ import (
 // maxLoveUpReportNames 是报告里最多列出的角色名数量（其余以计数概括，避免刷屏）。
 const maxLoveUpReportNames = 30
 
-// loveUpReport 报告【亲密度未满、喂蛋糕可提升】的角色（只读，不实际喂食）。
+// loveUpReport 报告'亲密度未满、喂蛋糕可提升'的角色（只读，不实际喂食）。
 //
-// 对应 ref love_up（喂蛋糕）：原模块会消耗蛋糕提升亲密度；此处为验证 masterdata 设计一律
+// 对应参考项目 love_up（喂蛋糕）：原模块会消耗蛋糕提升亲密度；此处为验证 masterdata 设计一律
 // 降级为只读报告，只统计差多少亲密度、可升至几级，不发送 give_gift 写请求。
 type loveUpReport struct{}
 

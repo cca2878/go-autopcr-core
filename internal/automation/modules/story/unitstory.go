@@ -9,7 +9,7 @@ import (
 	mdstory "github.com/cca2878/go-autopcr-core/internal/client/masterdata/story"
 )
 
-// unitStoryReport 报告【可阅读但未读】的角色好感剧情（只读，不实际阅读）。最典型的 masterdata
+// unitStoryReport 报告'可阅读但未读'的角色好感剧情（只读，不实际阅读）。最典型的 masterdata
 // 交叉：门禁取决于母数据里每篇的好感等级要求与玩家状态里该角色当前好感等级的比较。
 type unitStoryReport struct{}
 

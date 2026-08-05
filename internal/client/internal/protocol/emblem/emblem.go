@@ -1,4 +1,4 @@
-// Package emblem 是「称号」域的 DTO（emblem/top；对应 ref missing_emblem）。
+// Package emblem 是"称号"域的 DTO（emblem/top；对应参考项目 missing_emblem）。
 package emblem
 
 import (

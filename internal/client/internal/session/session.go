@@ -1,7 +1,7 @@
 // Package session 实现基于 AccessKey 的游戏服登录序列。
 //
-// 对应原 Python 项目 core/sessionmgr.py 的登录编排（去掉了 token 文件缓存——纯库
-// 不持久化状态）。Login 只负责「按序发出请求 + 控制流校验」，返回 error；各响应
+// 对应参考项目 core/sessionmgr.py 的登录编排（去掉了 token 文件缓存——纯库
+// 不持久化状态）。Login 只负责"按序发出请求 + 控制流校验"，返回 error；各响应
 // 的数据由上层安装的折叠中间件（gameclient）落入玩家状态，故本包不依赖 gamestate。
 package session
 
@@ -25,15 +25,15 @@ import (
 //	check/game_start → load/index → home/index
 //
 // 权威客户端在此之后还会发 daily_task/top（普通 8-1 已领取时）与 unit_role/gacha_index。
-// 本库【有意不发】：实测两者只回 task_list 与 exec_count/gacha_level，没有任何本库模块消费的
+// 本库'有意不发'：实测两者只回 task_list 与 exec_count/gacha_level，没有任何本库模块消费的
 // 状态，发它们纯属每次登录多两发。若将来移植依赖这些状态的模块，需要连同这两步一起补回。
 //
 // 风控（is_risk）未通过验证码时返回 gameerr.RiskError（未注入求解器即硬失败）；
 // 未过教程返回 PanicError。
 //
-// logger 记录逐步进度（Debug 级；风控这类罕见分支为 Warn）。传 nil 即 slog.Default()。
-// 步骤日志走 Debug 而非 Info：正常登录每次都跑这六步，Info 级会变成噪音；但一旦卡在中间，
-// 「走到哪一步了」是第一个要问的问题，而传输层的请求日志同样在 Debug 级，两者能对上。
+// logger 记录逐步进度，走 Debug 级而非 Info：正常登录每次都跑这六步，Info 会变成噪音；但一旦
+// 卡在中间，"走到哪一步了"是第一个要问的问题，且能与同样 Debug 级的传输层请求日志对上时间线。
+// 风控这类罕见分支例外，记 Warn。传 nil 即 slog.Default()。
 func Login(ctx context.Context, c *transport.Client, cred credential.Credential, logger *slog.Logger) error {
 	if logger == nil {
 		logger = slog.Default()
@@ -88,7 +88,7 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential,
 	startReq := &sdk.CheckGameStartRequest{
 		AppType:      0,
 		CampaignData: "",
-		CampaignUser: rand.Intn(100001) &^ 1, // 随机偶数，复刻原项目
+		CampaignUser: rand.Intn(100001) &^ 1, // 随机偶数，复刻参考项目
 	}
 	start, err := transport.Call[sdk.CheckGameStartResponse](ctx, c, startReq)
 	if err != nil {
@@ -114,17 +114,17 @@ func Login(ctx context.Context, c *transport.Client, cred credential.Credential,
 	return nil
 }
 
-// maxRiskAttempts 是触发风控后允许的验证码重试轮数（复刻原项目上限）。
+// maxRiskAttempts 是触发风控后允许的验证码重试轮数（复刻参考项目上限）。
 const maxRiskAttempts = 5
 
-// passRisk 处理 tool/sdk_login 返回 is_risk 的风控：循环「求解验证码 → 带票据重登」，
-// 直到某轮登录不再 is_risk。求解由 credential 注入的验证码求解器完成（核心不自带求解器——
-// 求解能力由外壳经 accesskey.WithCaptchaSolver 注入）；重登请求在四要素之外补齐
-// challenge/validate/seccode 等 geetest 票据（复刻原项目 sessionmgr 的重提交字段）。
+// passRisk 处理 tool/sdk_login 返回 is_risk 的风控：循环"求解验证码 → 带票据重登"，
+// 直到某轮登录不再 is_risk。求解由外壳经 accesskey.WithCaptchaSolver 注入的验证码求解器完成
+// （核心不自带）；重登请求在四要素之外补齐 challenge/validate/seccode 等 gt 票据（复刻
+// 参考项目 sessionmgr 的重提交字段）。
 //
-// 求解失败（含未注入求解器 → captcha.ErrNoSolver）即【硬失败】：不发重登，返回 distinct
+// 求解失败（含未注入求解器 → captcha.ErrNoSolver）即'硬失败'：不发重登，返回 distinct
 // 的 gameerr.RiskError（Unwrap 保留成因，便于外壳 errors.Is/As 诊断与数据采集）。这是
-// 有意的设计——is_risk 极罕见且行为不明，暂不在核心内投机求解（见架构决策）。
+// 有意的设计——is_risk 极罕见且行为不明，暂不在核心内投机求解（见 docs/architecture.md）。
 // payload 为触发本次风控的响应中未建模字段的快照，随每轮重登刷新为最近一次风控响应的载荷，
 // 最终随 RiskError 透出（供数据采集）。
 func passRisk(ctx context.Context, c *transport.Client, cred credential.Credential, uid, accessKey string, payload map[string]any) error {

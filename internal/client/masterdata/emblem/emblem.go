@@ -1,4 +1,4 @@
-// Package emblem 是母数据「称号」域的只读查询（全称号列表 + 说明；对应 ref missing_emblem）。
+// Package emblem 是母数据"称号"域的只读查询（全称号列表 + 说明；对应参考项目 missing_emblem）。
 package emblem
 
 import (

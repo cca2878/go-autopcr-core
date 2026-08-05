@@ -9,7 +9,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/errs"
 )
 
-// 提取失败必须落到 ErrMalformed 上——母数据构建链据此判断「这份下载坏了，重来一次有戏」。
+// 提取失败必须落到 ErrMalformed 上——母数据构建链据此判断"这份下载坏了，重来一次有戏"。
 // 只断言 err != nil 是不够的：那样把哨兵摘掉也照样绿。
 func TestMalformedInputsAreClassifiedCorrupt(t *testing.T) {
 	badLength := func() []byte {
@@ -60,7 +60,7 @@ func TestMalformedInputsAreClassifiedCorrupt(t *testing.T) {
 	}
 }
 
-// 「我们没实现这个特性」与「数据坏了」是两码事：前者重下多少次都一样，故必须分得开。
+// "我们没实现这个特性"与"数据坏了"是两码事：前者重下多少次都一样，故必须分得开。
 func TestUnsupportedCompressionIsNotMalformed(t *testing.T) {
 	cases := map[string]uint32{
 		"LZMA":   compLZMA,

@@ -1,4 +1,4 @@
-// Package mirage 是「追忆战」域的游戏 API 能力面（对应 ref mirage_floor_receive）。
+// Package mirage 是"追忆战"域的游戏 API 能力面（对应参考项目 mirage_floor_receive）。
 //
 // 是否解锁由上层据玩家任务状态判定；礼物池是否够领由母数据累积天数 + top 的 reward_full_time
 // 共同判定（见模块）。本域只负责发包。

@@ -8,10 +8,10 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// towerUnlockQuestID 是露娜塔解锁任务（对应 ref get_tower_top 的门禁）。
+// towerUnlockQuestID 是露娜塔解锁任务（对应参考项目 get_tower_top 的门禁）。
 const towerUnlockQuestID = 11009001
 
-// towerCloisterReport 报告露娜塔回廊今日是否还可扫荡（只读；对应 ref tower_cloister_sweep 降级为报告）。
+// towerCloisterReport 报告露娜塔回廊今日是否还可扫荡（只读；对应参考项目 tower_cloister_sweep 降级为报告）。
 //
 // 原模块会扫荡回廊换取奖励；此处降级为只读报告，只据开放窗口 + 回廊状态给出剩余可扫荡次数，
 // 不发送 cloister_battle/skip 写请求。

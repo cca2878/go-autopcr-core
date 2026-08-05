@@ -59,7 +59,7 @@ func runGuard(ctx context.Context, g *sessionGuard, out any, script []error) (in
 	return calls, err
 }
 
-// tolerantCtx 是「模块声明容忍断点」的 ctx——自愈重发只在这一档下发生。
+// tolerantCtx 是"模块声明容忍断点"的 ctx——自愈重发只在这一档下发生。
 func tolerantCtx() context.Context {
 	return WithBreakPolicy(context.Background(), BreakIgnore)
 }
@@ -77,7 +77,7 @@ func TestClassifySession(t *testing.T) {
 		{"会话错误 4 可重发", apiErr(4, 1, title), faultRetry},
 		{"status=3 只标记", apiErr(9999, 3, "会话已失效"), faultStale},
 		{"未知码靠 message 兜底", apiErr(9999, 1, title), faultStale},
-		// 107 与需要重登的错误【共用同一句 message】，故必须靠错误码豁免：
+		// 107 与需要重登的错误'共用同一句 message'，故必须靠错误码豁免：
 		// 同一 access_key 重跑登录必然再失败，重登纯属空转。
 		{"107 假凭据不重登", apiErr(107, 1, title), faultNone},
 		{"普通业务错误", apiErr(203, 1, "体力不足"), faultNone},
@@ -94,7 +94,7 @@ func TestClassifySession(t *testing.T) {
 
 // --- 中间件 ---
 
-// TestRelogin_RetriesAfterKick 断言【容忍断点的模块】被顶号后自动重登并原样重发，
+// TestRelogin_RetriesAfterKick 断言'容忍断点的模块'被顶号后自动重登并原样重发，
 // 模块层看到的是成功，而不是一个它无从处理的会话错误。
 func TestRelogin_RetriesAfterKick(t *testing.T) {
 	g, logins := newGuard()
@@ -117,7 +117,7 @@ func TestRelogin_RetriesAfterKick(t *testing.T) {
 	}
 }
 
-// TestRelogin_MarkerOnlyDoesNotResend 断言靠 message 兜底命中的未知错误码【不重发】：
+// TestRelogin_MarkerOnlyDoesNotResend 断言靠 message 兜底命中的未知错误码'不重发'：
 // 无从判断服务端是否已部分执行请求，盲目重发可能重复扣资源。
 func TestRelogin_MarkerOnlyDoesNotResend(t *testing.T) {
 	g, logins := newGuard()
@@ -149,7 +149,7 @@ func TestRelogin_MarkerOnlyDoesNotResend(t *testing.T) {
 }
 
 // TestRelogin_DefaultPolicyFailsFast 是断点语义的核心：默认（未声明策略）下，会话失效
-// 【当场】变成 SessionBreakError 上抛，不悄悄重发。自愈修得了会话，修不了调用方局部变量
+// '当场'变成 SessionBreakError 上抛，不悄悄重发。自愈修得了会话，修不了调用方局部变量
 // 里那份已过时的世界快照——让它在断点处 unwind，好过带着旧结论继续往下写。
 func TestRelogin_DefaultPolicyFailsFast(t *testing.T) {
 	for _, p := range []struct {
@@ -192,10 +192,10 @@ func TestRelogin_DefaultPolicyFailsFast(t *testing.T) {
 }
 
 // TestRelogin_DefaultRecoversNextRequest 是用户最关心的保证在最小尺度上的复现：默认档下
-// 被顶号，当次请求失败（SessionBreakError），但【下一次请求会自己重登恢复，无需外部主动登录】。
+// 被顶号，当次请求失败（SessionBreakError），但'下一次请求会自己重登恢复，无需外部主动登录'。
 //
 // 这正是 GUI 的用法流程——同一个持久 Session 反复 Run：某个模块中途顶号→该任务失败，用户
-// 再点运行任何模块，下一次请求前 ensure 自动补上重登。绝不会卡在「必须先手动重新登录」。
+// 再点运行任何模块，下一次请求前 ensure 自动补上重登。绝不会卡在"必须先手动重新登录"。
 func TestRelogin_DefaultRecoversNextRequest(t *testing.T) {
 	g, logins := newGuard()
 	ctx := context.Background() // 默认档（未声明策略）
@@ -212,7 +212,7 @@ func TestRelogin_DefaultRecoversNextRequest(t *testing.T) {
 		t.Fatal("会话应被标记失效")
 	}
 
-	// 第二次请求：无需任何外部干预，ensure 自动重登并放行——这就是「不必主动 relogin」。
+	// 第二次请求：无需任何外部干预，ensure 自动重登并放行——这就是"不必主动 relogin"。
 	calls, err = runGuard(ctx, g, &fakeResp{}, nil)
 	if err != nil {
 		t.Fatalf("下一次请求应自动恢复，得 %v", err)

@@ -1,4 +1,4 @@
-// Package captcha 定义验证码求解【端口】——只定义端口，不带任何实现。
+// Package captcha 定义验证码求解'端口'——只定义端口，不带任何实现。
 //
 // 架构决策（captcha 移出核心）：核心自身不携带任何验证码求解器实现、不依赖任何远程/本地
 // 求解库（gtrv / wasm 等）。具体求解器由外壳(imperative shell)构造并经
@@ -16,11 +16,11 @@ import (
 // 硬失败：这是有意的——核心不携带求解器实现，求解能力一律由外壳注入。外壳可用
 // errors.Is 命中它，据此提示用户 / 注入求解器 / 采集数据。
 //
-// 归 KindMisuse 而非 KindRejected：风控本身是对端行为，但「没人能解它」是外壳漏了装配，
+// 归 KindMisuse 而非 KindRejected：风控本身是对端行为，但"没人能解它"是外壳漏了装配，
 // 补上求解器即可，与账号真被风控拦下是两回事。
 var ErrNoSolver = errs.DomainCredential.New(errs.KindMisuse, "captcha: 未配置验证码求解器")
 
-// Result 是一次 geetest 求解的结果。
+// Result 是一次 gt 求解的结果。
 type Result struct {
 	Challenge string
 	Validate  string

@@ -1,4 +1,4 @@
-// Package accesskey 实现「AccessKey 四要素直传」的凭据（SC 缝首期实现）。
+// Package accesskey 实现"AccessKey 四要素直传"的凭据，是 credential 端口的核心内实现。
 //
 // 它不做任何账密登录：Login 直接返回构造时传入的 uid/access_key；渠道（bsdk/qsdk）
 // 仅决定 apiRoot / resKey / platformID / channelID 等静态配置与请求头。
@@ -21,7 +21,7 @@ const (
 	ChannelQSDK = "qsdk" // 渠道服
 )
 
-// 凭据构造与使用的三种失败。都是【调用方传错了东西】而非运行期意外，故同归 errs.KindMisuse：
+// 凭据构造与使用的三种失败。都是'调用方传错了东西'而非运行期意外，故同归 errs.KindMisuse：
 // 外壳判定后直接把用户引导到对应的输入项即可，不必去猜错误文本。
 var (
 	// ErrUnknownChannel 表示渠道标识不是 ChannelBSDK / ChannelQSDK 之一。
@@ -40,9 +40,8 @@ const platformAndroid = "2"
 
 // androidHeaders 复刻原 constants.py 的 DEFAULT_HEADERS（Android）。
 //
-// APP-VER 只是【出厂默认值】、会过期：游戏更新后服务端拒绝旧版本号，transport.Client 会从
-// 拒绝响应的 store_url 里读出真实版本号自动纠正（见其 transport 方法），故这里的值不必手动
-// 跟着每次更新维护。
+// APP-VER 只是'出厂默认值'、会过期：游戏更新后服务端拒绝旧版本号，transport.Client 会从
+// 拒绝响应的 store_url 自动读出真实版本号纠正，故这里的值不必跟着每次更新维护。
 //
 // User-Agent / X-Unity-Version 没有这套自愈（服务端目前未观察到校验它们），只能手动跟版本更新
 // 时取证。取证方法：真机 APK 的 libunity.so 里能搜到形如 "{短版本}/respin/{完整版本}-{commit}"
@@ -96,9 +95,9 @@ var channels = map[string]channelConfig{
 
 // Credential 是 AccessKey 直传凭据。
 //
-// solver 可选：核心不携带任何验证码求解器实现（见 captcha 包的架构决策），故默认为 nil。
-// 未注入求解器时，仅在真正触发风控(is_risk)才会以 captcha.ErrNoSolver 硬失败——正常登录
-// （绝大多数情况）不需要求解器。求解能力由外壳经 WithCaptchaSolver 注入。
+// solver 可选：核心不携带任何验证码求解器实现，默认为 nil。未注入求解器时，仅在真正触发
+// 风控(is_risk)才会以 captcha.ErrNoSolver 硬失败——绝大多数正常登录不需要求解器。求解能力
+// 由外壳经 WithCaptchaSolver 注入。
 type Credential struct {
 	uid       string
 	accessKey string
@@ -135,7 +134,7 @@ func New(channel, uid, accessKey string, opts ...Option) (*Credential, error) {
 	return c, nil
 }
 
-// Anonymous 构造仅用于【免凭证握手】(source_ini/index + get_maintenance_status，均非加密)
+// Anonymous 构造仅用于'免凭证握手'(source_ini/index + get_maintenance_status，均非加密)
 // 的凭据：只提供渠道静态配置(APIRoot/Header/platform/channel)，不含账号 uid/access_key。
 //
 // 供 masterdata 无凭证刷新用——不登录也能拉服务器列表与维护状态、进而取最新母数据。

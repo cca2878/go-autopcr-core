@@ -1,4 +1,4 @@
-// Package tower 是「露娜塔」域的 DTO（tower/top；对应 ref tower_cloister_sweep）。
+// Package tower 是"露娜塔"域的 DTO（tower/top；对应参考项目 tower_cloister_sweep）。
 package tower
 
 import (

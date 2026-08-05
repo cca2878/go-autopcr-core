@@ -2,7 +2,7 @@ package labyrinth
 
 import "testing"
 
-// TestCleanGuildName 检查公会名里的换行标记被抹平——母数据存的是【字面量】反斜杠 n
+// TestCleanGuildName 检查公会名里的换行标记被抹平——母数据存的是'字面量'反斜杠 n
 // （游戏内用于折行，如 `破晓\n之星`），直接显示会露出转义符。
 func TestCleanGuildName(t *testing.T) {
 	cases := map[string]string{

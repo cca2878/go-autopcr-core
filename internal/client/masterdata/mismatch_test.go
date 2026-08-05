@@ -15,7 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// hashedPackage 造一个「表名列名都是哈希」的母数据包，表名取自 tables。
+// hashedPackage 造一个"表名列名都是哈希"的母数据包，表名取自 tables。
 func hashedPackage(t *testing.T, tables ...string) []byte {
 	t.Helper()
 	srcPath := filepath.Join(t.TempDir(), "src.db")
@@ -44,7 +44,7 @@ func logAt(level slog.Level) (*slog.Logger, *bytes.Buffer) {
 }
 
 // 一张表都没还原＝这份 rainbow 配不上这个版本的母数据。过去这里静默通过：库照常落盘、日志
-// 打「构建完成」、登录成功，直到跑模块才逐个炸出 no such table，根因早已无从追溯。
+// 打"构建完成"、登录成功，直到跑模块才逐个炸出 no such table，根因早已无从追溯。
 func TestTotalMismatchFailsAtBuildTime(t *testing.T) {
 	logger, buf := logAt(slog.LevelDebug)
 	cacheDir := t.TempDir()
@@ -61,7 +61,7 @@ func TestTotalMismatchFailsAtBuildTime(t *testing.T) {
 		t.Errorf("应可 errors.Is 命中 ErrRainbowMismatch，得到 %v", err)
 	}
 
-	// 归类必须说清「是哪一部分、该怎么办」：母数据域 + 本版认不出（升级客户端），而不是
+	// 归类必须说清"是哪一部分、该怎么办"：母数据域 + 本版认不出（升级客户端），而不是
 	// 数据损坏（那会引导用户徒劳地清缓存重下）。
 	if got, want := errs.Classify(err), errs.DomainMasterdata.With(errs.KindUnsupported); got != want {
 		t.Errorf("分类 = %v，want %v", got, want)
@@ -156,7 +156,7 @@ func TestFingerprintDiffersOnContentChange(t *testing.T) {
 	}
 }
 
-// 换了 rainbow 而 manifest_ver 没动时，缓存必须重建。这正是「换包后我们发新版修好 rainbow」
+// 换了 rainbow 而 manifest_ver 没动时，缓存必须重建。这正是"换包后我们发新版修好 rainbow"
 // 的场景：只看文件在不在的话，用户会一直吃那份用旧表建出来的库，发多少版都救不回来。
 func TestCacheRebuiltWhenRainbowChanges(t *testing.T) {
 	cacheDir := t.TempDir()

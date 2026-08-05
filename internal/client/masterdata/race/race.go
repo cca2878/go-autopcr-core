@@ -1,4 +1,4 @@
-// Package race 是母数据「角色赛马」域的只读查询（赛马开放时段等；对应 ref chara_fortune_schedule）。
+// Package race 是母数据"角色赛马"域的只读查询（赛马开放时段等；对应参考项目 chara_fortune_schedule）。
 package race
 
 import (
@@ -10,7 +10,7 @@ import (
 
 // API 是赛马域查询契约（随功能在本包内累加）。
 type API interface {
-	// IsFortuneTime 报告 now 是否落在任一赛马排程的 [start,end] 内（对应 ref db.is_cf_time）。
+	// IsFortuneTime 报告 now 是否落在任一赛马排程的 [start,end] 内（对应参考项目 db.is_cf_time）。
 	IsFortuneTime(ctx context.Context, now time.Time) (bool, error)
 }
 

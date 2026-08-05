@@ -1,4 +1,4 @@
-// Package daily 是「每日收取」域的游戏 API 能力面（礼物箱、任务奖励等；对应 ref daily.py）。
+// Package daily 是"每日收取"域的游戏 API 能力面（礼物箱、任务奖励等；对应参考项目 daily.py）。
 //
 // 能力方法按具体系统分文件（present.go、mission.go…），共用同一 Impl（只持传输句柄）。
 package daily

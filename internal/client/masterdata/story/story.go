@@ -1,4 +1,4 @@
-// Package story 是母数据「剧情」域的只读查询（剧情列表、解锁时间等；随需增量）。
+// Package story 是母数据"剧情"域的只读查询（剧情列表、解锁时间等；随需增量）。
 package story
 
 import (
@@ -10,15 +10,15 @@ import (
 )
 
 const (
-	// birthdayStoryGroupID 是生日剧情所属的 story_group_id（对应 ref db.birthday_story）。
+	// birthdayStoryGroupID 是生日剧情所属的 story_group_id（对应参考项目 db.birthday_story）。
 	birthdayStoryGroupID = 4010
-	// 主线剧情 story_id 区间（对应 ref db.main_story：story_detail 中 [mainStoryLo, mainStoryHi)）。
+	// 主线剧情 story_id 区间（对应参考项目 db.main_story：story_detail 中 [mainStoryLo, mainStoryHi)）。
 	mainStoryLo = 2000000
 	mainStoryHi = 3000000
-	// 角色好感剧情 story_id 区间（对应 ref db.unit_story：story_detail 中 [unitStoryLo, unitStoryHi)）。
+	// 角色好感剧情 story_id 区间（对应参考项目 db.unit_story：story_detail 中 [unitStoryLo, unitStoryHi)）。
 	unitStoryLo = 1000000
 	unitStoryHi = 2000000
-	// MagicalGirlGroupID 是「魔姬」剧情的 story_group_id，读取判定中按 ref 忽略。
+	// MagicalGirlGroupID 是"魔姬"剧情的 story_group_id，读取判定中按参考项目忽略。
 	MagicalGirlGroupID = 1255
 )
 

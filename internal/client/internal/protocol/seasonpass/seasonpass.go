@@ -1,4 +1,4 @@
-// Package seasonpass 是「女神祭（季卡）」域的 DTO（season_ticket_new_index/accept；对应 ref seasonpass）。
+// Package seasonpass 是"女神祭（季卡）"域的 DTO（season_ticket_new_index/accept；对应参考项目 seasonpass）。
 package seasonpass
 
 import (
@@ -13,7 +13,7 @@ var (
 	urlMissionAccept = protocol.MustRelURL("season_ticket_new/accept")
 )
 
-// MissionStatusEnableReceive 是「可领取」的任务状态值（对应 ref eMissionStatusType.EnableReceive）。
+// MissionStatusEnableReceive 是"可领取"的任务状态值（对应参考项目 eMissionStatusType.EnableReceive）。
 const MissionStatusEnableReceive = 1
 
 // UserMission 是女神祭的一条任务进度（此处仅取领取判定所需字段）。
@@ -53,12 +53,12 @@ type MissionAcceptResponse struct {
 	Rewards         []protocol.InventoryInfo `msgpack:"rewards" json:"rewards"`
 }
 
-// InventoryChanges 实现 protocol.RewardCarrier，【逆序】返回。
+// InventoryChanges 实现 protocol.RewardCarrier，'逆序'返回。
 //
-// 逆序照搬 ref：它对应的 handler 写的是 `for reward in self.rewards[::-1]`
-// （handlers.py:900），而这是 ref 全部 138 个折叠 handler 里【唯一】一处逆序遍历——只此一
+// 逆序照搬参考项目：它对应的 handler 写的是 `for reward in self.rewards[::-1]`
+// （handlers.py:900），而这是参考项目全部 138 个折叠 handler 里'唯一'一处逆序遍历——只此一
 // 家，说明不是笔误而是这个端点的特性。一次领取会横跨多个等级，逐条的 stock 若是累进中间值，
-// 正序遍历最后留下的就会是最旧的那条。core 没有该端点的真机样本，故保持与 ref 一致。
+// 正序遍历最后留下的就会是最旧的那条。core 没有该端点的真机样本，故保持与参考项目一致。
 func (r *MissionAcceptResponse) InventoryChanges() []protocol.InventoryInfo {
 	out := slices.Clone(r.Rewards)
 	slices.Reverse(out)

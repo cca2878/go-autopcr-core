@@ -1,4 +1,4 @@
-// Package labyrinth 是「黎明界（迷宫）」域的游戏 API 能力面（对应 ref labyrinth_top/enter/retire）。
+// Package labyrinth 是"黎明界（迷宫）"域的游戏 API 能力面（对应参考项目 labyrinth_top/enter/retire）。
 //
 // 刷开局：Enter 拉一张随机地图，模块判定路线是否满足条件，不满足则 Retire 重刷。是否解锁由上层据
 // 玩家任务状态判定；本域只负责发包并把响应整理为域结果类型。

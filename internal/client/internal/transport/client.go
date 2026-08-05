@@ -21,7 +21,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/urlx"
 )
 
-// DefaultTimeout 是单次请求的默认超时（对应原项目 timeout=10）。
+// DefaultTimeout 是单次请求的默认超时（对应参考项目 timeout=10）。
 const DefaultTimeout = 10 * time.Second
 
 // Client 是面向单个账号的传输客户端：封装加密、编解码、HTTP 与会话头维护。
@@ -61,7 +61,7 @@ func WithLogger(l *slog.Logger) Option {
 
 // WithOnVersionUpdate 注册 APP-VER 自愈成功时的回调（见 transport 方法）。newAppVer 是纠正后的
 // 版本号。本包不做任何持久化——是否落盘、落到哪里由调用方决定（见 appversion 包），这里只负责
-// 在【状态确实变化的那一刻】通知它，不多不少。未注册则自愈仍然发生，只是没有旁路通知。
+// 在'状态确实变化的那一刻'通知它，不多不少。未注册则自愈仍然发生，只是没有旁路通知。
 func WithOnVersionUpdate(fn func(newAppVer string)) Option {
 	return func(c *Client) { c.onVersionUpdate = fn }
 }
@@ -93,7 +93,7 @@ func New(cred credential.Credential, opts ...Option) *Client {
 // 缺第 2 步时 Go 不会在 ALPN 中声明任何协议，服务器遂自行选择默认协议——部分游戏
 // 服务器（如 le1-*）在空 ALPN 下默认回落 HTTP/2，其 h2 帧会被误判为畸形 HTTP/1 响应。
 //
-// 导出以便上层在「游戏 API」与「资源 CDN 下载」之间共享同一底层 Transport（统一
+// 导出以便上层在"游戏 API"与"资源 CDN 下载"之间共享同一底层 Transport（统一
 // 代理/TLS/连接池，只配一次），各自再包成不同超时的 *http.Client。
 func NewRoundTripper(proxy *url.URL, insecure bool) *http.Transport {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
@@ -121,7 +121,7 @@ func (c *Client) Use(mws ...Middleware) {
 func (c *Client) Handler() Handler { return c.handler }
 
 // ServerTime 返回当前的服务器时间（Unix 秒）＝最近一次同步值 + 其后本地流逝的时间
-// （对应 ref apiclient.time 的 time.time() - _local_time + _server_time）。
+// （对应参考项目 apiclient.time 的 time.time() - _local_time + _server_time）。
 //
 // 必须加上流逝量：登录后可能先下几分钟母数据再跑模块，长驻会话更可能空闲数小时；直接返回
 // 同步时刻的旧值会让时间门禁模块（赛马/公主祭/剧情窗口…）在边界附近判错开放状态。
@@ -169,7 +169,7 @@ func Call[R any](ctx context.Context, c *Client, req protocol.Request) (*R, erro
 }
 
 // storeURLVersionPattern 从维护状态响应下发的 store_url（应用商店安装包链接）中提取真实版本号。
-// 复刻原项目 apiclient.py 的同名正则；Go 的 regexp（RE2）不支持环视，故用捕获组取代 lookbehind。
+// 复刻参考项目 apiclient.py 的同名正则；Go 的 regexp（RE2）不支持环视，故用捕获组取代 lookbehind。
 // 形如 https://pkg.biligame.com/games/gzlj_11.7.2_20260715_154600_b8233_896629.apk。
 var storeURLVersionPattern = regexp.MustCompile(`gzlj_(\d+\.\d+\.\d+)`)
 
@@ -185,14 +185,14 @@ func parseStoreURLVersion(storeURL string) (string, bool) {
 // transport 是最内层处理器：单次尝试之外附带 APP-VER 过期自愈。
 //
 // 客户端版本号（APP-VER 头）落后于服务端认可的版本时，服务端会拒绝请求并在 store_url 里下发
-// 当前安装包链接，从中能读出真实版本号（对应原项目 apiclient.py 的 store_url 探测）。本包自己
-// 不做持久化（是否落盘、落到哪里是调用方的事，见 WithOnVersionUpdate），但会在纠正发生的那一刻
-// 通知已注册的回调，使调用方能把它记下来，避免下一个新进程还要再吃一次这次的多余往返。
+// 当前安装包链接，从中能读出真实版本号（对应参考项目 apiclient.py 的 store_url 探测）。本包自己
+// 不做持久化（是否落盘、落到哪里是调用方的事，见 WithOnVersionUpdate），只在纠正发生的那一刻
+// 通知已注册的回调，供调用方记下来，避免下一个新进程再走一次这趟多余往返。
 //
-// 必须在这里而非外层中间件处理：版本不符时 result_code=204、status=3，与「会话失效」共用同一个
+// 必须在这里而非外层中间件处理：版本不符时 result_code=204、status=3，与"会话失效"共用同一个
 // status（见 relogin.go 的 statusSessionInvalid），若放任它冒泡到 session guard，会被误判成需要
-// 重登——而重登发出的请求带着同样过期的头，会在这里再栽一次跟头。只重试一次：纠正后仍失败，
-// 就不是版本的事，照常按原样上抛给外层处理。
+// 重登——而重登发出的请求带着同样过期的头，仍会在这里再次撞上同一个问题。只重试一次：纠正后
+// 仍失败，就不是版本的事，照常按原样上抛给外层处理。
 func (c *Client) transport(ctx context.Context, req protocol.Request, out any) (protocol.ResponseHeader, error) {
 	header, err := c.doTransport(ctx, req, out)
 
@@ -287,8 +287,8 @@ func (c *Client) doTransport(ctx context.Context, req protocol.Request, out any)
 
 	var header protocol.ResponseHeader
 	if err := decodeEnvelope(raw, crypted, &header, out); err != nil {
-		// 与原项目一致：解码失败视为网络异常，从而落入 ErrorHandler 的重试。包在里面的是
-		// gameerr.ProtocolError，要分辨「链路不通」还是「响应形状对不上」再 As 一次即可。
+		// 与参考项目一致：解码失败视为网络异常，从而落入 ErrorHandler 的重试。包在里面的是
+		// gameerr.ProtocolError，要分辨"链路不通"还是"响应形状对不上"再 As 一次即可。
 		return protocol.ResponseHeader{}, gameerr.Network(err)
 	}
 
@@ -317,12 +317,12 @@ func (c *Client) doTransport(ctx context.Context, req protocol.Request, out any)
 			// 只按响应码短路；维护消息照常上抛，由 errorhandler 中间件升级
 			// （分层理由见 gameerr.IsFatalBusiness）。
 			if gameerr.IsFatalResultCode(header.ResultCode) {
-				// 这一档【确定不可恢复】，本层就是终点，记 Error 名副其实。
+				// 这一档'确定不可恢复'，本层就是终点，记 Error 名副其实。
 				c.logger.Error("游戏服返回不可恢复的业务错误",
 					"url", req.URL(), "result_code", header.ResultCode, "message", se.Message)
 				return header, gameerr.Panic("%s", se.Message)
 			}
-			// 其余一律 Warn：本层【不知道后果】。会话失效那一类紧接着就被 sessionGuard 自愈了，
+			// 其余一律 Warn：本层'不知道后果'。会话失效那一类紧接着就被 sessionGuard 自愈了，
 			// 记成 Error 会让一次成功的自愈在日志里留下一条吓人的错误；模块的业务错误则会变成
 			// 该任务的 Result.Err，由调用方决定它算不算失败。谁知道后果，谁记 Error。
 			c.logger.Warn("游戏服返回业务错误",

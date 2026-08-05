@@ -1,4 +1,4 @@
-// Package clan 是「公会」域的 DTO（公会信息、点赞等；对应 ref clan.py）。
+// Package clan 是"公会"域的 DTO（公会信息、点赞等；对应参考项目 clan.py）。
 package clan
 
 import (
@@ -59,5 +59,5 @@ type ClanLikeResponse struct {
 	protocol.ResponseBase
 }
 
-// StaminaSnapshot 实现 protocol.StaminaCarrier（对应 ref handlers.py 的 ClanLikeResponse）。
+// StaminaSnapshot 实现 protocol.StaminaCarrier（对应参考项目 handlers.py 的 ClanLikeResponse）。
 func (r *ClanLikeResponse) StaminaSnapshot() *protocol.UserStaminaInfo { return r.StaminaInfo }

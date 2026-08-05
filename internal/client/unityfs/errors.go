@@ -2,7 +2,7 @@ package unityfs
 
 import "github.com/cca2878/go-autopcr-core/internal/errs"
 
-// 本包的两类失败。分开它们是为了回答调用方唯一关心的那个问题：【重下一份还有没有救】。
+// 本包的两类失败。分开它们是为了回答调用方唯一关心的那个问题：'重下一份还有没有救'。
 //
 // 母数据构建链上，提取失败的最常见成因是下载残缺或缓存损坏（ErrMalformed，重来一次通常
 // 就好），而非我们碰上了没实现的容器特性（ErrUnsupported，重来多少次都一样）。二者混在

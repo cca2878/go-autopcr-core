@@ -1,4 +1,4 @@
-// Package clan 汇集「公会」域的自动化模块（公会点赞…）。
+// Package clan 汇集"公会"域的自动化模块（公会点赞…）。
 package clan
 
 import (
@@ -54,8 +54,8 @@ func (clanLike) Run(ctx context.Context, gc client.GameClient, rc *automation.Ru
 	if len(others) == 0 {
 		return automation.Skip("公会内没有其他成员可点赞")
 	}
-	// 确定性挑选：按 viewer_id 定序后用服务器日期轮转。ref 用 random.choice 分摊点赞，但本项目
-	// 要求「账号+线上状态+配置固定则输出可复现」，故改用随天轮换——同日必选同一人，跨日自然轮替。
+	// 确定性挑选：按 viewer_id 定序后用服务器日期轮转。参考项目用 random.choice 分摊点赞，但本项目
+	// 要求"账号+线上状态+配置固定则输出可复现"，故改用随天轮换——同日必选同一人，跨日自然轮替。
 	slices.SortFunc(others, func(a, b gapiclan.Member) int { return cmp.Compare(a.ViewerID, b.ViewerID) })
 	day := gc.ServerTime() / 86400 // 服务器时间为正的 Unix 秒，取模安全
 	target := others[day%int64(len(others))]

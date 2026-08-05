@@ -1,4 +1,4 @@
-// Package race 是「角色赛马」域的 DTO（chara_fortune/draw；对应 ref chara_fortune）。
+// Package race 是"角色赛马"域的 DTO（chara_fortune/draw；对应参考项目 chara_fortune）。
 package race
 
 import (

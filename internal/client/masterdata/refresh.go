@@ -20,7 +20,7 @@ import (
 // assetDownloadTimeout 是母数据 CDN 下载的 http 超时（母数据包达几十 MB，给足余量）。
 const assetDownloadTimeout = 5 * time.Minute
 
-// Refresher 装配母数据「确保就绪」管线，并支持【免凭证刷新】。
+// Refresher 装配母数据"确保就绪"管线，并支持'免凭证刷新'。
 //
 // 两条路径共用同一确保内核（下载→反混淆→缓存→只读打开）：
 //   - Ensure：已知 manifest_ver + res（登录已学到）时直接确保——供无头客户端登录后调用。

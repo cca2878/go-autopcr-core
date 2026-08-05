@@ -1,4 +1,4 @@
-// Package seasonpass 是母数据「女神祭（季卡）」域的只读查询（进行中的女神祭；对应 ref get_active_seasonpass）。
+// Package seasonpass 是母数据"女神祭（季卡）"域的只读查询（进行中的女神祭；对应参考项目 get_active_seasonpass）。
 package seasonpass
 
 import (
@@ -11,7 +11,7 @@ import (
 // API 是女神祭域查询契约（随功能在本包内累加）。
 type API interface {
 	// ActiveSeasonIDs 返回 now 处于 [start_time, limit_time] 内的女神祭 season_id 列表
-	// （对应 ref get_active_seasonpass：可领任务的开放窗口）。
+	// （对应参考项目 get_active_seasonpass：可领任务的开放窗口）。
 	ActiveSeasonIDs(ctx context.Context, now time.Time) ([]int, error)
 }
 

@@ -7,7 +7,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/errs"
 )
 
-// 同一个 HTTPError 落在哪一类由状态码决定——这正是「多主机故障转移」要的判据：
+// 同一个 HTTPError 落在哪一类由状态码决定——这正是"多主机故障转移"要的判据：
 // 5xx/429 换台主机还有戏，404 换到哪台都一样。
 func TestHTTPErrorKindByStatus(t *testing.T) {
 	cases := []struct {
@@ -41,7 +41,7 @@ func TestHTTPErrorMessageCarriesURLAndStatus(t *testing.T) {
 	}
 }
 
-// 「清单里没有这个资源」不是损坏也不是暂时故障：换台主机重来同样没有，故归 Rejected。
+// "清单里没有这个资源"不是损坏也不是暂时故障：换台主机重来同样没有，故归 Rejected。
 func TestManifestSentinelKinds(t *testing.T) {
 	if got := errs.Classify(ErrNotInManifest).Kind; got != errs.KindRejected {
 		t.Errorf("ErrNotInManifest 分类 = %v, want KindRejected", got)

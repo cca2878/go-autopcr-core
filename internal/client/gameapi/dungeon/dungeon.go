@@ -1,4 +1,4 @@
-// Package dungeon 是「地下城」域的游戏 API 能力面（dungeon/info；对应 ref underground 扫荡）。
+// Package dungeon 是"地下城"域的游戏 API 能力面（dungeon/info；对应参考项目 underground 扫荡）。
 package dungeon
 
 import (

@@ -1,4 +1,4 @@
-// Package mirage 是母数据「追忆战」域的只读查询（礼物池累积上限；对应 ref get_mirage_setting）。
+// Package mirage 是母数据"追忆战"域的只读查询（礼物池累积上限；对应参考项目 get_mirage_setting）。
 package mirage
 
 import (
@@ -10,7 +10,7 @@ import (
 
 // API 是追忆战域查询契约（随功能在本包内累加）。
 type API interface {
-	// AccumulateDayMax 返回礼物池累积天数上限（对应 ref get_mirage_setting 里最新一行的
+	// AccumulateDayMax 返回礼物池累积天数上限（对应参考项目 get_mirage_setting 里最新一行的
 	// pool_reward_accumulate_day_num_max）；无数据返回 0。
 	AccumulateDayMax(ctx context.Context) (int, error)
 }
@@ -25,7 +25,7 @@ func New(db *mddb.DB) *Impl { return &Impl{db: db} }
 
 func (a *Impl) AccumulateDayMax(ctx context.Context) (int, error) {
 	var days int
-	// ref 取 id 最大的一行；此处等价地取按 id 降序的首行。
+	// 参考项目取 id 最大的一行；此处等价地取按 id 降序的首行。
 	err := a.db.QueryRowContext(ctx,
 		"SELECT pool_reward_accumulate_day_num_max FROM mirage_setting ORDER BY id DESC LIMIT 1").Scan(&days)
 	if err == sql.ErrNoRows {

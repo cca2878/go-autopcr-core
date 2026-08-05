@@ -13,7 +13,7 @@ const (
 	ParamInt         ParamType = "int"
 	ParamString      ParamType = "string"
 	ParamChoice      ParamType = "choice"      // 从 Bounds.Choices 单选（值为 string）
-	ParamMultiChoice ParamType = "multichoice" // 从 Bounds.Choices 多选（值为【有序】[]string；顺序有意义时即优先级）
+	ParamMultiChoice ParamType = "multichoice" // 从 Bounds.Choices 多选（值为'有序'[]string；顺序有意义时即优先级）
 )
 
 // Bounds 是参数的通用约束/边界，各类型按需使用（零值=不约束）：ParamInt 用 Min/Max，
@@ -23,7 +23,7 @@ type Bounds struct {
 	Choices  []string // 允许取值集合，nil=不限
 }
 
-// Param 是模块的参数【定义】——随模块（Params()）走，不随实际值重复携带。
+// Param 是模块的参数'定义'——随模块（Params()）走，不随实际值重复携带。
 type Param struct {
 	Name        string
 	Type        ParamType
@@ -32,8 +32,8 @@ type Param struct {
 	Bounds      Bounds
 }
 
-// Option 是一个候选项：写回配置的【值】与给人看的【显示名】分开。依赖世界的候选里裸值常常
-// 对人毫无意义（彩装是 serial_id、公会是 guild_id），而怎么把它显示成人话是【模块知识】，
+// Option 是一个候选项：写回配置的'值'与给人看的'显示名'分开。依赖世界的候选里裸值常常
+// 对人毫无意义（彩装是 serial_id、公会是 guild_id），而怎么把它显示成人话是'模块知识'，
 // 故与候选解析写在一处（见 Candidates）。校验只认 Value。
 type Option struct {
 	Value string
@@ -41,10 +41,10 @@ type Option struct {
 }
 
 // isChoice 报告某参数类型的取值是否受候选约束——这类参数没有候选就是无意义的（不约束的
-// Choice 即 String），故「Choice 且无候选」不是一种合法声明，见 bindCandidates。
+// Choice 即 String），故"Choice 且无候选"不是一种合法声明，见 bindCandidates。
 func isChoice(t ParamType) bool { return t == ParamChoice || t == ParamMultiChoice }
 
-// hasUnboundChoice 报告 params 里是否有【无静态候选】的 Choice 类参数——即其候选只能依赖
+// hasUnboundChoice 报告 params 里是否有'无静态候选'的 Choice 类参数——即其候选只能依赖
 // 世界解析，模块因此必须实现 Candidates。供 Registry.Register 在注册期核对。
 func hasUnboundChoice(params []Param) (Param, bool) {
 	for _, p := range params {
@@ -55,16 +55,16 @@ func hasUnboundChoice(params []Param) (Param, bool) {
 	return Param{}, false
 }
 
-// bindCandidates 把解析出的候选填进对应参数的 Bounds.Choices，产出【已绑定】的参数定义（不改
+// bindCandidates 把解析出的候选填进对应参数的 Bounds.Choices，产出'已绑定'的参数定义（不改
 // 入参）。Bounds.Choices 始终是唯一的候选源——依赖世界的参数只是要到 gc 可用时才填得上。
 //
-// 两处防御都【响亮失败】，因为二者都会让参数静默退回零校验，而零校验正是本机制要消灭的：
+// 两处防御都'响亮失败'，因为二者都会让参数静默退回零校验，而零校验正是本机制要消灭的：
 //   - 候选给了未声明的参数：多半是参数名拼错，静默则该参数永远拿不到候选；
 //   - Choice 类参数既无静态候选、Candidates 也没给：Bounds.Choices 空＝不约束，静默则可传任意值。
 //
-// 【给了空候选】不在此列：它表示「世界里当前没有可选项」（如新号一件彩装都没有），是合法
-// 状态，此时无可校验，由模块自己的 Skip 守卫接管。故这里以 map 的 key 是否存在区分「给了但
-// 是空的」与「压根没给」。
+// '给了空候选'不在此列：它表示"世界里当前没有可选项"（如新号一件彩装都没有），是合法
+// 状态，此时无可校验，由模块自己的 Skip 守卫接管。故这里以 map 的 key 是否存在区分"给了但
+// 是空的"与"压根没给"。
 func bindCandidates(params []Param, cands map[string][]Option) ([]Param, error) {
 	declared := make(map[string]bool, len(params))
 	for _, p := range params {
@@ -137,11 +137,11 @@ func (p Param) validate(v any) error {
 	return nil
 }
 
-// Source 是「模块名 → 参数名 → 值」的配置源（CLI 常见用法：每模块一份；同模块多实例请直接
+// Source 是"模块名 → 参数名 → 值"的配置源（CLI 常见用法：每模块一份；同模块多实例请直接
 // 构造 []Task）。
 type Source map[string]map[string]any
 
-// Config 是单个任务解析后的【只读有效值】：模块参数名→有效值（默认已合并）。参数定义（Param）
+// Config 是单个任务解析后的'只读有效值'：模块参数名→有效值（默认已合并）。参数定义（Param）
 // 不在此重复——它属于模块。
 type Config map[string]any
 
@@ -154,10 +154,10 @@ func (c Config) Int(name string) int { n, _ := asInt(c[name]); return n }
 // String 取字符串参数（缺失/类型不符返回 ""）。
 func (c Config) String(name string) string { s, _ := c[name].(string); return s }
 
-// Strings 取多选参数的【有序】字符串切片（缺失/类型不符返回 nil；顺序即用户所选顺序）。
+// Strings 取多选参数的'有序'字符串切片（缺失/类型不符返回 nil；顺序即用户所选顺序）。
 func (c Config) Strings(name string) []string { ss, _ := asStringSlice(c[name]); return ss }
 
-// resolve 用参数定义把 provided 补全默认，产出只含【已声明参数】的有效值（不改 provided）。
+// resolve 用参数定义把 provided 补全默认，产出只含'已声明参数'的有效值（不改 provided）。
 func resolve(params []Param, provided map[string]any) Config {
 	out := make(Config, len(params))
 	for _, p := range params {
@@ -172,15 +172,15 @@ func resolve(params []Param, provided map[string]any) Config {
 
 // Validate 校验 provided 的每个值：参数须已声明、类型匹配、且满足 Bounds。provided 为空即通过。
 //
-// null 的语义：一律【等同未提供】——校验放行、resolve 回落默认值。这是有意与「空选择」区分：
-// Go 的 []string(nil) 经 JSON 就是 null，外壳无从表达「我确实没设这个参数」以外的意思；要表达
+// null 的语义：一律'等同未提供'——校验放行、resolve 回落默认值。这是有意与"空选择"区分：
+// Go 的 []string(nil) 经 JSON 就是 null，外壳无从表达"我确实没设这个参数"以外的意思；要表达
 // 空选择请传 []（非 nil 的空切片，resolve 会原样保留）。
 func Validate(params []Param, provided map[string]any) error {
 	if len(provided) == 0 {
 		return nil
 	}
-	// 按【参数声明序】而非 map 迭代序校验：否则同一份非法配置每次跑出来的报错都可能不同，
-	// 破坏「同输入同输出」的确定性契约（也让外壳侧的golden 比对失效）。
+	// 按'参数声明序'而非 map 迭代序校验：否则同一份非法配置每次跑出来的报错都可能不同，
+	// 破坏"同输入同输出"的确定性契约（也让外壳侧的 golden 比对失效）。
 	declared := make(map[string]struct{}, len(params))
 	for _, p := range params {
 		declared[p.Name] = struct{}{}
@@ -206,7 +206,7 @@ func Validate(params []Param, provided map[string]any) error {
 }
 
 // asStringSlice 把配置值规整为 []string：兼容 []string 与 JSON 解出的 []any（元素须为 string）。
-// nil 视为「未提供」（合法，由 resolve 回落默认值；见 Validate 的说明）。任一元素非字符串则失败。
+// nil 视为"未提供"（合法，由 resolve 回落默认值；见 Validate 的说明）。任一元素非字符串则失败。
 func asStringSlice(v any) ([]string, bool) {
 	switch s := v.(type) {
 	case nil:

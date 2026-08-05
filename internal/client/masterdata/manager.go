@@ -64,7 +64,7 @@ func (m *Manager) DBPath(ver int) string {
 func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 	dbPath := m.DBPath(ver)
 	if _, err := os.Stat(dbPath); err == nil {
-		// 版本号相同不代表这份缓存还能用：它可能是【另一张 rainbow】建出来的。换包后我们发新版
+		// 版本号相同不代表这份缓存还能用：它可能是'另一张 rainbow'建出来的。换包后我们发新版
 		// 修好 rainbow，而 manifest_ver 未必跟着动，此时若只看文件在不在，用户会一直吃那份用旧
 		// 表建出来的库——发多少版都救不回来，除非他自己去删缓存。
 		want := m.rainbow.Fingerprint()
@@ -103,7 +103,7 @@ func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", buildErr(ver, StageStore, err)
 	}
-	// 临时文件名须【每次唯一】：多账号外壳共用一个 cacheDir 时，两次 EnsureDB 会同时构建同一
+	// 临时文件名须'每次唯一'：多账号外壳共用一个 cacheDir 时，两次 EnsureDB 会同时构建同一
 	// 版本；共用固定的 "<ver>.db.tmp" 会让二者互相截断——最坏情况是把尚未反混淆的库 rename
 	// 成最终缓存，此后每次启动都命中这份坏缓存（查询全部报 no such table）。
 	f, err := os.CreateTemp(dir, fmt.Sprintf("%d.db.*.tmp", ver))
@@ -123,7 +123,7 @@ func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 		return "", buildErr(ver, StageUnhash, err)
 	}
 	m.logger.Debug("反混淆完成", "ver", ver, "elapsed", time.Since(unhashAt))
-	// rename 是原子的：并发的两方各自把自己那份【已反混淆】的库落到同一目标，谁后到谁生效，
+	// rename 是原子的：并发的两方各自把自己那份'已反混淆'的库落到同一目标，谁后到谁生效，
 	// 两种结果都是完整可用的库。
 	if err := os.Rename(tmp, dbPath); err != nil {
 		_ = os.Remove(tmp)
@@ -135,7 +135,7 @@ func (m *Manager) EnsureDB(ctx context.Context, ver int) (string, error) {
 	return dbPath, nil
 }
 
-// staleTempAge 是孤儿临时文件的判废年龄。取值须【远大于】一次正常构建的耗时：构建中的
+// staleTempAge 是孤儿临时文件的判废年龄。取值须'远大于'一次正常构建的耗时：构建中的
 // 临时文件也在同一个目录里，按年龄区分是唯一不需要跨进程协调的判据（同一 cacheDir 可能
 // 被另一个进程的外壳同时使用，我们看不见它的构建进行到哪一步）。
 const staleTempAge = 24 * time.Hour
@@ -145,7 +145,7 @@ const staleTempAge = 24 * time.Hour
 // 为什么可以删：本库任何时候都只用最新的 manifest_ver，旧版本库不会再被打开——每个 42MB
 // 上下，不清理就是无上限累积（移动端尤其吃不消）。
 //
-// 为什么只删【更旧】的：版本号回退时（服务端回滚）当前版本会小于目录里已有的，这时那些
+// 为什么只删'更旧'的：版本号回退时（服务端回滚）当前版本会小于目录里已有的，这时那些
 // 更新的库仍可能被另一个进程持有或马上再用，不该由我们代为判废。
 //
 // 为什么删失败可以不管：另一个进程正持有该文件时，Windows 会拒绝删除（POSIX 上删掉也不影响
@@ -214,7 +214,7 @@ func (m *Manager) unhashFile(path string, ver int) error {
 	}
 	if err := m.checkUnhash(ver, res); err != nil {
 		// 这条路径上 Close 的错误可以丢：调用方收到错误就会删掉这个临时文件，它不会变成缓存，
-		// 上面那句「Close 错误必须上报」的理由在这里不成立。
+		// 上面那句"Close 错误必须上报"的理由在这里不成立。
 		_ = db.Close()
 		return err
 	}
@@ -223,12 +223,12 @@ func (m *Manager) unhashFile(path string, ver int) error {
 
 // checkUnhash 判读反混淆战果。
 //
-// 一张都没还原 → 硬失败。过去这里是【静默通过】的最大的一个洞：还原表数被丢弃，没反混淆的库
-// 照常落盘、日志还打一条「构建完成」，登录也成功，直到跑模块才逐个炸出 no such table——而那时
+// 一张都没还原 → 硬失败。过去这里是'静默通过'的最大的一个洞：还原表数被丢弃，没反混淆的库
+// 照常落盘、日志还打一条"构建完成"，登录也成功，直到跑模块才逐个炸出 no such table——而那时
 // 错误已经和根因隔了十万八千里，用户只看得到一句 SQL 报错。
 //
-// 还剩表没还原（但不是全部）→ Warn，照常继续。不设阈值、有几张报几张：这条只在【构建新版本
-// 母数据】时才走到（命中缓存根本不到这里），一天顶多响几次，当得起每次都提醒一遍；而 rainbow
+// 还剩表没还原（但不是全部）→ Warn，照常继续。不设阈值、有几张报几张：这条只在'构建新版本
+// 母数据'时才走到（命中缓存根本不到这里），一天顶多响几次，当得起每次都提醒一遍；而 rainbow
 // 没盖全本就是实打实的瑕疵，值得看见。数字自己会说话——`stale=3` 是常态基线，`stale=800` 一眼
 // 就知道换包了。
 //
@@ -249,13 +249,13 @@ func (m *Manager) checkUnhash(ver int, res UnhashResult) error {
 }
 
 // stampFingerprint 把 rainbow 指纹写进库的 user_version（SQLite 文件头里的 32 位应用自定义
-// 字段），让这份缓存自带「我是谁建的」。
+// 字段），让这份缓存自带"我是谁建的"。
 //
 // 为什么不写进文件名：DBPath 的 {ver}.db 是 pruneCache 唯一的判据——它靠 Atoi 解析文件名来
 // 认出旧版本库，名字里多一段指纹会让解析失败、于是永远不删，几十 MB 一份地漏下去。写在库内部
 // 则文件名不变，清理逻辑一个字都不用动。
 //
-// user_version 而非 application_id：后者的语义是「这是什么类型的文件」，该是个跨版本的常量；
+// user_version 而非 application_id：后者的语义是"这是什么类型的文件"，该是个跨版本的常量；
 // 前者本就是留给应用自己编版本号的。pragma 不支持参数绑定，故用 Sprintf（与 Unhash 里
 // schema_version 的写法一致）。
 func (m *Manager) stampFingerprint(db *sql.DB) error {
@@ -265,7 +265,7 @@ func (m *Manager) stampFingerprint(db *sql.DB) error {
 
 // cacheFingerprint 读出 path 处缓存库上盖的 rainbow 指纹。只读打开，读的是文件头、不碰表。
 //
-// 本次改动之前建的缓存没盖过章，读出来是 SQLite 的默认值 0。那和「指纹不符」同样处置——重建。
+// 本次改动之前建的缓存没盖过章，读出来是 SQLite 的默认值 0。那和"指纹不符"同样处置——重建。
 // 来路不明的缓存就该重建，代价是升级到本版后各用户会多下一次母数据。
 func cacheFingerprint(path string) (int32, error) {
 	db, err := sql.Open("sqlite", "file:"+path+"?mode=ro")

@@ -11,7 +11,7 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
-// 事实（官方权威实现）：客户端请求仍用【旧】msgpack 规范，服务端响应已用【新】规范。
+// 事实（官方权威实现）：客户端请求仍用'旧'msgpack 规范，服务端响应已用'新'规范。
 // 故编码与解码使用两个不同配置的 handle。
 
 // requestHandle 用于编码请求体——旧规范（等价 Python packb(use_bin_type=False)）：
@@ -28,7 +28,7 @@ func newRequestHandle() *codec.MsgpackHandle {
 }
 
 // responseHandle 用于解码响应——新规范：
-//   - WriteExt=true：str 家族（含 str8=0xd9）按【字符串】解读；否则会被当作 []byte
+//   - WriteExt=true：str 家族（含 str8=0xd9）按'字符串'解读；否则会被当作 []byte
 //     （见 ugorji 解码 ContainerType：str 家族在 WriteExt||RawToString 为真时才是 string）；
 //   - RawToString 保持 false：bin 家族仍解为 []byte，与 Python bin→bytes 一致；
 //   - Raw=true：支持用 codec.Raw 两段式拆解信封；

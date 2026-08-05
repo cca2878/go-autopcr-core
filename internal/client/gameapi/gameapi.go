@@ -1,7 +1,7 @@
-// Package gameapi 是无头客户端对外暴露的「游戏 API 能力面」——供自动化模块(S3)按参数调用。
+// Package gameapi 是无头客户端对外暴露的"游戏 API 能力面"——供自动化模块按参数调用。
 //
-// 能力**按游戏功能域拆分为子包**（account、daily、room、clan…），每子包定义该域的接口 +
-// 实现 + 结果类型；GameAPI 以**访问器**形式聚合各域（gc.Account()/gc.Daily()…），从源头避免
+// 能力'按游戏功能域拆分为子包'（account、daily、room、clan…），每子包定义该域的接口 +
+// 实现 + 结果类型；GameAPI 以'访问器'形式聚合各域（gc.Account()/gc.Daily()…），从源头避免
 // 长成一个巨型对象。每个方法内部完成请求体构造、发包、解码，调用方无需接触 protocol（仍隐藏
 // 在 internal/client/internal 下，本子包在客户端子树内故可引用）。
 package gameapi

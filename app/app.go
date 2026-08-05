@@ -1,16 +1,16 @@
-// Package app 是 go-autopcr 的【应用服务门面】——把无头客户端(S2)与自动化运行器(S3)
+// Package app 是 go-autopcr-core 的'应用服务门面'——把无头客户端与自动化运行器
 // 装配成产品级操作（登录 / 列模块 / 跑任务 / 读玩家态与母数据），供所有前端共享：
-// CLI、未来的 web server、以及经 gomobile 的移动端 wrapper（go-autopcr-mobile）。
+// CLI、未来的 web server、以及经 gomobile 的移动端 wrapper（autopcr-mobile-gocore）。
 //
 // 定位（functional core / imperative shell）：app 是地道 Go（带 context / 结构体 / error），
 // 不掺任何 gomobile 味道；有状态的会话隔离在 Session 里，其上的运行是无状态、data-in/data-out。
 //
-//   - 凭据只吃 (channel, uid, access_key)：账密→access_key 的冷启动属外壳职责（见 go-autopcr
-//     外壳侧的 bsdk 组件），拿到后交给 Login 即可。
+//   - 凭据只吃 (channel, uid, access_key)：账密→access_key 的冷启动属外壳职责（如 CLI 的账密
+//     登录组件、或登录 SDK bsdkv3-go），拿到后交给 Login 即可。
 //   - 目录一律由调用方传入（见 Dirs）：核心不假设工作目录，桌面传本地路径、安卓传 filesDir。
 //   - 验证码求解器由外壳经 WithCaptchaSolver 注入；不注入则触发风控(is_risk)时硬失败。
 //
-// 详见架构决策：SDK/captcha 移出核心、核心保持确定性内核。
+// 详见 docs/architecture.md：登录 SDK 与验证码求解器为什么移出核心、核心如何保持确定性。
 package app
 
 import (
@@ -25,7 +25,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/masterdata"
 )
 
-// Dirs 是外壳提供给核心的文件系统位置。核心不假设任何工作目录——一切目录由调用方【显式传入】
+// Dirs 是外壳提供给核心的文件系统位置。核心不假设任何工作目录——一切目录由调用方'显式传入'
 // （桌面传本地路径，安卓传 filesDir/cacheDir 等应用私有目录）。沿用 gtlv 的经验：host 负责
 // 决定并传入位置、核心只使用。
 //
@@ -37,7 +37,7 @@ type Dirs struct {
 }
 
 // Session 是一次游戏会话：登录一次、可多次跑模块。它持有装配好的无头客户端（会话/玩家态/
-// 母数据句柄），故【有状态、非并发安全】；用毕 Close。
+// 母数据句柄），故'有状态、非并发安全'；用毕 Close。
 //
 // 生命周期归调用方（外壳）：建一个 Session 长期复用，避免每次操作重建（登录 + 母数据 ensure
 // 是昂贵的一次性成本）。
@@ -100,7 +100,7 @@ func NewSession(dirs Dirs, opts ...Option) *Session {
 // Registry 暴露模块注册表，供前端列出/挑选模块与预设。
 func (s *Session) Registry() *Registry { return s.registry }
 
-// Login 用「四要素直传」凭据登录：channel 取 ChannelBSDK / ChannelQSDK。是否接母数据由构造
+// Login 用"四要素直传"凭据登录：channel 取 ChannelBSDK / ChannelQSDK。是否接母数据由构造
 // Session 时的 WithMasterdata 决定，而非本方法的参数。
 //
 // 账密→(uid, access_key) 的冷启动不在此——由外壳先行完成，再把 (uid, access_key) 交进来。
@@ -166,7 +166,7 @@ func (s *Session) ServerTime() int64 {
 // 多元素，统一走 automation.Run；单个任务失败/跳过不影响其余。
 //
 // obs 是可选的进度端口（见 Observer）：非 nil 时按任务边界推送进度事件，nil 即无进度。返回的
-// error 非 nil 表示【被取消】（ctx 取消/超时），此时 []Result 只含已完成任务；nil 表示全部跑完。
+// error 非 nil 表示'被取消'（ctx 取消/超时），此时 []Result 只含已完成任务；nil 表示全部跑完。
 func (s *Session) Run(ctx context.Context, tasks []Task, obs Observer) ([]Result, error) {
 	if s.gc == nil {
 		return nil, ErrNotLoggedIn
@@ -182,11 +182,11 @@ func (s *Session) Close() error {
 	return s.gc.Close()
 }
 
-// DefaultRegistry 返回内置模块的默认注册表（含全部模块与预设），供【无需会话】地列出/挑选
+// DefaultRegistry 返回内置模块的默认注册表（含全部模块与预设），供'无需会话'地列出/挑选
 // 模块（如 CLI 的 --list）。会话内的 Run 用其自有注册表按名解析任务，二者内容一致。
 func DefaultRegistry() *Registry { return modules.DefaultRegistry() }
 
-// RefreshMasterdata 【免登录/免凭证】确保并打开最新母数据：自行握手取最新版本、必要时下载
+// RefreshMasterdata '免登录/免凭证'确保并打开最新母数据：自行握手取最新版本、必要时下载
 // 反混淆落库（落于 dirs.Cache），返回只读查询句柄（调用方负责 Close）。channel 取
 // ChannelBSDK / ChannelQSDK；logger 为 nil 时用 slog.Default()。
 func RefreshMasterdata(ctx context.Context, dirs Dirs, channel string, logger *slog.Logger) (MasterdataHandle, error) {

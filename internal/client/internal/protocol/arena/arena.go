@@ -1,4 +1,4 @@
-// Package arena 是「竞技场」域的 DTO（jjc/pjjc 时间奖励领取；对应 ref jjc_reward）。
+// Package arena 是"竞技场"域的 DTO（jjc/pjjc 时间奖励领取；对应参考项目 jjc_reward）。
 package arena
 
 import (
@@ -73,7 +73,7 @@ type GrandArenaTimeRewardAcceptResponse struct {
 	RewardInfo *protocol.InventoryInfo `msgpack:"reward_info" json:"reward_info"`
 }
 
-// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬 ref
+// InventoryChanges 实现 protocol.RewardCarrier。core 无该端点的真机样本，做法照搬参考项目
 // （handlers.py:874 / :725 —— reward_info 走 update_inventory）。字段是单条而非列表。
 func (r *ArenaTimeRewardAcceptResponse) InventoryChanges() []protocol.InventoryInfo {
 	if r.RewardInfo == nil {

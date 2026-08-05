@@ -1,4 +1,4 @@
-// Package tower 是「露娜塔」域的游戏 API 能力面（tower/top；对应 ref tower_cloister_sweep）。
+// Package tower 是"露娜塔"域的游戏 API 能力面（tower/top；对应参考项目 tower_cloister_sweep）。
 //
 // 是否解锁由上层据玩家任务状态判定；是否开放期由母数据排程判定（见模块）。本域只负责发包。
 package tower

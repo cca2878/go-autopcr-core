@@ -8,7 +8,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// seasonpassAccept 领取进行中女神祭的任务奖励（对应 ref seasonpass_accept）。
+// seasonpassAccept 领取进行中女神祭的任务奖励（对应参考项目 seasonpass_accept）。
 type seasonpassAccept struct{}
 
 func (seasonpassAccept) Meta() automation.Meta {

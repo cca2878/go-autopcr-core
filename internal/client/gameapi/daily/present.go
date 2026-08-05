@@ -34,7 +34,7 @@ type Reward struct {
 }
 
 // PresentBox 拉取礼物箱内容（present/index）。供调用方先查后领——只在确有可领取礼物时才
-// receive，避免触发「已领取」等业务错误。
+// receive，避免触发"已领取"等业务错误。
 func (a *Impl) PresentBox(ctx context.Context) ([]Present, error) {
 	req := &dailypb.PresentIndexRequest{TimeFilter: -1, TypeFilter: 0, DescFlag: true, Offset: 0}
 	resp, err := transport.Call[dailypb.PresentIndexResponse](ctx, a.tr, req)

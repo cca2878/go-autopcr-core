@@ -1,4 +1,4 @@
-// Package room 汇集「家园」域的自动化模块（收取家园产物）。
+// Package room 汇集"家园"域的自动化模块（收取家园产物）。
 package room
 
 import (

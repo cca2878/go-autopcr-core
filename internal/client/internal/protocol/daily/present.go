@@ -1,4 +1,4 @@
-// Package daily 是「每日收取」域的 DTO（礼物箱、任务奖励等；对应 ref daily.py）。
+// Package daily 是"每日收取"域的 DTO（礼物箱、任务奖励等；对应参考项目 daily.py）。
 package daily
 
 import (
@@ -40,7 +40,7 @@ type PresentIndexResponse struct {
 
 // PresentReceiveAllRequest 领取礼物箱中符合过滤条件的全部礼物。
 //
-// time_filter=-1 / type_filter=0 / desc_flag=true 复刻权威客户端的「全部、不限时、倒序」；
+// time_filter=-1 / type_filter=0 / desc_flag=true 复刻权威客户端的"全部、不限时、倒序"；
 // is_exclude_stamina=true 时跳过体力饮料礼物（避免体力溢出浪费）。
 type PresentReceiveAllRequest struct {
 	protocol.RequestBase

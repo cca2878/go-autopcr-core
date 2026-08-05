@@ -13,7 +13,7 @@ const (
 	secondsPerDay       = 24 * 60 * 60
 )
 
-// mirageFloorReceive 领取追忆战礼物池奖励（对应 ref mirage_floor_receive，先查后领）。
+// mirageFloorReceive 领取追忆战礼物池奖励（对应参考项目 mirage_floor_receive，先查后领）。
 type mirageFloorReceive struct{}
 
 func (mirageFloorReceive) Meta() automation.Meta {
@@ -48,7 +48,7 @@ func (mirageFloorReceive) Run(ctx context.Context, gc client.GameClient, rc *aut
 	if err != nil {
 		return err
 	}
-	// 复刻 ref：距礼物池注满不足 (上限天数-1) 天，说明池中已有可领奖励。
+	// 复刻参考项目：距礼物池注满不足 (上限天数-1) 天，说明池中已有可领奖励。
 	now := gc.ServerTime()
 	if fullTime-now >= int64(days-1)*secondsPerDay {
 		return automation.Skip("礼物箱无奖励")

@@ -10,7 +10,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client/internal/transport"
 )
 
-// 并发调用必须互斥地穿过「串行化 → 折叠」，且不与重登互锁。
+// 并发调用必须互斥地穿过"串行化 → 折叠"，且不与重登互锁。
 // 用 -race 跑才有意义：折叠写的是共享 PlayerState。
 func TestSerializeMiddleware_ConcurrentCallsAreExclusive(t *testing.T) {
 	var mu sync.Mutex
@@ -45,7 +45,7 @@ func TestSerializeMiddleware_ConcurrentCallsAreExclusive(t *testing.T) {
 	}
 }
 
-// 重登的登录请求会再次穿过本链；串行化必须在守卫【之内】，否则同一把非重入锁会自死锁。
+// 重登的登录请求会再次穿过本链；串行化必须在守卫'之内'，否则同一把非重入锁会自死锁。
 // 本测试若挂住即回归（go test 超时会报 panic 栈）。
 func TestSerializeMiddleware_ReloginDoesNotDeadlock(t *testing.T) {
 	var callMu sync.Mutex

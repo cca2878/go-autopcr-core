@@ -1,4 +1,4 @@
-// Package seasonpass 是「女神祭（季卡）」域的游戏 API 能力面（对应 ref seasonpass）。
+// Package seasonpass 是"女神祭（季卡）"域的游戏 API 能力面（对应参考项目 seasonpass）。
 //
 // 是否有进行中的女神祭由母数据判定（见 masterdata/seasonpass），本域只按 season_id 发包。
 package seasonpass
@@ -13,7 +13,7 @@ import (
 // Index 是女神祭总览摘要（供先查后动：判断是否有可领任务）。
 type Index struct {
 	Level             int  // 当前女神祭等级
-	HasReceivableTask bool // 是否有「可领取」状态的任务
+	HasReceivableTask bool // 是否有"可领取"状态的任务
 }
 
 // API 是女神祭域能力面契约（随功能在本包内累加）。

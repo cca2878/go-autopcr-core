@@ -8,7 +8,7 @@ import (
 	"github.com/cca2878/go-autopcr-core/internal/client"
 )
 
-// mainStoryReport 报告【可阅读但未读】的主线/支线剧情（只读，不实际阅读）。比生日剧情多一道
+// mainStoryReport 报告'可阅读但未读'的主线/支线剧情（只读，不实际阅读）。比生日剧情多一道
 // 任务通关门禁（unlock_quest_id），需 home/index 折叠的通关状态。
 type mainStoryReport struct{}
 

@@ -2,7 +2,7 @@ package gamestate
 
 import "testing"
 
-// mana/jewel 不进 Inventory 表而落在 Gold/Jewel 专用字段，GetInventory 必须按 ref 特判——
+// mana/jewel 不进 Inventory 表而落在 Gold/Jewel 专用字段，GetInventory 必须按参考项目特判——
 // 漏了这条，彩装究极炼成读到的 mana 恒为 0，模块永远进不到第一发。
 func TestGetInventorySpecialCurrencies(t *testing.T) {
 	s := New()
